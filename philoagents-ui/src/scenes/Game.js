@@ -1,33 +1,44 @@
-import { Scene } from 'phaser';
+import {Scene} from 'phaser';
 import Character from '../classes/Character';
 import DialogueBox from '../classes/DialogueBox';
 import DialogueManager from '../classes/DialogueManager';
 
-export class Game extends Scene
-{
-    constructor ()
-    {
+export class Game extends Scene {
+    constructor() {
         super('Game');
         this.controls = null;
         this.player = null;
         this.cursors = null;
         this.dialogueBox = null;
         this.spaceKey = null;
-        this.activePhilosopher = null;
+
+        // Game State
+        this.playerCharacterId = null; // e.g., 'castlereagh'
+        this.currentRound = 1;
+        this.gameState = {}; // Will hold crisis updates, resources, etc.
+        this.isPlayerTurn = true; // Controls when the player can act
+
+        // Characters & Interaction
+        this.delegates = []; // Array to hold all character/NPC objects
+        this.activeDelegate = null; // The NPC the player is currently near
+
         this.dialogueManager = null;
-        this.philosophers = [];
         this.labelsVisible = true;
     }
 
-    create ()
-    {
+    init(data) {
+        // Get the chosen character from the CharacterSelect scene
+        this.playerCharacterId = data.characterId;
+    }
+
+    create() {
         const map = this.createTilemap();
         const tileset = this.addTileset(map);
         const layers = this.createLayers(map, tileset);
         let screenPadding = 20;
         let maxDialogueHeight = 200;
 
-        this.createPhilosophers(map, layers);
+        this.createDelegates(map, layers);
 
         this.setupPlayer(map, layers.worldLayer);
         const camera = this.setupCamera(map);
@@ -39,85 +50,72 @@ export class Game extends Scene
         this.dialogueBox = new DialogueBox(this);
         this.dialogueText = this.add
             .text(60, this.game.config.height - maxDialogueHeight - screenPadding + screenPadding, '', {
-            font: "18px monospace",
-            fill: "#ffffff",
-            padding: { x: 20, y: 10 },
-            wordWrap: { width: 680 },
-            lineSpacing: 6,
-            maxLines: 5
+                font: "18px monospace",
+                fill: "#ffffff",
+                padding: {x: 20, y: 10},
+                wordWrap: {width: 680},
+                lineSpacing: 6,
+                maxLines: 5
             })
             .setScrollFactor(0)
             .setDepth(30)
             .setVisible(false);
 
         this.spaceKey = this.input.keyboard.addKey('SPACE');
-        
+
         // Initialize the dialogue manager
         this.dialogueManager = new DialogueManager(this);
         this.dialogueManager.initialize(this.dialogueBox);
     }
 
-    createPhilosophers(map, layers) {
-        const philosopherConfigs = [
-            { id: "socrates", name: "Socrates", defaultDirection: "right", roamRadius: 800 },
-            { id: "aristotle", name: "Aristotle", defaultDirection: "right", roamRadius: 700 },
-            { id: "plato", name: "Plato", defaultDirection: "front", roamRadius: 750 },
-            { id: "descartes", name: "Descartes", defaultDirection: "front", roamRadius: 650 },
-            { id: "leibniz", name: "Leibniz", defaultDirection: "front", roamRadius: 720 },
-            { id: "ada_lovelace", name: "Ada Lovelace", defaultDirection: "front", roamRadius: 680 },
-            { id: "turing", name: "Turing", defaultDirection: "front", roamRadius: 770 },
-            { id: "searle", name: "Searle", defaultDirection: "front", roamRadius: 730 },
-            { id: "chomsky", name: "Chomsky", defaultDirection: "front", roamRadius: 690 },
-            { id: "dennett", name: "Dennett", defaultDirection: "front", roamRadius: 710 },
-            { 
-                id: "miguel", 
-                name: "Miguel", 
-                defaultDirection: "front", 
-                roamRadius: 300,
-                defaultMessage: "Hey there! I'm Miguel, but you can call me Mr Agent. I'd love to chat, but I'm currently writing my Substack article for tomorrow. If you're curious about my work, take a look at The Neural Maze!" 
-            },
-            { 
-                id: "paul", 
-                name: "Paul", 
-                defaultDirection: "front",
-                roamRadius: 300,
-                defaultMessage: "Hey, I'm busy teaching my cat AI with my latest course. I can't talk right now. Check out Decoding ML for more on my thoughts." 
-            }
+    createDelegates(map, layers) {
+        const delegateConfigs = [{
+            id: "metternich", name: "Metternich", atlas: "metternich_atlas", defaultDirection: "right", roamRadius: 800
+        }, {
+            id: "alexander_i", name: "Alexander I", atlas: "tsar_atlas", defaultDirection: "left", roamRadius: 750
+        }, {
+            id: "talleyrand", name: "Talleyrand", atlas: "talleyrand_atlas", defaultDirection: "front", roamRadius: 720
+        }, // Add other delegates here...
         ];
 
         this.philosophers = [];
-        
-        philosopherConfigs.forEach(config => {
-            const spawnPoint = map.findObject("Objects", (obj) => obj.name === config.name);
-            
-            this[config.id] = new Character(this, {
-                id: config.id,
-                name: config.name,
-                spawnPoint: spawnPoint,
-                atlas: config.id,
-                defaultDirection: config.defaultDirection,
-                worldLayer: layers.worldLayer,
-                defaultMessage: config.defaultMessage,
-                roamRadius: config.roamRadius,
-                moveSpeed: config.moveSpeed || 40,
-                pauseChance: config.pauseChance || 0.2,
-                directionChangeChance: config.directionChangeChance || 0.3,
-                handleCollisions: true
-            });
-            
-            this.philosophers.push(this[config.id]);
+
+        delegateConfigs.forEach(config => {
+            if (config.id !== this.playerCharacterId) {
+                const spawnPoint = map.findObject("Objects", (obj) => obj.name === config.name);
+
+                if (!spawnPoint) {
+                    console.log(config)
+                    console.error(`ERROR: Spawn point not found for delegate: "${config.name}". Check your Tiled map for an object with this exact name in the "Objects" object layer.`);
+                    return; // Skip creating this character to prevent a crash.
+                }
+
+                this[config.id] = new Character(this, {
+                    id: config.id,
+                    name: config.name,
+                    spawnPoint: spawnPoint,
+                    atlas: config.id,
+                    defaultDirection: config.defaultDirection,
+                    worldLayer: layers.worldLayer,
+                    defaultMessage: config.defaultMessage,
+                    roamRadius: config.roamRadius,
+                    moveSpeed: config.moveSpeed || 40,
+                    pauseChance: config.pauseChance || 0.2,
+                    directionChangeChance: config.directionChangeChance || 0.3,
+                    handleCollisions: true
+                });
+
+                this.philosophers.push(this[config.id]);
+            }
         });
 
         // Make all philosopher labels visible initially
-        this.togglePhilosopherLabels(true);
+        this.toggleDelegatesLabels(true);
 
         // Add collisions between philosophers
         for (let i = 0; i < this.philosophers.length; i++) {
             for (let j = i + 1; j < this.philosophers.length; j++) {
-                this.physics.add.collider(
-                    this.philosophers[i].sprite, 
-                    this.philosophers[j].sprite
-                );
+                this.physics.add.collider(this.philosophers[i].sprite, this.philosophers[j].sprite);
             }
         }
     }
@@ -131,7 +129,7 @@ export class Game extends Scene
                 break;
             }
         }
-        
+
         if (nearbyPhilosopher) {
             if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
                 if (!this.dialogueBox.isVisible()) {
@@ -140,7 +138,7 @@ export class Game extends Scene
                     this.dialogueManager.continueDialogue();
                 }
             }
-            
+
             if (this.dialogueBox.isVisible()) {
                 nearbyPhilosopher.facePlayer(this.player);
             }
@@ -150,7 +148,7 @@ export class Game extends Scene
     }
 
     createTilemap() {
-        return this.make.tilemap({ key: "map" });
+        return this.make.tilemap({key: "map"});
     }
 
     addTileset(map) {
@@ -165,9 +163,9 @@ export class Game extends Scene
         const belowLayer = map.createLayer("Below Player", tilesets, 0, 0);
         const worldLayer = map.createLayer("World", tilesets, 0, 0);
         const aboveLayer = map.createLayer("Above Player", tilesets, 0, 0);
-        worldLayer.setCollisionByProperty({ collides: true });
+        worldLayer.setCollisionByProperty({collides: true});
         aboveLayer.setDepth(10);
-        return { belowLayer, worldLayer, aboveLayer };
+        return {belowLayer, worldLayer, aboveLayer};
     }
 
     setupPlayer(map, worldLayer) {
@@ -177,7 +175,7 @@ export class Game extends Scene
             .setOffset(0, 6);
 
         this.physics.add.collider(this.player, worldLayer);
-        
+
         this.philosophers.forEach(philosopher => {
             this.physics.add.collider(this.player, philosopher.sprite);
         });
@@ -191,17 +189,16 @@ export class Game extends Scene
 
     createPlayerAnimations() {
         const anims = this.anims;
-        const animConfig = [
-            { key: "sophia-left-walk", prefix: "sophia-left-walk-" },
-            { key: "sophia-right-walk", prefix: "sophia-right-walk-" },
-            { key: "sophia-front-walk", prefix: "sophia-front-walk-" },
-            { key: "sophia-back-walk", prefix: "sophia-back-walk-" }
-        ];
-        
+        const animConfig = [{key: "sophia-left-walk", prefix: "sophia-left-walk-"}, {
+            key: "sophia-right-walk", prefix: "sophia-right-walk-"
+        }, {key: "sophia-front-walk", prefix: "sophia-front-walk-"}, {
+            key: "sophia-back-walk", prefix: "sophia-back-walk-"
+        }];
+
         animConfig.forEach(config => {
             anims.create({
                 key: config.key,
-                frames: anims.generateFrameNames("sophia", { prefix: config.prefix, start: 0, end: 8, zeroPad: 4 }),
+                frames: anims.generateFrameNames("sophia", {prefix: config.prefix, start: 0, end: 8, zeroPad: 4}),
                 frameRate: 10,
                 repeat: -1,
             });
@@ -225,9 +222,9 @@ export class Game extends Scene
             down: this.cursors.down,
             speed: 0.5,
         });
-        
+
         this.labelsVisible = true;
-        
+
         // Add ESC key for pause menu
         this.input.keyboard.on('keydown-ESC', () => {
             if (!this.dialogueBox.isVisible()) {
@@ -240,14 +237,14 @@ export class Game extends Scene
     setupDialogueSystem() {
         const screenPadding = 20;
         const maxDialogueHeight = 200;
-        
+
         this.dialogueBox = new DialogueBox(this);
         this.dialogueText = this.add
             .text(60, this.game.config.height - maxDialogueHeight - screenPadding + screenPadding, '', {
                 font: "18px monospace",
                 fill: "#ffffff",
-                padding: { x: 20, y: 10 },
-                wordWrap: { width: 680 },
+                padding: {x: 20, y: 10},
+                wordWrap: {width: 680},
                 lineSpacing: 6,
                 maxLines: 5
             })
@@ -256,24 +253,24 @@ export class Game extends Scene
             .setVisible(false);
 
         this.spaceKey = this.input.keyboard.addKey('SPACE');
-        
+
         this.dialogueManager = new DialogueManager(this);
         this.dialogueManager.initialize(this.dialogueBox);
     }
 
     update(time, delta) {
         const isInDialogue = this.dialogueBox.isVisible();
-        
+
         if (!isInDialogue) {
             this.updatePlayerMovement();
         }
-        
+
         this.checkPhilosopherInteraction();
-        
+
         this.philosophers.forEach(philosopher => {
             philosopher.update(this.player, isInDialogue);
         });
-        
+
         if (this.controls) {
             this.controls.update(delta);
         }
@@ -300,7 +297,7 @@ export class Game extends Scene
 
         const currentVelocity = this.player.body.velocity.clone();
         const isMoving = Math.abs(currentVelocity.x) > 0 || Math.abs(currentVelocity.y) > 0;
-        
+
         if (this.cursors.left.isDown && isMoving) {
             this.player.anims.play("sophia-left-walk", true);
         } else if (this.cursors.right.isDown && isMoving) {
@@ -311,34 +308,27 @@ export class Game extends Scene
             this.player.anims.play("sophia-front-walk", true);
         } else {
             this.player.anims.stop();
-            if (prevVelocity.x < 0) this.player.setTexture("sophia", "sophia-left");
-            else if (prevVelocity.x > 0) this.player.setTexture("sophia", "sophia-right");
-            else if (prevVelocity.y < 0) this.player.setTexture("sophia", "sophia-back");
-            else if (prevVelocity.y > 0) this.player.setTexture("sophia", "sophia-front");
-            else {
+            if (prevVelocity.x < 0) this.player.setTexture("sophia", "sophia-left"); else if (prevVelocity.x > 0) this.player.setTexture("sophia", "sophia-right"); else if (prevVelocity.y < 0) this.player.setTexture("sophia", "sophia-back"); else if (prevVelocity.y > 0) this.player.setTexture("sophia", "sophia-front"); else {
                 // If prevVelocity is zero, maintain current direction
                 // Get current texture frame name
                 const currentFrame = this.player.frame.name;
-                
+
                 // Extract direction from current animation or texture
                 let direction = "front"; // Default
-                
+
                 // Check if the current frame name contains direction indicators
-                if (currentFrame.includes("left")) direction = "left";
-                else if (currentFrame.includes("right")) direction = "right";
-                else if (currentFrame.includes("back")) direction = "back";
-                else if (currentFrame.includes("front")) direction = "front";
-                
+                if (currentFrame.includes("left")) direction = "left"; else if (currentFrame.includes("right")) direction = "right"; else if (currentFrame.includes("back")) direction = "back"; else if (currentFrame.includes("front")) direction = "front";
+
                 // Set the static texture for that direction
                 this.player.setTexture("sophia", `sophia-${direction}`);
             }
         }
     }
 
-    togglePhilosopherLabels(visible) {
-        this.philosophers.forEach(philosopher => {
-            if (philosopher.nameLabel) {
-                philosopher.nameLabel.setVisible(visible);
+    toggleDelegatesLabels(visible) {
+        this.delegates.forEach(delegate => {
+            if (delegate.nameLabel) {
+                delegate.nameLabel.setVisible(visible);
             }
         });
     }

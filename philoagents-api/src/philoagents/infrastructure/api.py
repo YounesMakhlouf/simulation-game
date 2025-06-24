@@ -3,17 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from opik.integrations.langchain import OpikTracer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from philoagents.application.conversation_service.generate_response import (
-    get_response,
-    get_streaming_response,
-)
-from philoagents.application.conversation_service.reset_conversation import (
-    reset_conversation_state,
-)
-from philoagents.domain.philosopher_factory import PhilosopherFactory
-
+from philoagents.application.conversation_service.generate_response import (get_response, get_streaming_response, )
+from philoagents.application.conversation_service.reset_conversation import (reset_conversation_state, )
+from philoagents.domain import CharacterFactory
 from .opik_utils import configure
 
 configure()
@@ -31,35 +25,28 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"],
+                   allow_headers=["*"], )
 
 
 class ChatMessage(BaseModel):
-    message: str
-    philosopher_id: str
+    """
+    Defines the payload for initiating a conversation turn.
+    """
+    message: str = Field(description="The content of the message being sent.")
+    sender_id: str = Field(description="The ID of the character sending the message.")
+    receiver_id: str = Field(description="The ID of the character receiving the message.")
 
 
 @app.post("/chat")
 async def chat(chat_message: ChatMessage):
     try:
-        philosopher_factory = PhilosopherFactory()
-        philosopher = philosopher_factory.get_philosopher(chat_message.philosopher_id)
-
-        response, _ = await get_response(
-            messages=chat_message.message,
-            philosopher_id=chat_message.philosopher_id,
-            philosopher_name=philosopher.name,
-            philosopher_perspective=philosopher.perspective,
-            philosopher_style=philosopher.style,
-            philosopher_context="",
-        )
+        character_factory = CharacterFactory()
+        receiver_character = character_factory.get_character(chat_message.receiver_id)
+        response, _ = await get_response(messages=chat_message.message, sender_id=chat_message.sender_id,
+                                         receiver_character=receiver_character, )
         return {"response": response}
+
     except Exception as e:
         opik_tracer = OpikTracer()
         opik_tracer.flush()
@@ -75,29 +62,18 @@ async def websocket_chat(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
 
-            if "message" not in data or "philosopher_id" not in data:
+            if "message" not in data or "sender_id" not in data or "receiver_id" not in data:
                 await websocket.send_json(
-                    {
-                        "error": "Invalid message format. Required fields: 'message' and 'philosopher_id'"
-                    }
-                )
+                    {"error": "Invalid message format. Required fields: 'message' and 'philosopher_id'"})
                 continue
 
             try:
-                philosopher_factory = PhilosopherFactory()
-                philosopher = philosopher_factory.get_philosopher(
-                    data["philosopher_id"]
-                )
+                character_factory = CharacterFactory()
+                receiver_character = character_factory.get_character(data["receiver_id"])
 
                 # Use streaming response instead of get_response
-                response_stream = get_streaming_response(
-                    messages=data["message"],
-                    philosopher_id=data["philosopher_id"],
-                    philosopher_name=philosopher.name,
-                    philosopher_perspective=philosopher.perspective,
-                    philosopher_style=philosopher.style,
-                    philosopher_context="",
-                )
+                response_stream = get_streaming_response(messages=data["message"], sender_id=data["sender_id"],
+                    receiver_character=receiver_character, )
 
                 # Send initial message to indicate streaming has started
                 await websocket.send_json({"streaming": True})
@@ -108,9 +84,7 @@ async def websocket_chat(websocket: WebSocket):
                     full_response += chunk
                     await websocket.send_json({"chunk": chunk})
 
-                await websocket.send_json(
-                    {"response": full_response, "streaming": False}
-                )
+                await websocket.send_json({"response": full_response, "streaming": False})
 
             except Exception as e:
                 opik_tracer = OpikTracer()

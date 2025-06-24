@@ -1,37 +1,61 @@
-from langgraph.graph import MessagesState
+from typing import List, Optional, Annotated
+
+from langgraph.graph.message import add_messages, AnyMessage
+from typing_extensions import TypedDict
 
 
-class PhilosopherState(MessagesState):
-    """State class for the LangGraph workflow. It keeps track of the information necessary to maintain a coherent
-    conversation between the Philosopher and the user.
+class ConversationState(TypedDict):
+    """
+    State class for the conversation_service LangGraph workflow.
+
+    This class manages the context for a single character who is participating
+    in a private, one-on-one conversation. It holds all the information necessary
+    for that character to generate a believable, in-character response to a message.
 
     Attributes:
-        philosopher_context (str): The historical and philosophical context of the philosopher.
-        philosopher_name (str): The name of the philosopher.
-        philosopher_perspective (str): The perspective of the philosopher about AI.
-        philosopher_style (str): The style of the philosopher.
-        summary (str): A summary of the conversation. This is used to reduce the token usage of the model.
+        messages: A list of messages in the current conversation thread.
+                  Managed by LangGraph's `add_messages`.
+        character_id: The unique ID of the character whose state this is.
+        character_name: The full name of the character.
+        character_perspective: The character's worldview and political beliefs.
+        character_style: The character's conversational and diplomatic style.
+        retrieved_context: Factual context retrieved from the RAG system to
+                           ground the conversation.
+        summary: A running summary of the conversation to manage token count.
     """
+    messages: Annotated[List[AnyMessage], add_messages]
+    character_id: str
+    character_name: str
+    character_perspective: str
+    character_style: str
+    retrieved_context: Optional[str]
+    summary: Optional[str]
 
-    philosopher_context: str
-    philosopher_name: str
-    philosopher_perspective: str
-    philosopher_style: str
-    summary: str
 
-
-def state_to_str(state: PhilosopherState) -> str:
-    if "summary" in state and bool(state["summary"]):
-        conversation = state["summary"]
-    elif "messages" in state and bool(state["messages"]):
-        conversation = state["messages"]
+def state_to_str(state: ConversationState) -> str:
+    """
+    A utility function to create a string representation of the conversation state,
+    useful for debugging and logging.
+    """
+    # Prefer showing the summary if it exists, otherwise show the raw messages.
+    if "summary" in state and state["summary"]:
+        conversation_history = f"Summary: '{state['summary']}'"
+    elif "messages" in state and state["messages"]:
+        # Format messages for readability
+        formatted_messages = "\n  ".join([f"{m.type.capitalize()}: {m.content}" for m in state["messages"]])
+        conversation_history = f"Messages:\n  {formatted_messages}"
     else:
-        conversation = ""
+        conversation_history = "No conversation history."
+
+    # Handle optional retrieved_context
+    retrieved_info = state.get("retrieved_context", "None")
 
     return f"""
-PhilosopherState(philosopher_context={state["philosopher_context"]}, 
-philosopher_name={state["philosopher_name"]}, 
-philosopher_perspective={state["philosopher_perspective"]}, 
-philosopher_style={state["philosopher_style"]}, 
-conversation={conversation})
-        """
+--- Conversation State ---
+Character: {state.get('character_name', 'N/A')} (ID: {state.get('character_id', 'N/A')})
+Perspective: {state.get('character_perspective', 'N/A')[:80]}...
+Style: {state.get('character_style', 'N/A')[:80]}...
+Retrieved Context: {retrieved_info[:100]}...
+{conversation_history}
+------------------------
+"""

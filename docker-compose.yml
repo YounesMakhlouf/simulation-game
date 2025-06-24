@@ -3,7 +3,7 @@ services:
     image: mongodb/mongodb-atlas-local:8.0
     hostname: local_dev_atlas
     ports:
-      - 27017:27017
+      - "27017:27017"
     environment:
       - MONGODB_INITDB_ROOT_USERNAME=philoagents
       - MONGODB_INITDB_ROOT_PASSWORD=philoagents

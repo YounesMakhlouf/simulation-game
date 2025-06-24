@@ -14,15 +14,15 @@ export class MainMenu extends Scene {
         const buttonSpacing = 70;
 
         this.createButton(centerX, startY, 'Let\'s Play!', () => {
-            this.scene.start('Game');
+            this.scene.start('CharacterSelect');
         });
 
         this.createButton(centerX, startY + buttonSpacing, 'Instructions', () => {
             this.showInstructions();
         });
 
-        this.createButton(centerX, startY + buttonSpacing * 2, 'Support Philoagents', () => {
-            window.open('https://github.com/neural-maze/philoagents-course', '_blank');
+        this.createButton(centerX, startY + buttonSpacing * 2, 'Credits', () => {
+            window.open('https://github.com/YounesMakhlouf/simulation-game', '_blank');
         });
     }
 
@@ -144,7 +144,12 @@ export class MainMenu extends Scene {
         const instructions = [
             'Arrow keys for moving',
             'SPACE for talking to philosophers',
-            'ESC for closing the dialogue'
+            'ESC for closing the dialogue',
+            '1. Read the Crisis Update each round.',
+            '2. Submit your action (Diplomacy, Military, etc.).',
+            '3. Negotiate privately with other delegates.',
+            '4. Achieve your goals and deduce the secret plot.',
+            'Good luck, diplomat.'
         ];
         
         const textElements = [];

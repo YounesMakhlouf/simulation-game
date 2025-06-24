@@ -2,6 +2,7 @@ import { Game } from './scenes/Game';
 import { MainMenu } from './scenes/MainMenu';
 import { Preloader } from './scenes/Preloader';
 import { PauseMenu } from './scenes/PauseMenu';
+import {CharacterSelect} from "./scenes/CharacterSelect";
 
 const config = {
     type: Phaser.AUTO,
@@ -16,7 +17,8 @@ const config = {
         Preloader,
         MainMenu,
         Game,
-        PauseMenu
+        PauseMenu,
+        CharacterSelect
     ],
     physics: {
         default: "arcade",

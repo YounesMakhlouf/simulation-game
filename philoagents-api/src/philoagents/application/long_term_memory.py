@@ -5,7 +5,7 @@ from philoagents.application.data import deduplicate_documents, get_extraction_g
 from philoagents.application.rag.retrievers import Retriever, get_retriever
 from philoagents.application.rag.splitters import Splitter, get_splitter
 from philoagents.config import settings
-from philoagents.domain.philosopher import PhilosopherExtract
+from philoagents.domain.character import CharacterExtract
 from philoagents.infrastructure.mongo import MongoClientWrapper, MongoIndex
 
 
@@ -25,9 +25,9 @@ class LongTermMemoryCreator:
 
         return cls(retriever, splitter)
 
-    def __call__(self, philosophers: list[PhilosopherExtract]) -> None:
-        if len(philosophers) == 0:
-            logger.warning("No philosophers to extract. Exiting.")
+    def __call__(self, characters: list[CharacterExtract]) -> None:
+        if len(characters) == 0:
+            logger.warning("No characters to extract. Exiting.")
 
             return
 
@@ -37,7 +37,7 @@ class LongTermMemoryCreator:
         ) as client:
             client.clear_collection()
 
-        extraction_generator = get_extraction_generator(philosophers)
+        extraction_generator = get_extraction_generator(characters)
         for _, docs in extraction_generator:
             chunked_docs = self.splitter.split_documents(docs)
 

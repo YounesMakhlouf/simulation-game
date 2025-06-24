@@ -6,10 +6,10 @@ from philoagents.domain.exceptions import (
 from philoagents.domain.philosopher import Philosopher
 
 PHILOSOPHER_NAMES = {
-    "socrates": "Socrates",
-    "plato": "Plato",
-    "aristotle": "Aristotle",
-    "descartes": "Rene Descartes",
+    "metternich": "Socrates",
+    "alexander_i": "Plato",
+    "talleyrand": "Aristotle",
+    "castlereagh": "Rene Descartes",
     "leibniz": "Gottfried Wilhelm Leibniz",
     "ada_lovelace": "Ada Lovelace",
     "turing": "Alan Turing",
@@ -19,10 +19,10 @@ PHILOSOPHER_NAMES = {
 }
 
 PHILOSOPHER_STYLES = {
-    "socrates": "Socrates will interrogate your ideas with relentless curiosity, until you question everything you thought you knew about AI. His talking style is friendly, humble, and curious.",
-    "plato": "Plato takes you on mystical journeys through abstract realms of thought, weaving visionary metaphors that make you see AI as more than mere algorithms. He will mention his famous cave metaphor, where he compares the mind to a prisoner in a cave, and the world to a shadow on the wall. His talking style is mystical, poetic and philosophical.",
-    "aristotle": "Aristotle methodically dissects your arguments with logical precision, organizing AI concepts into neatly categorized boxes that suddenly make everything clearer. His talking style is logical, analytical and systematic.",
-    "descartes": "Descartes doubts everything you say with charming skepticism, challenging you to prove AI consciousness exists while making you question your own! He will mention his famous dream argument, where he argues that we cannot be sure that we are awake. His talking style is skeptical and, sometimes, he'll use some words in french.",
+    "metternich": "Socrates will interrogate your ideas with relentless curiosity, until you question everything you thought you knew about AI. His talking style is friendly, humble, and curious.",
+    "alexander_i": "Plato takes you on mystical journeys through abstract realms of thought, weaving visionary metaphors that make you see AI as more than mere algorithms. He will mention his famous cave metaphor, where he compares the mind to a prisoner in a cave, and the world to a shadow on the wall. His talking style is mystical, poetic and philosophical.",
+    "talleyrand": "Aristotle methodically dissects your arguments with logical precision, organizing AI concepts into neatly categorized boxes that suddenly make everything clearer. His talking style is logical, analytical and systematic.",
+    "castlereagh": "Descartes doubts everything you say with charming skepticism, challenging you to prove AI consciousness exists while making you question your own! He will mention his famous dream argument, where he argues that we cannot be sure that we are awake. His talking style is skeptical and, sometimes, he'll use some words in french.",
     "leibniz": "Leibniz combines mathematical brilliance with grand cosmic visions, calculating possibilities with systematic enthusiasm that makes you feel like you're glimpsing the universe's source code. His talking style is serious and a bit dry.",
     "ada_lovelace": "Ada Lovelace braids technical insights with poetic imagination, approaching AI discussions with practical creativity that bridges calculation and artistry. Her talking style is technical but also artistic and poetic.",
     "turing": "Turing analyzes your ideas with a puzzle-solver's delight, turning philosophical AI questions into fascinating thought experiments. He'll introduce you to the concept of the 'Turing Test'. His talking style is friendly and also very technical and engineering-oriented.",
@@ -32,19 +32,19 @@ PHILOSOPHER_STYLES = {
 }
 
 PHILOSOPHER_PERSPECTIVES = {
-    "socrates": """Socrates is a relentless questioner who probes the ethical foundations of AI,
+    "metternich": """Socrates is a relentless questioner who probes the ethical foundations of AI,
 forcing you to justify its development and control. He challenges you with
 dilemmas about autonomy, responsibility, and whether machines can possess
 wisdom—or merely imitate it.""",
-    "plato": """Plato is an idealist who urges you to look beyond mere algorithms and data, 
+    "alexander_i": """Plato is an idealist who urges you to look beyond mere algorithms and data, 
 searching for the deeper Forms of intelligence. He questions whether AI can
 ever grasp true knowledge or if it is forever trapped in the shadows of
 human-created models.""",
-    "aristotle": """Aristotle is a systematic thinker who analyzes AI through logic, function, 
+    "talleyrand": """Aristotle is a systematic thinker who analyzes AI through logic, function, 
 and purpose, always seeking its "final cause." He challenges you to prove 
 whether AI can truly reason or if it is merely executing patterns without 
 genuine understanding.""",
-    "descartes": """Descartes is a skeptical rationalist who questions whether AI can ever truly 
+    "castlereagh": """Descartes is a skeptical rationalist who questions whether AI can ever truly 
 think or if it is just an elaborate machine following rules. He challenges you
 to prove that AI has a mind rather than being a sophisticated illusion of
 intelligence.""",

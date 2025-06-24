@@ -1,54 +1,26 @@
 [
     {
-        "id": "plato",
+        "id": "metternich",
         "urls": [
-            "https://plato.stanford.edu/entries/plato/"
+            "https://www.britannica.com/biography/Klemens-von-Metternich"
         ]
     },
     {
-        "id": "aristotle",
+        "id": "alexander_i",
         "urls": [
-            "https://plato.stanford.edu/entries/aristotle/"
+            "https://www.britannica.com/biography/Alexander-I-emperor-of-Russia"
         ]
     },
     {
-        "id": "socrates",
+        "id": "talleyrand",
         "urls": [
-            "https://plato.stanford.edu/entries/socrates/"
+            "https://www.britannica.com/biography/Charles-Maurice-de-Talleyrand-Perigord-prince-de-Benevent"
         ]
     },
     {
-        "id": "descartes",
+        "id": "castlereagh",
         "urls": [
-            "https://plato.stanford.edu/entries/descartes/"
+            "https://www.britannica.com/biography/Robert-Stewart-Viscount-Castlereagh"
         ]
-    },
-    {
-        "id": "leibniz",
-        "urls": [
-            "https://plato.stanford.edu/entries/leibniz/"
-        ]
-    },
-    {
-        "id": "ada_lovelace",
-        "urls": []
-    },
-    {
-        "id": "turing",
-        "urls": [
-            "https://plato.stanford.edu/entries/turing/"
-        ]
-    },
-    {
-        "id": "searle",
-        "urls": []
-    },
-    {
-        "id": "chomsky",
-        "urls": []
-    },
-    {
-        "id": "dennett",
-        "urls": []
     }
 ]

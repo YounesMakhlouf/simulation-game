@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="3d3fdbd6-4e28-488e-9e13-6a98c9290f65" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/notebooks/short_term_memory_in_action.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/short_term_memory_in_action.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/application/conversation_service/generate_response.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/application/conversation_service/generate_response.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/edges.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/edges.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/graph.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/graph.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/nodes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/nodes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/state.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/application/conversation_service/workflow/state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/philoagents/domain/philosopher.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/philoagents/domain/philosopher.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 7
+}]]></component>
+  <component name="ProjectId" id="2yYY1r21LVQWYUtzIJGnVLSuVpZ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/wawao/OneDrive/Bureau/philoagents-course/philoagents-api",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-b26f3e71634d-JavaScript-PY-251.26094.141" />
+        <option value="bundled-python-sdk-9f8e2b94138c-36ea0e71a18c-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.26094.141" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3d3fdbd6-4e28-488e-9e13-6a98c9290f65" name="Changes" comment="" />
+      <created>1750012762345</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1750012762345</updated>
+      <workItem from="1750012763565" duration="36000" />
+    </task>
+    <servers />
+  </component>
+</project>
