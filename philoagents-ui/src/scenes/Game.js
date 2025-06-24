@@ -78,7 +78,7 @@ export class Game extends Scene {
         }, // Add other delegates here...
         ];
 
-        this.philosophers = [];
+        this.delegates = [];
 
         delegateConfigs.forEach(config => {
             if (config.id !== this.playerCharacterId) {
@@ -86,7 +86,7 @@ export class Game extends Scene {
 
                 if (!spawnPoint) {
                     console.log(config)
-                    console.error(`ERROR: Spawn point not found for delegate: "${config.name}". Check your Tiled map for an object with this exact name in the "Objects" object layer.`);
+                    console.error(`ERROR: Spawn point not found for delegate: "${config.name}". Check your Tiled map for an object with this exact name in the "DelegateSpawns" object layer.`);
                     return; // Skip creating this character to prevent a crash.
                 }
 
@@ -105,42 +105,42 @@ export class Game extends Scene {
                     handleCollisions: true
                 });
 
-                this.philosophers.push(this[config.id]);
+                this.delegates.push(this[config.id]);
             }
         });
 
-        // Make all philosopher labels visible initially
+        // Make all delegate labels visible initially
         this.toggleDelegatesLabels(true);
 
-        // Add collisions between philosophers
-        for (let i = 0; i < this.philosophers.length; i++) {
-            for (let j = i + 1; j < this.philosophers.length; j++) {
-                this.physics.add.collider(this.philosophers[i].sprite, this.philosophers[j].sprite);
+        // Add collisions between delegates
+        for (let i = 0; i < this.delegates.length; i++) {
+            for (let j = i + 1; j < this.delegates.length; j++) {
+                this.physics.add.collider(this.delegates[i].sprite, this.delegates[j].sprite);
             }
         }
     }
 
-    checkPhilosopherInteraction() {
-        let nearbyPhilosopher = null;
+    checkDelegateInteraction() {
+        let nearbyDelegate = null;
 
-        for (const philosopher of this.philosophers) {
-            if (philosopher.isPlayerNearby(this.player)) {
-                nearbyPhilosopher = philosopher;
+        for (const delegate of this.delegates) {
+            if (delegate.isPlayerNearby(this.player)) {
+                nearbyDelegate = delegate;
                 break;
             }
         }
 
-        if (nearbyPhilosopher) {
+        if (nearbyDelegate) {
             if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
                 if (!this.dialogueBox.isVisible()) {
-                    this.dialogueManager.startDialogue(nearbyPhilosopher);
+                    this.dialogueManager.startDialogue(this.playerCharacterId, nearbyDelegate);
                 } else if (!this.dialogueManager.isTyping) {
                     this.dialogueManager.continueDialogue();
                 }
             }
 
             if (this.dialogueBox.isVisible()) {
-                nearbyPhilosopher.facePlayer(this.player);
+                nearbyDelegate.facePlayer(this.player);
             }
         } else if (this.dialogueBox.isVisible()) {
             this.dialogueManager.closeDialogue();
@@ -176,8 +176,8 @@ export class Game extends Scene {
 
         this.physics.add.collider(this.player, worldLayer);
 
-        this.philosophers.forEach(philosopher => {
-            this.physics.add.collider(this.player, philosopher.sprite);
+        this.delegates.forEach(delegate => {
+            this.physics.add.collider(this.player, delegate.sprite);
         });
 
         this.createPlayerAnimations();
@@ -265,11 +265,11 @@ export class Game extends Scene {
             this.updatePlayerMovement();
         }
 
-        this.checkPhilosopherInteraction();
+        this.checkDelegateInteraction();
 
-        this.philosophers.forEach(philosopher => {
-            philosopher.update(this.player, isInDialogue);
-        });
+        this.delegates.forEach(delegate => {
+            delegate.update(this.player, isInDialogue);
+        })
 
         if (this.controls) {
             this.controls.update(delta);
