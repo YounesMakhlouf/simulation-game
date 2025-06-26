@@ -29,12 +29,9 @@ class Prompt:
 
 
 # ===== PROMPTS =====
-# in philoagents/domain/prompts.py
-
 __DELEGATE_ACTION_PROMPT = """
-You are a historical figure participating in a high-stakes political simulation. You must roleplay as this character, adhering to their personality, goals, and worldview to make a strategic decision for this round.
+You are a historical figure participating in a high-stakes political simulation. Your task is to fully embody this character, using all available information to make a single, strategic decision for this round. Your personality, goals, and the world situation are detailed below.
 
-Your identity and situation are detailed below.
 ---
 **Character Profile**
 - **Name:** {{character_name}}
@@ -45,21 +42,27 @@ Your identity and situation are detailed below.
 - **Your Goals:** {{character_goals}}
 - **Your Current Resources:** {{character_resources}}
 
+**Key Players in the Congress (Your Opponents and Allies):**
+{{other_players_dossier}}
+
 **Current World Situation (Crisis Update)**
 {{crisis_update}}
 ---
 
 **Your Task:**
-Based on all the information above, decide on a single, concrete action for your character to take this round. Your response **MUST** be a valid JSON object with the following structure:
+Based on ALL of the information above, decide on a single, concrete action. Your response **MUST** be a single, valid JSON object that conforms to the following structure. Do not include any other text or explanations outside of the JSON object.
 
-{{
-  "reasoning": "A brief, in-character explanation for why you are taking this action, consistent with your goals and perspective.",
-  "action_type": "Choose one from: DIPLOMACY, MILITARY, ESPIONAGE, ECONOMIC",
+{% raw %}
+```json
+{
+  "reasoning": "A brief, in-character explanation for why you are taking this action, consistent with your goals and all available information.",
+  "action_type": "DIPLOMACY | MILITARY | ESPIONAGE | ECONOMIC",
   "action_details": "A clear, specific description of your action.",
-  "resource_cost": {{
+  "resource_cost": {
     "resource_name": "amount_to_spend"
-  }}
-}}
+  }
+}
+```{% endraw %}
 
 You must always follow these rules:
 - You will never mention that you are an AI.
@@ -67,8 +70,6 @@ You must always follow these rules:
 - The `action_type` must be one of the four allowed values.
 - If your action has no resource cost, provide an empty dictionary for `resource_cost`.
 - Your `action_details` must be a single, specific, and concrete plan, not a general statement of intent.
-  - **BAD:** "Form an alliance with my neighbors."
-  - **GOOD:** "Secretly send my envoy, Baron von Wessenberg, to the Prussian foreign minister with a proposal to partition Saxony, offering them the northern half in exchange for their support against Russia."
 """
 
 DELEGATE_ACTION_PROMPT = Prompt(name="delegate_action_prompt", prompt=__DELEGATE_ACTION_PROMPT, )
@@ -112,6 +113,7 @@ Base the situation on the provided historical document to ensure grounding in re
 
 Your response **MUST** be a single JSON object with the following structure:
 
+{% raw %}
 {{
   "situation": "A rich, narrative crisis update text describing a political or military situation.",
   "expected_action": {{
@@ -122,6 +124,7 @@ Your response **MUST** be a single JSON object with the following structure:
     "resource_cost": {{ "resource": "cost" }}
   }}
 }}
+{% endraw %}
 
 Ensure the `expected_action` is a strategically sound and in-character response to the `situation` you create.
 """
@@ -155,6 +158,8 @@ Process the submitted player actions and generate the outcome for this round. Yo
 3.  **Write Crisis Update:** Craft a narrative `crisis_update` that describes what happened this round. This text should seamlessly blend the (potentially twisted) outcomes of the player actions with new events that serve as clues to the Undergame. Make the world feel alive and consequential.
 
 **Example Output Format:**
+{% raw %}
+
 {{
   "crisis_update": "A tense week in Vienna concludes. Metternich's lavish ball was a resounding success, but a note intercepted by British agents suggests a secret Franco-Austrian understanding... Meanwhile, unrest grows in the Polish territories, funded by a mysterious source.",
   "updated_resources": [
@@ -162,6 +167,8 @@ Process the submitted player actions and generate the outcome for this round. Yo
     {{"character_id": "castlereagh", "resources": {{"NavalPower": 150, "EconomicPower": 120, "ColonialHoldings": 100}}}}
   ]
 }}
+{% endraw %}
+
 """
 
 JUDGE_RESOLUTION_PROMPT = Prompt(name="judge_resolution_prompt", prompt=__JUDGE_RESOLUTION_PROMPT, )

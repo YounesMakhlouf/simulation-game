@@ -52,7 +52,16 @@ class GameLoopService:
             thread_id = f"{character.id}-action-round-{self.game_state.round_number}"
             config = {"configurable": {"thread_id": thread_id}, "callbacks": [opik_tracer]}
 
-            initial_state = {"character": character, "crisis_update": self.game_state.crisis_update, }
+            dossier_entries = []
+            all_characters = self.game_state.characters
+            for char_id, other_char in all_characters.items():
+                if other_char.id != character.id:
+                    entry = f"- **{other_char.name}**\n  Reputation: {other_char.perspective}"
+                    dossier_entries.append(entry)
+
+            other_players_dossier = "\n".join(dossier_entries)
+            initial_state = {"character": character, "crisis_update": self.game_state.crisis_update,
+                             "other_players_dossier": other_players_dossier, }
             result = await graph.ainvoke(input=initial_state, config=config)
             return result['action']
 

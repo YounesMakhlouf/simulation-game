@@ -24,8 +24,13 @@ async def action_decision_node(state: ActionState) -> Dict:
 
     action_response = await action_chain.ainvoke(
         {"character_name": character.name, "character_perspective": character.perspective,
-            "character_style": character.style, "character_goals": character.goals,
-            "character_resources": character.resources, "crisis_update": state["crisis_update"]})
+         "character_style": character.style, "character_goals": character.goals,
+         "character_resources": character.resources, "other_players_dossier": state["other_players_dossier"],
+         "crisis_update": state["crisis_update"], })
+    if action_response.character_id.lower() != character.id.lower():
+        print(
+            f"WARNING: Agent hallucinated character ID! Expected '{character.id}', got '{action_response.character_id}'. Overwriting for consistency.")
+        action_response.character_id = character.id
 
     print(f"Action Decided by {character.name}: {action_response.action_type} - {action_response.action_details}")
 

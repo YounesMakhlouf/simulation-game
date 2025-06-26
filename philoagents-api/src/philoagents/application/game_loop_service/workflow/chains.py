@@ -27,7 +27,7 @@ def get_character_action_chain():
     # Use a low temperature for more deterministic, strategic, and less "creative" actions.
     model = get_chat_model(temperature=0.2)
     structured_llm = model.with_structured_output(Action)
-    prompt = ChatPromptTemplate.from_messages([("system", DELEGATE_ACTION_PROMPT.prompt), ])
+    prompt = ChatPromptTemplate.from_messages([("system", DELEGATE_ACTION_PROMPT.prompt), ], template_format="jinja2", )
 
     return prompt | structured_llm
 
@@ -47,6 +47,7 @@ def get_judge_resolution_chain():
     model = get_chat_model(temperature=0.7)
 
     structured_llm = model.with_structured_output(JudgeOutput)
-    prompt = ChatPromptTemplate.from_messages([("system", JUDGE_RESOLUTION_PROMPT.prompt), ])
+    prompt = ChatPromptTemplate.from_messages([("system", JUDGE_RESOLUTION_PROMPT.prompt), ],
+                                              template_format="jinja2", )
 
     return prompt | structured_llm
