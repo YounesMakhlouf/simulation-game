@@ -118,7 +118,7 @@ def __format_messages(messages: Union[str, list[dict[str, Any]]], ) -> list[Unio
         if not messages:
             return []
 
-        if (isinstance(messages[0], dict) and "role" in messages[0] and "content" in messages[0]):
+        if isinstance(messages[0], dict) and "role" in messages[0] and "content" in messages[0]:
             result = []
             for msg in messages:
                 if msg["role"] == "user":

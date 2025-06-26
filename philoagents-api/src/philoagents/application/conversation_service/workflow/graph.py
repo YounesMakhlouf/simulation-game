@@ -24,7 +24,7 @@ def create_workflow_graph():
     # Define the flow
     graph_builder.add_edge(START, "conversation_node")
     graph_builder.add_conditional_edges("conversation_node", tools_condition,
-        {"tools": "retrieve_character_context", END: "connector_node"})
+                                        {"tools": "retrieve_character_context", END: "connector_node"})
     graph_builder.add_edge("retrieve_character_context", "summarize_context_node")
     graph_builder.add_edge("summarize_context_node", "conversation_node")
     graph_builder.add_conditional_edges("connector_node", should_summarize_conversation)

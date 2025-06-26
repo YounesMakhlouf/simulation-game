@@ -80,8 +80,9 @@ class EvaluationDatasetGenerator:
 
         return prompt | model
 
+    @staticmethod
     def __build_splitter(
-        self, max_token_limit: int = 6000
+            max_token_limit: int = 6000
     ) -> RecursiveCharacterTextSplitter:
         return RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             encoding_name="cl100k_base",
@@ -89,7 +90,8 @@ class EvaluationDatasetGenerator:
             chunk_overlap=0,
         )
 
-    def __validate_sample(self, sample: EvaluationDatasetSample) -> bool:
+    @staticmethod
+    def __validate_sample(sample: EvaluationDatasetSample) -> bool:
         return (
             len(sample.messages) >= 2
             and sample.messages[-2].role == "user"

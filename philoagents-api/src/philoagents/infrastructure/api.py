@@ -9,6 +9,7 @@ from philoagents.application.conversation_service.generate_response import (get_
 from philoagents.application.conversation_service.reset_conversation import (reset_conversation_state, )
 from philoagents.domain import CharacterFactory
 from .opik_utils import configure
+from philoagents.application.game_loop_service.api import router as game_loop_router
 
 configure()
 
@@ -111,6 +112,7 @@ async def reset_conversation():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+app.include_router(game_loop_router)
 
 if __name__ == "__main__":
     import uvicorn
