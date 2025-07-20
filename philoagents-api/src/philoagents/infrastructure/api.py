@@ -9,9 +9,8 @@ from pydantic import BaseModel, Field
 from philoagents.application.conversation_service.generate_response import (get_response, get_streaming_response, )
 from philoagents.application.conversation_service.reset_conversation import (reset_conversation_state, )
 from philoagents.application.game_loop_service.api import router as game_loop_router
-from philoagents.application.scenario_loader import ScenarioLoader
-from philoagents.config import settings
 from philoagents.domain.character_factory import CharacterFactory
+from philoagents.infrastructure.dependencies import get_character_factory
 from .opik_utils import configure
 
 configure()
@@ -40,21 +39,6 @@ class ChatMessage(BaseModel):
     message: str = Field(description="The content of the message being sent.")
     sender_id: str = Field(description="The ID of the character sending the message.")
     receiver_id: str = Field(description="The ID of the character receiving the message.")
-
-
-# --- SINGLETON INSTANTIATION (happens once on startup) ---
-SCENARIO_PATH = settings.SCENARIO_PATH
-
-print(f"Loading scenario from: {SCENARIO_PATH}")
-scenario_loader = ScenarioLoader(scenario_path=SCENARIO_PATH)
-character_factory_instance = scenario_loader.create_character_factory()
-
-
-# --- DEPENDENCY INJECTION PROVIDER ---
-
-def get_character_factory() -> CharacterFactory:
-    """A FastAPI dependency that provides the singleton CharacterFactory instance."""
-    return character_factory_instance
 
 
 @app.post("/chat")

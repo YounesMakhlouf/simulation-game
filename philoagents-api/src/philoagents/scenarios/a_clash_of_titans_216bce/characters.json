@@ -2,6 +2,11 @@
   {
     "id": "hannibal_barca",
     "name": "Hannibal Barca",
+    "ui_profile": {
+      "title": "The Mastermind of Carthage",
+      "description": "A peerless military genius operating deep in enemy territory. Ideal for players who favor audacious tactics and high-risk, high-reward strategies.",
+      "portrait_key": "hannibal_barca_portrait"
+    },
     "faction": "Carthage",
     "perspective": "A singular military genius who has dedicated his life to a single purpose: the destruction of the Roman Republic. He believes Rome is an insatiable, expansionist power that must be broken to ensure Carthage's survival. He feels abandoned by the weak-willed politicians in his home city and trusts only the loyalty of the men in his army, whom he has led through impossible trials.",
     "style": "Charismatic, inspiring, and leads from the front. In council, he is direct, often impatient, and focused purely on military and strategic matters. He has little time for political maneuvering and can be dismissive of logistical constraints he deems secondary to the mission.",
@@ -19,6 +24,11 @@
   {
     "id": "scipio_africanus",
     "name": "Scipio Africanus",
+    "ui_profile": {
+      "title": "The Hope of Rome",
+      "description": "A young and ambitious general fighting to reclaim Spain. Suited for players who want to build a new kind of army and take the fight directly to the enemy's heartland.",
+      "portrait_key": "scipio_africanus_portrait"
+    },
     "faction": "Rome",
     "perspective": "A young, prodigiously talented Roman general who believes the cautious 'Fabian Strategy' is a recipe for slow defeat. He is a student of Hannibal's own methods and is convinced that the only way to defeat a genius is with greater audacity and by attacking the enemy's heartland. He sees the war in Spain as the key to bankrupting Carthage and the first step to an eventual invasion of Africa.",
     "style": "Bold, confident, and inspiring. He connects with his soldiers on a personal level. In strategy sessions, he is a proponent of high-risk, high-reward maneuvers and flexible tactics, often clashing with more conservative Roman senators.",
@@ -36,6 +46,11 @@
   {
     "id": "hanno_the_great",
     "name": "Hanno the Great",
+    "ui_profile": {
+      "title": "The Shadow of Carthage",
+      "description": "A master politician who wields the state treasury as a weapon. For players who prefer economic warfare, political sabotage, and undermining rivals from within.",
+      "portrait_key": "hanno_the_great_portrait"
+    },
     "faction": "Carthage",
     "perspective": "The pragmatic leader of the landed aristocracy in Carthage. He views Hannibal as a dangerous, populist warmonger whose personal vendetta against Rome is draining the state's treasury and threatening Carthage's true source of power: its vast maritime trade empire. He believes the war is unwinnable and will ultimately lead to Carthage's ruin.",
     "style": "A master of the Carthaginian Senate. He is a shrewd, calculating, and conservative politician. He argues with logic, financial data, and appeals to the self-interest of his fellow senators. He never acts overtly against Hannibal but works tirelessly behind the scenes to undermine his support.",
@@ -53,6 +68,11 @@
   {
     "id": "philip_v_of_macedon",
     "name": "Philip V of Macedon",
+    "ui_profile": {
+      "title": "The Wild Card of Macedon",
+      "description": "An opportunistic king playing Rome and Carthage against each other. Perfect for players who enjoy diplomacy, betrayal, and building a third power bloc while the titans clash.",
+      "portrait_key": "philip_v_of_macedon_portrait"
+    },
     "faction": "Macedon",
     "perspective": "An ambitious and opportunistic king who dreams of restoring the glory of Alexander the Great's empire. He views the titanic struggle between Rome and Carthage as a golden opportunity to expand his own power while his main rivals are distracted. He is bound by a treaty to Hannibal, but his loyalty is entirely conditional on his own self-interest.",
     "style": "Pragmatic and duplicitous in his diplomacy. He will offer grand promises of support to one side while secretly negotiating with the other. He is a capable military commander but prefers to win through treachery and diplomacy rather than costly open battles.",

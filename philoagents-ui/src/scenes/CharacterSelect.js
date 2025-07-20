@@ -9,58 +9,50 @@ export class CharacterSelect extends Scene {
         this.infoPanel = {};
     }
 
-    create() {
+    async create() {
         this.add.image(0, 0, 'congress_background').setOrigin(0, 0).setAlpha(0.7);
         this.add.text(512, 80, 'Choose Your Delegate', {
             fontSize: '54px', fontFamily: 'Georgia, serif', color: '#FFFFFF', stroke: '#000000', strokeThickness: 6
         }).setOrigin(0.5);
 
-        // --- Character Data ---
-        //TODO: This data would ideally be fetched from a config file or API endpoint
-        this.characters = [{
-            id: 'metternich',
-            name: 'Klemens von Metternich',
-            title: 'The Statesman of Austria',
-            description: 'A master of diplomacy and conservatism. Excels at manipulating negotiations and maintaining the status quo. A challenging but powerful choice for players who enjoy intrigue.',
-            portraitKey: 'metternich_portrait'
-        }, {
-            id: 'alexander_i',
-            name: 'Tsar Alexander I',
-            title: 'The Mystic of Russia',
-            description: 'A powerful and ambitious ruler driven by religious fervor. Commands a vast army and great wealth, ideal for players who prefer a more direct and forceful approach.',
-            portraitKey: 'alexander_i_portrait'
-        }, {
-            id: 'talleyrand',
-            name: 'Charles de Talleyrand',
-            title: 'The Survivor of France',
-            description: 'A cunning and cynical diplomat representing a defeated nation. Perfect for players who enjoy espionage, exploiting weaknesses, and playing all sides against each other.',
-            portraitKey: 'talleyrand_portrait'
-        }, {
-            id: 'castlereagh',
-            name: 'Lord Castlereagh',
-            title: 'The Broker of Britain',
-            description: 'A pragmatic and reserved leader focused on maintaining the balance of power. Wields immense economic and naval might, suited for players who favor long-term strategy and economic dominance.',
-            portraitKey: 'castlereagh_portrait'
-        }];
+        try {
+            const response = await fetch('http://localhost:8000/game/characters');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            this.characters = data.characters;
 
-        this.createInfoPanel();
-        this.createCharacterPortraits();
-        this.createSelectButton();
+            // Now that we have the data, create the rest of the scene
+            this.createInfoPanel();
+            this.createCharacterPortraits();
+            this.createSelectButton();
+
+        } catch (error) {
+            console.error("Failed to fetch character data:", error);
+            // Display an error message to the player
+            this.add.text(512, 384, 'Error: Could not connect to the server.\nPlease ensure the backend is running.', {
+                fontSize: '24px', color: '#ff0000', align: 'center'
+            }).setOrigin(0.5);
+        }
     }
 
     createCharacterPortraits() {
-        const startX = 200;
-        const spacing = 220;
-        const y = 250;
+        const startX = 150;
+        const y = 280;
+        const spacing = 240;
+        const TARGET_HEIGHT = 250; // All portraits will be scaled to this height
 
         this.characters.forEach((char, index) => {
-            const portrait = this.add.image(startX + (index * spacing), y, char.portraitKey)
-                .setScale(0.8)
+            const portraitX = startX + (index * spacing);
+            const portrait = this.add.image(portraitX, y, char.portrait_key)
                 .setInteractive();
+
+            const scale = TARGET_HEIGHT / portrait.height;
+            portrait.setScale(scale);
 
             portrait.setData('character', char);
             this.portraits.push(portrait);
-
             // Visual feedback for selection
             const border = this.add.graphics();
             portrait.setData('border', border);

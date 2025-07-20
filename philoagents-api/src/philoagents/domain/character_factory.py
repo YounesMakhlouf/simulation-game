@@ -28,6 +28,8 @@ class CharacterFactory:
             pydantic.ValidationError: If any character dictionary in the list
                                       is missing required fields.
         """
+        self._raw_data: Dict[str, Dict] = {char_dict['id']: char_dict for char_dict in character_data}
+
         # We process the list into a dictionary for fast, O(1) lookups by character ID.
         # Pydantic automatically validates the data during this conversion.
         self._characters: Dict[str, Character] = {char_dict['id']: Character(**char_dict) for char_dict in
@@ -62,3 +64,14 @@ class CharacterFactory:
     def get_all_characters(self) -> List[Character]:
         """Returns a list of all character objects."""
         return [char.model_copy(deep=True) for char in self._characters.values()]
+
+    def get_character_raw_data(self, character_id: str) -> Dict:
+        """
+        Retrieves the original, raw dictionary for a character by ID.
+        This is useful for accessing extra data not present in the core domain model,
+        such as the 'ui_profile'.
+        """
+        id_lower = character_id.lower()
+        if id_lower not in self._raw_data:
+            raise CharacterNotFound(id_lower)
+        return self._raw_data[id_lower]

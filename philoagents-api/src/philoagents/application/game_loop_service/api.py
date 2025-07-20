@@ -2,28 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from philoagents.application.game_loop_service.service import GameLoopService
-from philoagents.application.scenario_loader import ScenarioLoader
-from philoagents.config import settings
-from philoagents.domain import Action, Character
-
-# --- Singleton Game Service Instance ---
-# In a real production app, this would be managed more robustly (e.g., dependency injection framework).
-# For now, we'll initialize it once when the module is loaded.
-
-scenario_loader = ScenarioLoader(scenario_path=settings.SCENARIO_PATH)
-initial_game_state = scenario_loader.create_initial_game_state()
-undergame_plot = scenario_loader.get_undergame_plot()
-character_factory_instance = scenario_loader.create_character_factory()
-
-game_service_instance = GameLoopService(initial_state=initial_game_state, undergame_plot=undergame_plot,
-                                        factory=character_factory_instance)
-print(f"Game service initialized for scenario: '{scenario_loader.manifest['name']}'")
-
-
-def get_game_service() -> GameLoopService:
-    """Dependency injection function to provide the singleton game service to endpoints."""
-    return game_service_instance
-
+from philoagents.domain import Character, CharacterFactory, Action
+from philoagents.infrastructure.dependencies import get_character_factory, get_game_service
 
 router = APIRouter(prefix="/game", tags=["Game Loop"], )
 
@@ -40,6 +20,19 @@ class GameStatusResponse(BaseModel):
 class EndGameRequest(BaseModel):
     player_character_id: str
     undergame_guess: str
+
+
+class CharacterProfile(BaseModel):
+    """A simplified character model for the selection screen."""
+    id: str
+    name: str
+    title: str
+    description: str
+    portrait_key: str
+
+
+class CharacterListResponse(BaseModel):
+    characters: list[CharacterProfile]
 
 
 # --- API Endpoints ---
@@ -61,6 +54,28 @@ async def get_game_status(character_id: str, service: GameLoopService = Depends(
     return GameStatusResponse(round_number=current_state.round_number, crisis_update=current_state.crisis_update,
                               your_character=player_char, other_characters=other_chars,
                               known_intel=player_char.known_intel)
+
+
+@router.get("/characters", response_model=CharacterListResponse)
+async def get_all_characters(factory: CharacterFactory = Depends(get_character_factory)):
+    """
+    Returns a list of all playable characters in the current scenario
+    with the specific profile data needed for the character selection screen.
+    """
+    character_ids = factory.get_available_character_ids()
+
+    profiles = []
+    for char_id in character_ids:
+        # Get the original, raw dictionary for this character
+        raw_data = factory.get_character_raw_data(char_id)
+        ui_profile_data = raw_data.get("ui_profile", {})
+
+        profiles.append(CharacterProfile(id=raw_data.get("id"), name=raw_data.get("name"),
+                                         title=ui_profile_data.get("title", "No Title Available"),
+                                         description=ui_profile_data.get("description", "No Description Available"),
+                                         portrait_key=ui_profile_data.get("portrait_key", "default_portrait")))
+
+    return CharacterListResponse(characters=profiles)
 
 
 @router.post("/action", status_code=202)
