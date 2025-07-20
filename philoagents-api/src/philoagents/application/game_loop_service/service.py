@@ -1,11 +1,12 @@
 import asyncio
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from opik.integrations.langchain import OpikTracer
 
 from philoagents.application.game_loop_service.workflow.graph import create_action_graph, create_judge_graph
 from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.domain.game_state import GameState
+from philoagents.domain.resources import PrivateIntel
 
 
 class GameLoopService:
@@ -39,6 +40,21 @@ class GameLoopService:
         print(f"Action received from: {self.game_state.characters[action.character_id].name}")
         self.submitted_actions[action.character_id] = action
 
+    def _deliver_private_intel(self, private_reports: Optional[List[PrivateIntel]]):
+        """
+        Appends new intelligence reports to the appropriate characters' state.
+        """
+        if not private_reports:
+            return
+
+        print(f"Delivering {len(private_reports)} private intelligence reports...")
+        for report in private_reports:
+            recipient_id = report.recipient_id
+            if recipient_id in self.game_state.characters:
+                self.game_state.characters[recipient_id].known_intel.append(report.report)
+            else:
+                print(f"Warning: Could not deliver intel to non-existent character ID: {recipient_id}")
+
     async def _run_ai_delegate_turns(self) -> List[Action]:
         """
         Invokes the action agent for all AI characters concurrently.
@@ -70,7 +86,8 @@ class GameLoopService:
         ai_actions = await asyncio.gather(*tasks)
         return ai_actions
 
-    async def _run_judge_turn(self, all_actions: List[Action]) -> tuple[str, Dict[str, Character]]:
+    async def _run_judge_turn(self, all_actions: List[Action]) -> tuple[
+        str, Dict[str, Character], Optional[List[PrivateIntel]]]:
         """
         Invokes the judge agent to resolve the round.
         """
@@ -84,7 +101,7 @@ class GameLoopService:
                          "undergame_plot": self.undergame_plot, }
         result = await graph.ainvoke(input=initial_state, config=config)
 
-        return result['crisis_update'], result['updated_characters']
+        return result['crisis_update'], result['updated_characters'], result.get('private_intel_reports', None)
 
     async def advance_round(self) -> GameState:
         """
@@ -100,7 +117,8 @@ class GameLoopService:
         all_actions_for_round = list(self.submitted_actions.values())
 
         # 2. Resolve the round with the AI Judge
-        new_crisis_update, updated_characters = await self._run_judge_turn(all_actions_for_round)
+        new_crisis_update, updated_characters, private_reports = await self._run_judge_turn(all_actions_for_round)
+        self._deliver_private_intel(private_reports)
 
         # 3. Update the master game state for the new round
         self.game_state.round_number += 1

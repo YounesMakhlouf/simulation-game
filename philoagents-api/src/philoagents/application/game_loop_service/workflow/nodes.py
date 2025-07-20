@@ -72,5 +72,5 @@ async def resolution_node(state: ResolutionState) -> Dict:
 
     original_characters = state["characters"]
     updated_characters = _apply_resource_updates(original_characters, judge_output.updated_resources)
-
-    return {"crisis_update": judge_output.crisis_update, "updated_characters": updated_characters}
+    return {"crisis_update": judge_output.crisis_update, "updated_characters": updated_characters,
+            "private_intel_reports": judge_output.private_intel_reports}

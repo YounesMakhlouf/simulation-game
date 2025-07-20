@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 from typing_extensions import TypedDict
 
 from philoagents.domain import Action, Character
+from philoagents.domain.resources import PrivateIntel
 
 
 class ActionState(TypedDict):
@@ -51,3 +52,4 @@ class ResolutionState(TypedDict):
     undergame_plot: str
     crisis_update: Optional[str]
     updated_characters: Optional[Dict[str, Character]]
+    private_intel_reports: Optional[List[PrivateIntel]]

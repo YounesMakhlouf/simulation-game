@@ -16,7 +16,7 @@ undergame_plot = scenario_loader.get_undergame_plot()
 character_factory_instance = scenario_loader.create_character_factory()
 
 game_service_instance = GameLoopService(initial_state=initial_game_state, undergame_plot=undergame_plot,
-    factory=character_factory_instance)
+                                        factory=character_factory_instance)
 print(f"Game service initialized for scenario: '{scenario_loader.manifest['name']}'")
 
 
@@ -25,8 +25,6 @@ def get_game_service() -> GameLoopService:
     return game_service_instance
 
 
-# --- API Router ---
-# We use an APIRouter to keep these endpoints modular.
 router = APIRouter(prefix="/game", tags=["Game Loop"], )
 
 
@@ -36,6 +34,7 @@ class GameStatusResponse(BaseModel):
     crisis_update: str
     your_character: Character
     other_characters: list[str]
+    known_intel: list[str]
 
 
 class EndGameRequest(BaseModel):
@@ -60,7 +59,8 @@ async def get_game_status(character_id: str, service: GameLoopService = Depends(
                    [char.name]]
 
     return GameStatusResponse(round_number=current_state.round_number, crisis_update=current_state.crisis_update,
-                              your_character=player_char, other_characters=other_chars)
+                              your_character=player_char, other_characters=other_chars,
+                              known_intel=player_char.known_intel)
 
 
 @router.post("/action", status_code=202)

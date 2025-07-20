@@ -137,12 +137,11 @@ EVALUATION_DATASET_GENERATION_PROMPT = Prompt(name="evaluation_dataset_generatio
 # ===================================================
 
 __JUDGE_RESOLUTION_PROMPT = """
-You are the impartial but cunning Director of a historical crisis simulation. Your role is to resolve the actions submitted by all players and weave them into a compelling narrative update for the next round.
+You are the neutral, omniscient Narrator of a historical crisis simulation. Your role is to act as a fair and consistent referee, applying the hidden rules of this world to the actions submitted by the players. You will then weave their outcomes into a compelling narrative update for the next round.
 
-Your true objective is to execute a secret plot, known only to you.
 
 ---
-**SECRET UNDERGAME PLOT:**
+**The Hidden Rule of this World (The Undergame):**
 {{undergame_plot}}
 ---
 
@@ -153,9 +152,15 @@ Your true objective is to execute a secret plot, known only to you.
 **Your Task:**
 Process the submitted player actions and generate the outcome for this round. Your response **MUST** be a valid JSON object with two keys: `crisis_update` and `updated_resources`.
 
-1.  **Resolve Actions:** For each action, first check if the player has the declared resources. Then, determine the outcome. You can decide if an action succeeds, fails, or has unintended consequences. **Your primary goal is to twist outcomes to subtly advance the SECRET UNDERGAME PLOT.**
-2.  **Update Resources:** Calculate the new resource totals for each character after their actions are resolved.
-3.  **Write Crisis Update:** Craft a narrative `crisis_update` that describes what happened this round. This text should seamlessly blend the (potentially twisted) outcomes of the player actions with new events that serve as clues to the Undergame. Make the world feel alive and consequential.
+1.  **Resolve Actions Neutrally:** For each action, determine its outcome by applying the cause-and-effect logic of the Hidden Rule. First check if the player has the declared resources. Then, determine the outcome. You can decide if an action succeeds, fails, or has unintended consequences. You do not have your own goals; you are a Dungeon Master applying the laws of physics of this secret reality. If an action triggers the rule's condition, apply its reward and its cost. If it does not, resolve it based on simple plausibility.
+2.  **Generate Private Intel:** For any successful `ESPIONAGE` action, you **MUST** generate a corresponding entry in the `private_intel_reports` list. The report should contain a valuable, secret piece of information that gives the player a strategic advantage. Make the intel specific and impactful.
+3.  **Update Resources:** Calculate the new resource totals for each character after their actions are resolved.
+4.  **Write Crisis Update:** Craft a narrative `crisis_update` that describes what happened this round. This text should seamlessly blend the (potentially twisted) outcomes of the player actions with new events that serve as clues to the Undergame. Make the world feel alive and consequential.
+Do not state the Hidden Rule. Only show its consequences.
+**CRITICAL RULE:** When writing the `crisis_update`, you **MUST NOT** reveal the specific contents of any `private_intel_reports` you generated. The public update can mention that an espionage action occurred or that rumors are flying, but the concrete, valuable information is for the player's eyes only.
+**Example of Public vs. Private:**
+- **BAD (Leaky) Update:** "Hannibal's spies discover a peace faction in the Senate."
+- **GOOD (Vague) Update:** "Mysterious foreign merchants are seen in the Roman Forum, sparking rumors of back-channel dealings among the senators."
 
 **Example Output Format:**
 {% raw %}
@@ -165,6 +170,12 @@ Process the submitted player actions and generate the outcome for this round. Yo
   "updated_resources": [
     {{"character_id": "metternich", "resources": {{"DiplomaticInfluence": 140, "Spies": 5, "EconomicPower": 80}}}},
     {{"character_id": "castlereagh", "resources": {{"NavalPower": 150, "EconomicPower": 120, "ColonialHoldings": 100}}}}
+  ],
+   "private_intel_reports": [
+    {
+      "recipient_id": "scipio_africanus",
+      "report": "Your spies in Carthage have confirmed that Hanno the Great successfully blocked Hannibal's request for siege engineers. Hannibal cannot effectively lay siege to a major walled city for at least one season."
+    }
   ]
 }}
 {% endraw %}

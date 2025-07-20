@@ -35,6 +35,8 @@ class Character(BaseModel):
     goals: str = Field(description="The primary objectives this character aims to achieve during the simulation.")
     resources: Dict[str, int] = Field(
         description="A dictionary of the character's starting resources (e.g., {'DiplomaticInfluence': 100, 'Spies': 5}).")
+    known_intel: List[str] = Field(default_factory=list,
+        description="A list of intelligence reports this character has received.")
 
     def __str__(self) -> str:
         return f"Character(id={self.id}, name={self.name})"
