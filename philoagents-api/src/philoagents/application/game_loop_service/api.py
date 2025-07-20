@@ -2,33 +2,26 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from philoagents.application.game_loop_service.service import GameLoopService
+from philoagents.application.scenario_loader import ScenarioLoader
+from philoagents.config import settings
 from philoagents.domain import Action, Character
-from philoagents.domain.character_factory import CharacterFactory
-from philoagents.domain.game_state import GameState
-
 
 # --- Singleton Game Service Instance ---
 # In a real production app, this would be managed more robustly (e.g., dependency injection framework).
 # For now, we'll initialize it once when the module is loaded.
 
-def initialize_game_service():
-    """Initializes the game state and service for the application lifecycle."""
-    char_factory = CharacterFactory()
-    initial_characters = {char_id: char_factory.get_character(char_id) for char_id in
-        char_factory.get_available_character_ids()}
-    initial_crisis = "The Congress of Vienna has officially opened. The major powers of Europe gather to redraw the map after two decades of war. The air is thick with tension and opportunity. The fate of Saxony and Poland are the first items on the agenda."
-    undergame = "A secret cabal of international bankers, The Argentum Order, wants to design a treaty that looks fair but contains hidden flaws and unresolved tensions that will inevitably lead to another major European conflict within 25 years."
+scenario_loader = ScenarioLoader(scenario_path=settings.SCENARIO_PATH)
+initial_game_state = scenario_loader.create_initial_game_state()
+undergame_plot = scenario_loader.get_undergame_plot()
+character_factory_instance = scenario_loader.create_character_factory()
 
-    initial_game_state = GameState(characters=initial_characters, crisis_update=initial_crisis, )
-    return GameLoopService(initial_state=initial_game_state, undergame_plot=undergame)
-
-
-# Create a single instance of the game service for the app to use
-game_service_instance = initialize_game_service()
+game_service_instance = GameLoopService(initial_state=initial_game_state, undergame_plot=undergame_plot,
+    factory=character_factory_instance)
+print(f"Game service initialized for scenario: '{scenario_loader.manifest['name']}'")
 
 
 def get_game_service() -> GameLoopService:
-    """Dependency injection function to provide the game service to endpoints."""
+    """Dependency injection function to provide the singleton game service to endpoints."""
     return game_service_instance
 
 
@@ -67,12 +60,12 @@ async def get_game_status(character_id: str, service: GameLoopService = Depends(
                    [char.name]]
 
     return GameStatusResponse(round_number=current_state.round_number, crisis_update=current_state.crisis_update,
-        your_character=player_char, other_characters=other_chars)
+                              your_character=player_char, other_characters=other_chars)
 
 
 @router.post("/action", status_code=202)
 async def submit_action(action: Action, background_tasks: BackgroundTasks,
-        service: GameLoopService = Depends(get_game_service)):
+                        service: GameLoopService = Depends(get_game_service)):
     """
     Endpoint for the human player to submit their official action for the round.
     This triggers the AI players and the Judge to process the round in the background.

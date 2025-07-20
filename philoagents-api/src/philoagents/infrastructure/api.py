@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+from fastapi import Depends
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from opik.integrations.langchain import OpikTracer
@@ -7,9 +8,11 @@ from pydantic import BaseModel, Field
 
 from philoagents.application.conversation_service.generate_response import (get_response, get_streaming_response, )
 from philoagents.application.conversation_service.reset_conversation import (reset_conversation_state, )
-from philoagents.domain import CharacterFactory
-from .opik_utils import configure
 from philoagents.application.game_loop_service.api import router as game_loop_router
+from philoagents.application.scenario_loader import ScenarioLoader
+from philoagents.config import settings
+from philoagents.domain.character_factory import CharacterFactory
+from .opik_utils import configure
 
 configure()
 
@@ -39,11 +42,25 @@ class ChatMessage(BaseModel):
     receiver_id: str = Field(description="The ID of the character receiving the message.")
 
 
+# --- SINGLETON INSTANTIATION (happens once on startup) ---
+SCENARIO_PATH = settings.SCENARIO_PATH
+
+print(f"Loading scenario from: {SCENARIO_PATH}")
+scenario_loader = ScenarioLoader(scenario_path=SCENARIO_PATH)
+character_factory_instance = scenario_loader.create_character_factory()
+
+
+# --- DEPENDENCY INJECTION PROVIDER ---
+
+def get_character_factory() -> CharacterFactory:
+    """A FastAPI dependency that provides the singleton CharacterFactory instance."""
+    return character_factory_instance
+
+
 @app.post("/chat")
-async def chat(chat_message: ChatMessage):
+async def chat(chat_message: ChatMessage, factory: CharacterFactory = Depends(get_character_factory)):
     try:
-        character_factory = CharacterFactory()
-        receiver_character = character_factory.get_character(chat_message.receiver_id)
+        receiver_character = factory.get_character(chat_message.receiver_id)
         response, _ = await get_response(messages=chat_message.message, sender_id=chat_message.sender_id,
                                          receiver_character=receiver_character, )
         return {"response": response}
@@ -69,12 +86,12 @@ async def websocket_chat(websocket: WebSocket):
                 continue
 
             try:
-                character_factory = CharacterFactory()
+                character_factory = get_character_factory()
                 receiver_character = character_factory.get_character(data["receiver_id"])
 
                 # Use streaming response instead of get_response
                 response_stream = get_streaming_response(messages=data["message"], sender_id=data["sender_id"],
-                    receiver_character=receiver_character, )
+                                                         receiver_character=receiver_character, )
 
                 # Send initial message to indicate streaming has started
                 await websocket.send_json({"streaming": True})
@@ -111,6 +128,7 @@ async def reset_conversation():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 app.include_router(game_loop_router)
 

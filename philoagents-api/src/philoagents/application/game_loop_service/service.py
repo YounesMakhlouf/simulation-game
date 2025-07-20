@@ -4,7 +4,7 @@ from typing import Dict, List
 from opik.integrations.langchain import OpikTracer
 
 from philoagents.application.game_loop_service.workflow.graph import create_action_graph, create_judge_graph
-from philoagents.domain import Action, Character
+from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.domain.game_state import GameState
 
 
@@ -17,9 +17,10 @@ class GameLoopService:
     the state for the next turn.
     """
 
-    def __init__(self, initial_state: GameState, undergame_plot: str):
+    def __init__(self, initial_state: GameState, undergame_plot: str, factory: CharacterFactory):
         self.game_state = initial_state
         self.undergame_plot = undergame_plot
+        self.factory = factory
         self.submitted_actions: Dict[str, Action] = {}
 
     def get_current_state(self) -> GameState:

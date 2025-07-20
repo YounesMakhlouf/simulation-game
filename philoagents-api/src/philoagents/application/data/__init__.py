@@ -1,4 +1,4 @@
 from .deduplicate_documents import deduplicate_documents
-from .extract import get_extraction_generator
+from .extract import RagExtractor
 
-__all__ = ["get_extraction_generator", "deduplicate_documents"]
+__all__ = ["RagExtractor", "deduplicate_documents"]
