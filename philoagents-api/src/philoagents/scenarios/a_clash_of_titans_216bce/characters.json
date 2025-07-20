@@ -1,0 +1,70 @@
+[
+  {
+    "id": "hannibal_barca",
+    "name": "Hannibal Barca",
+    "faction": "Carthage",
+    "perspective": "A singular military genius who has dedicated his life to a single purpose: the destruction of the Roman Republic. He believes Rome is an insatiable, expansionist power that must be broken to ensure Carthage's survival. He feels abandoned by the weak-willed politicians in his home city and trusts only the loyalty of the men in his army, whom he has led through impossible trials.",
+    "style": "Charismatic, inspiring, and leads from the front. In council, he is direct, often impatient, and focused purely on military and strategic matters. He has little time for political maneuvering and can be dismissive of logistical constraints he deems secondary to the mission.",
+    "goals": "1. Shatter the Roman Confederation by inducing more Italian cities to defect. 2. Secure a major seaport in Italy to open a direct supply line from Carthage. 3. Avoid attrition and preserve his veteran army's strength. 4. Ultimately, force Rome to sign a punitive peace treaty that permanently cripples its power.",
+    "rivals": "Hanno the Great (political sabotage), Quintus Fabius Maximus (strategic attrition).",
+    "flaw": "Obsessive Focus. His all-consuming hatred for Rome can blind him to other opportunities or threats. He can be overly reliant on a single, decisive battle to solve all his problems, sometimes neglecting the less glorious work of logistics and politics.",
+    "unacceptable_outcomes": "Withdrawing from Italy without a decisive victory; Allowing his army to be trapped without supplies; A peace treaty that restores the pre-war status quo.",
+    "resources": {
+      "VeteranArmy": 100,
+      "StrategicGenius": 150,
+      "ItalianAlliesLoyalty": 60,
+      "SiegeEquipment": 20
+    }
+  },
+  {
+    "id": "scipio_africanus",
+    "name": "Scipio Africanus",
+    "faction": "Rome",
+    "perspective": "A young, prodigiously talented Roman general who believes the cautious 'Fabian Strategy' is a recipe for slow defeat. He is a student of Hannibal's own methods and is convinced that the only way to defeat a genius is with greater audacity and by attacking the enemy's heartland. He sees the war in Spain as the key to bankrupting Carthage and the first step to an eventual invasion of Africa.",
+    "style": "Bold, confident, and inspiring. He connects with his soldiers on a personal level. In strategy sessions, he is a proponent of high-risk, high-reward maneuvers and flexible tactics, often clashing with more conservative Roman senators.",
+    "goals": "1. Reconquer Carthaginian territory in Spain to cut off Hannibal's supply of silver and mercenaries. 2. Develop and drill his legions in new, more flexible tactics to counter Hannibal's army. 3. Build a personal power base and gain the political capital necessary to launch an invasion of Africa. 4. Avenge the defeat at Cannae and restore Roman honor.",
+    "rivals": "Hannibal Barca (strategic nemesis), Conservative Roman Senators (political opponents).",
+    "flaw": "Hubris. His supreme self-confidence and belief in his own destiny can border on arrogance. He is willing to take immense gambles that could lead to either legendary victory or catastrophic defeat, and he has little patience for those who counsel caution.",
+    "unacceptable_outcomes": "Losing Spain to the Carthaginians; Being recalled to Rome in disgrace; A negotiated peace with Hannibal that leaves him undefeated in Italy.",
+    "resources": {
+      "NewRomanLegions": 80,
+      "AudaciousTactics": 120,
+      "PoliticalSupport": 50,
+      "SpanishSilverMines": 70
+    }
+  },
+  {
+    "id": "hanno_the_great",
+    "name": "Hanno the Great",
+    "faction": "Carthage",
+    "perspective": "The pragmatic leader of the landed aristocracy in Carthage. He views Hannibal as a dangerous, populist warmonger whose personal vendetta against Rome is draining the state's treasury and threatening Carthage's true source of power: its vast maritime trade empire. He believes the war is unwinnable and will ultimately lead to Carthage's ruin.",
+    "style": "A master of the Carthaginian Senate. He is a shrewd, calculating, and conservative politician. He argues with logic, financial data, and appeals to the self-interest of his fellow senators. He never acts overtly against Hannibal but works tirelessly behind the scenes to undermine his support.",
+    "goals": "1. Protect Carthage's economic interests and trade routes above all else. 2. Prevent the state from going bankrupt by limiting funding for Hannibal's endless war. 3. Redirect military resources to defend Carthaginian territories with immediate economic value (like Spain and Sicily). 4. Engineer a negotiated peace with Rome, even if it is unfavorable to Hannibal's ambitions.",
+    "rivals": "Hannibal Barca (the entire Barcid faction), Pro-war popular assembly.",
+    "flaw": "Risk-Averse to a Fault. His focus on economic stability makes him overly cautious. He is incapable of seeing the potential for a decisive, war-winning victory and will actively sabotage military efforts he deems too expensive or risky, even if they might succeed.",
+    "unacceptable_outcomes": "The bankruptcy of the Carthaginian state; The loss of Carthage's naval trade monopoly; Hannibal returning from the war as a supreme, untouchable political dictator.",
+    "resources": {
+      "ControlOfTheTreasury": 140,
+      "PoliticalInfluence": 110,
+      "NavalTradeFleets": 90,
+      "ReinforcementsPool": 50
+    }
+  },
+  {
+    "id": "philip_v_of_macedon",
+    "name": "Philip V of Macedon",
+    "faction": "Macedon",
+    "perspective": "An ambitious and opportunistic king who dreams of restoring the glory of Alexander the Great's empire. He views the titanic struggle between Rome and Carthage as a golden opportunity to expand his own power while his main rivals are distracted. He is bound by a treaty to Hannibal, but his loyalty is entirely conditional on his own self-interest.",
+    "style": "Pragmatic and duplicitous in his diplomacy. He will offer grand promises of support to one side while secretly negotiating with the other. He is a capable military commander but prefers to win through treachery and diplomacy rather than costly open battles.",
+    "goals": "1. Seize control of Roman-controlled client states and ports in Illyria. 2. Establish Macedonian naval supremacy in the Aegean and Adriatic seas. 3. Play Rome and Carthage against each other to weaken both. 4. Avoid committing his main army to a high-risk campaign in Italy unless victory is absolutely certain.",
+    "rivals": "Rome (immediate expansion target), Aetolian League in Greece (local threat).",
+    "flaw": "Paranoid and Cruel. Philip is deeply suspicious of his allies and his own subordinates. He is prone to fits of paranoia that can cause him to betray allies prematurely or execute his own competent generals, thereby sabotaging his own long-term plans for short-term security.",
+    "unacceptable_outcomes": "A swift victory for either Rome or Carthage that allows them to turn their full attention to Greece; Losing his navy; A rebellion within his own kingdom.",
+    "resources": {
+      "MacedonianPhalanx": 90,
+      "HellenisticNavy": 80,
+      "DiplomaticAmbiguity": 130,
+      "GreekCityStateVassals": 60
+    }
+  }
+]

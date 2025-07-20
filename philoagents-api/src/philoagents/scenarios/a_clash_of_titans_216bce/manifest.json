@@ -1,0 +1,9 @@
+{
+  "scenario_id": "a_clash_of_titans_216bce",
+  "name": "Clash of Titans: The Second Punic War",
+  "description": "The struggle for the Mediterranean between Hannibal's Carthage and the Roman Republic in the years following the Battle of Cannae.",
+  "undergame_plot": "A hidden rule: The Baal Hammon Monolith has awakened in Italy. It amplifies audacity and willpower at the cost of sanity and stability. The Judge must neutrally apply this rule to any player's high-risk actions.",
+  "character_data_file": "characters.json",
+  "initial_state_file": "initial_state.json",
+  "rag_sources_file": "rag_sources.json"
+}
