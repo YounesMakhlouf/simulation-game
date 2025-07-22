@@ -1,18 +1,15 @@
-import { Scene } from 'phaser';
+import {Scene} from 'phaser';
 
-export class Preloader extends Scene
-{
-    constructor ()
-    {
+export class Preloader extends Scene {
+    constructor() {
         super('Preloader');
     }
 
-    preload ()
-    {
+    preload() {
         this.load.setPath('assets');
 
         // General assets
-        this.load.image('background', 'talking_philosophers.jpg');
+        this.load.image('background', 'hannibal_crossing_the_alps.png');
         this.load.image('logo', 'logo.png');
         this.load.image('metternich_portrait', 'images/portraits/metternich.webp');
         this.load.image('alexander_i_portrait', 'images/portraits/alexander_i.webp');
@@ -46,8 +43,7 @@ export class Preloader extends Scene
         // this.load.atlas("paul", "characters/paul/atlas.png", "characters/paul/atlas.json");
     }
 
-    create ()
-    {
+    create() {
         this.scene.start('MainMenu');
     }
 }

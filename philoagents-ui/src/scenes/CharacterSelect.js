@@ -41,7 +41,7 @@ export class CharacterSelect extends Scene {
         const startX = 150;
         const y = 280;
         const spacing = 240;
-        const TARGET_HEIGHT = 250; // All portraits will be scaled to this height
+        const TARGET_HEIGHT = 200; // All portraits will be scaled to this height
 
         this.characters.forEach((char, index) => {
             const portraitX = startX + (index * spacing);
