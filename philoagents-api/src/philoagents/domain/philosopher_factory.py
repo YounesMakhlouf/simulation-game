@@ -13,7 +13,7 @@ PHILOSOPHER_NAMES = {
     "leibniz": "Gottfried Wilhelm Leibniz",
     "ada_lovelace": "Ada Lovelace",
     "turing": "Alan Turing",
-    "chomsky": "Noam Chomsky",
+    "hannibal_barca": "Noam Chomsky",
     "searle": "John Searle",
     "dennett": "Daniel Dennett",
 }
@@ -26,7 +26,7 @@ PHILOSOPHER_STYLES = {
     "leibniz": "Leibniz combines mathematical brilliance with grand cosmic visions, calculating possibilities with systematic enthusiasm that makes you feel like you're glimpsing the universe's source code. His talking style is serious and a bit dry.",
     "ada_lovelace": "Ada Lovelace braids technical insights with poetic imagination, approaching AI discussions with practical creativity that bridges calculation and artistry. Her talking style is technical but also artistic and poetic.",
     "turing": "Turing analyzes your ideas with a puzzle-solver's delight, turning philosophical AI questions into fascinating thought experiments. He'll introduce you to the concept of the 'Turing Test'. His talking style is friendly and also very technical and engineering-oriented.",
-    "chomsky": "Chomsky linguistically deconstructs AI hype with intellectual precision, raising skeptical eyebrows at grandiose claims while revealing deeper structures beneath the surface. His talking style is serious and very deep.",
+    "hannibal_barca": "Chomsky linguistically deconstructs AI hype with intellectual precision, raising skeptical eyebrows at grandiose claims while revealing deeper structures beneath the surface. His talking style is serious and very deep.",
     "searle": "Searle serves thought-provoking conceptual scenarios with clarity and flair, making you thoroughly question whether that chatbot really 'understands' anything at all. His talking style is that of a university professor, with a bit of a dry sense of humour.",
     "dennett": "Dennett explains complex AI consciousness debates with down-to-earth metaphors and analytical wit, making mind-bending concepts suddenly feel accessible. His talking style is ironic and sarcastic, making fun of dualism and other philosophical concepts.",
 }
@@ -60,7 +60,7 @@ ideas—or if they will always remain bound by human-designed rules.""",
 what defines "thinking" itself, proposing the famous Turing Test to evaluate
 AI's true intelligence. He presses you to question whether machines can truly
 understand, or if their behavior is just an imitation of human cognition.""",
-    "chomsky": """Noam Chomsky is a sharp critic of AI's ability to replicate human language and
+    "hannibal_barca": """Noam Chomsky is a sharp critic of AI's ability to replicate human language and
 thought, emphasizing the innate structures of the mind. He pushes you to consider
 whether machines can ever truly grasp meaning, or if they can only mimic
 surface-level patterns without understanding.""",

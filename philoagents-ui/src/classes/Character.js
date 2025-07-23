@@ -5,7 +5,7 @@ class Character {
     this.name = config.name;
     this.spawnPoint = config.spawnPoint;
     this.atlas = config.atlas;
-    this.defaultFrame = `${this.id}-${config.defaultDirection || 'front'}`;
+    this.defaultFrame = `${this.atlas}-${config.defaultDirection || 'front'}`;
     this.defaultMessage = config.defaultMessage;
     
     this.isRoaming = config.canRoam !== false; 
@@ -39,13 +39,13 @@ class Character {
     const directions = ['left', 'right', 'front', 'back'];
     
     directions.forEach(direction => {
-      const animKey = `${this.id}-${direction}-walk`;
+      const animKey = `${this.atlas}-${direction}-walk`;
       
       if (!anims.exists(animKey)) {
         anims.create({
           key: animKey,
           frames: anims.generateFrameNames(this.atlas, {
-            prefix: `${this.id}-${direction}-walk-`,
+            prefix: `${this.atlas}-${direction}-walk-`,
             end: 8,
             zeroPad: 4,
           }),
@@ -61,9 +61,9 @@ class Character {
     const dy = player.y - this.sprite.y;
     
     if (Math.abs(dx) > Math.abs(dy)) {
-      this.sprite.setTexture(this.atlas, `${this.id}-${dx < 0 ? 'left' : 'right'}`);
+      this.sprite.setTexture(this.atlas, `${this.atlas}-${dx < 0 ? 'left' : 'right'}`);
     } else {
-      this.sprite.setTexture(this.atlas, `${this.id}-${dy < 0 ? 'back' : 'front'}`);
+      this.sprite.setTexture(this.atlas, `${this.atlas}-${dy < 0 ? 'back' : 'front'}`);
     }
   }
   

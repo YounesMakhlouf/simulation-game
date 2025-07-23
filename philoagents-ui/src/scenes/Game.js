@@ -2,6 +2,7 @@ import {Scene} from 'phaser';
 import Character from '../classes/Character';
 import DialogueBox from '../classes/DialogueBox';
 import DialogueManager from '../classes/DialogueManager';
+import {CHARACTER_CONFIG} from "../configs/CharacterConfig";
 
 export class Game extends Scene {
     constructor() {
@@ -13,7 +14,8 @@ export class Game extends Scene {
         this.spaceKey = null;
 
         // Game State
-        this.playerCharacterId = null; // e.g., 'castlereagh'
+        this.playerCharacterId = null;
+        this.playerConfig = null;
         this.currentRound = 1;
         this.gameState = {}; // Will hold crisis updates, resources, etc.
         this.isPlayerTurn = true; // Controls when the player can act
@@ -32,6 +34,11 @@ export class Game extends Scene {
     }
 
     create() {
+        this.playerConfig = CHARACTER_CONFIG.find(char => char.id === this.playerCharacterId);
+        if (!this.playerConfig) {
+            console.error(`FATAL: Configuration for character ID "${this.playerCharacterId}" not found!`);
+            this.playerConfig = CHARACTER_CONFIG[0];
+        }
         const map = this.createTilemap();
         const tileset = this.addTileset(map);
         const layers = this.createLayers(map, tileset);
@@ -69,14 +76,7 @@ export class Game extends Scene {
     }
 
     createDelegates(map, layers) {
-        const delegateConfigs = [{
-            id: "metternich", name: "Metternich", atlas: "metternich_atlas", defaultDirection: "right", roamRadius: 800
-        }, {
-            id: "alexander_i", name: "Alexander I", atlas: "tsar_atlas", defaultDirection: "left", roamRadius: 750
-        }, {
-            id: "talleyrand", name: "Talleyrand", atlas: "talleyrand_atlas", defaultDirection: "front", roamRadius: 720
-        }, // Add other delegates here...
-        ];
+        const delegateConfigs = CHARACTER_CONFIG;
 
         this.delegates = [];
 
@@ -170,7 +170,9 @@ export class Game extends Scene {
 
     setupPlayer(map, worldLayer) {
         const spawnPoint = map.findObject("Objects", (obj) => obj.name === "Spawn Point");
-        this.player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, "sophia", "sophia-front")
+        const atlasKey = this.playerConfig.atlas;
+        const initialFrame = `${atlasKey}-front`;
+        this.player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, atlasKey, initialFrame)
             .setSize(30, 40)
             .setOffset(0, 6);
 
@@ -180,25 +182,25 @@ export class Game extends Scene {
             this.physics.add.collider(this.player, delegate.sprite);
         });
 
-        this.createPlayerAnimations();
+        this.createPlayerAnimations(atlasKey);
 
         // Set world bounds for physics
         this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         this.physics.world.setBoundsCollision(true, true, true, true);
     }
 
-    createPlayerAnimations() {
+    createPlayerAnimations(atlasKey) {
         const anims = this.anims;
-        const animConfig = [{key: "sophia-left-walk", prefix: "sophia-left-walk-"}, {
-            key: "sophia-right-walk", prefix: "sophia-right-walk-"
-        }, {key: "sophia-front-walk", prefix: "sophia-front-walk-"}, {
-            key: "sophia-back-walk", prefix: "sophia-back-walk-"
-        }];
+        const animConfig = [{
+            key: `${atlasKey}-left-walk`, prefix: `${atlasKey}-left-walk-`
+        }, {key: `${atlasKey}-right-walk`, prefix: `${atlasKey}-right-walk-`}, {
+            key: `${atlasKey}-front-walk`, prefix: `${atlasKey}-front-walk-`
+        }, {key: `${atlasKey}-back-walk`, prefix: `${atlasKey}-back-walk-`}];
 
         animConfig.forEach(config => {
             anims.create({
                 key: config.key,
-                frames: anims.generateFrameNames("sophia", {prefix: config.prefix, start: 0, end: 8, zeroPad: 4}),
+                frames: anims.generateFrameNames(atlasKey, {prefix: config.prefix, start: 0, end: 8, zeroPad: 4}),
                 frameRate: 10,
                 repeat: -1,
             });
@@ -279,6 +281,8 @@ export class Game extends Scene {
     updatePlayerMovement() {
         const speed = 175;
         const prevVelocity = this.player.body.velocity.clone();
+        const atlasKey = this.playerConfig.atlas;
+
         this.player.body.setVelocity(0);
 
         if (this.cursors.left.isDown) {
@@ -299,16 +303,16 @@ export class Game extends Scene {
         const isMoving = Math.abs(currentVelocity.x) > 0 || Math.abs(currentVelocity.y) > 0;
 
         if (this.cursors.left.isDown && isMoving) {
-            this.player.anims.play("sophia-left-walk", true);
+            this.player.anims.play(`${atlasKey}-left-walk`, true);
         } else if (this.cursors.right.isDown && isMoving) {
-            this.player.anims.play("sophia-right-walk", true);
+            this.player.anims.play(`${atlasKey}-right-walk`, true);
         } else if (this.cursors.up.isDown && isMoving) {
-            this.player.anims.play("sophia-back-walk", true);
+            this.player.anims.play(`${atlasKey}-back-walk`, true);
         } else if (this.cursors.down.isDown && isMoving) {
-            this.player.anims.play("sophia-front-walk", true);
+            this.player.anims.play(`${atlasKey}-front-walk`, true);
         } else {
             this.player.anims.stop();
-            if (prevVelocity.x < 0) this.player.setTexture("sophia", "sophia-left"); else if (prevVelocity.x > 0) this.player.setTexture("sophia", "sophia-right"); else if (prevVelocity.y < 0) this.player.setTexture("sophia", "sophia-back"); else if (prevVelocity.y > 0) this.player.setTexture("sophia", "sophia-front"); else {
+            if (prevVelocity.x < 0) this.player.setTexture(atlasKey, `${atlasKey}-left`); else if (prevVelocity.x > 0) this.player.setTexture(atlasKey, `${atlasKey}-right`); else if (prevVelocity.y < 0) this.player.setTexture(atlasKey, `${atlasKey}-back`); else if (prevVelocity.y > 0) this.player.setTexture(atlasKey, `${atlasKey}-front`); else {
                 // If prevVelocity is zero, maintain current direction
                 // Get current texture frame name
                 const currentFrame = this.player.frame.name;
@@ -320,7 +324,7 @@ export class Game extends Scene {
                 if (currentFrame.includes("left")) direction = "left"; else if (currentFrame.includes("right")) direction = "right"; else if (currentFrame.includes("back")) direction = "back"; else if (currentFrame.includes("front")) direction = "front";
 
                 // Set the static texture for that direction
-                this.player.setTexture("sophia", `sophia-${direction}`);
+                this.player.setTexture(atlasKey, `${atlasKey}-${direction}`);
             }
         }
     }
