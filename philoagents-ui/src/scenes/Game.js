@@ -3,6 +3,7 @@ import Character from '../classes/Character';
 import DialogueBox from '../classes/DialogueBox';
 import DialogueManager from '../classes/DialogueManager';
 import {CHARACTER_CONFIG} from "../configs/CharacterConfig";
+import {GameManager} from "../classes/GameManager";
 
 export class Game extends Scene {
     constructor() {
@@ -26,6 +27,7 @@ export class Game extends Scene {
 
         this.dialogueManager = null;
         this.labelsVisible = true;
+        this.gameManager = null;
     }
 
     init(data) {
@@ -34,6 +36,7 @@ export class Game extends Scene {
     }
 
     create() {
+        this.gameManager = new GameManager(this, this.playerCharacterId);
         this.playerConfig = CHARACTER_CONFIG.find(char => char.id === this.playerCharacterId);
         if (!this.playerConfig) {
             console.error(`FATAL: Configuration for character ID "${this.playerCharacterId}" not found!`);
@@ -73,6 +76,15 @@ export class Game extends Scene {
         // Initialize the dialogue manager
         this.dialogueManager = new DialogueManager(this);
         this.dialogueManager.initialize(this.dialogueBox);
+        this.scene.run('HUDScene', {gameManager: this.gameManager});
+
+        this.gameManager.events.on('stateUpdated', this.handleStateUpdate, this);
+        this.gameManager.events.on('phaseChanged', this.handlePhaseChange, this);
+        this.gameManager.events.on('showCrisisUpdate', this.showCrisisModal, this);
+        this.gameManager.events.on('showActionModal', this.showActionModal, this);
+        this.gameManager.events.on('error', this.showError, this);
+
+        this.gameManager.startGame();
     }
 
     createDelegates(map, layers) {
@@ -335,5 +347,33 @@ export class Game extends Scene {
                 delegate.nameLabel.setVisible(visible);
             }
         });
+    }
+
+    handleStateUpdate(newState) {
+        console.log("Game Scene: Received new state. Updating HUD.");
+        // TODO: Create a HUD class and call hud.update(newState);
+    }
+
+    handlePhaseChange(newPhase) {
+        console.log(`Game Scene: Phase is now ${newPhase}.`);
+        // TODO: Update a UI text element to show the current phase.
+    }
+
+    showCrisisModal(crisisText, roundNumber) {
+        console.log(`Game Scene: Launching CrisisModal for round ${roundNumber}.`);
+        this.scene.pause('Game'); // Pause the game world
+        this.scene.launch('CrisisModal', {text: crisisText, round: roundNumber});
+    }
+
+    showActionModal() {
+        console.log("Game Scene: Launching ActionModal.");
+        this.scene.pause('Game');
+        // Pass the gameManager instance so the modal can call back to it
+        this.scene.launch('ActionModal', {gameManager: this.gameManager});
+    }
+
+    showError(errorMessage) {
+        console.error(`Game Scene: Displaying error: ${errorMessage}`);
+        // TODO: Show an error message to the player.
     }
 }

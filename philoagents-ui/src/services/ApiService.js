@@ -63,6 +63,35 @@ class ApiService {
             throw error;
         }
     }
+
+    /**
+     * Fetches the entire current game state for a specific character.
+     * @param {string} characterId - The ID of the player's character.
+     * @returns {Promise<object>} The full game state object.
+     */
+    async getGameState(characterId) {
+        try {
+            return await this.request(`/game/status/${characterId}`, 'GET');
+        } catch (error) {
+            console.error('Error fetching game state:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Submits the player's final, official action for the round.
+     * @param {object} actionData - The action object to be submitted.
+     * @returns {Promise<object>} The server's confirmation message.
+     */
+    async submitAction(actionData) {
+        try {
+            return await this.request('/game/action', 'POST', actionData);
+        } catch (error) {
+            console.error('Error submitting action:', error);
+            throw error;
+        }
+    }
 }
+
 
 export default new ApiService(); 
