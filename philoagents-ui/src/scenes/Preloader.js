@@ -28,16 +28,16 @@ export class Preloader extends Scene {
         this.load.tilemapTiledJSON("map", "tilemaps/philoagents-town.json");
 
         // Character assets
-        this.load.atlas("sophia_atlas", "characters/sophia/atlas.png", "characters/sophia/atlas.json");
-        this.load.atlas("metternich_atlas", "characters/metternich/atlas.png", "characters/metternich/atlas.json");
-        this.load.atlas("alexander_i_atlas", "characters/alexander_i/atlas.png", "characters/alexander_i/atlas.json");
-        this.load.atlas("talleyrand_atlas", "characters/talleyrand/atlas.png", "characters/talleyrand/atlas.json");
-        this.load.atlas("castlereagh_atlas", "characters/castlereagh/atlas.png", "characters/castlereagh/atlas.json");
+        this.load.atlas("sophia", "characters/sophia/atlas.png", "characters/sophia/atlas.json");
+        this.load.atlas("metternich", "characters/metternich/atlas.png", "characters/metternich/atlas.json");
+        this.load.atlas("alexander_i", "characters/alexander_i/atlas.png", "characters/alexander_i/atlas.json");
+        this.load.atlas("talleyrand", "characters/talleyrand/atlas.png", "characters/talleyrand/atlas.json");
+        this.load.atlas("castlereagh", "characters/castlereagh/atlas.png", "characters/castlereagh/atlas.json");
         // this.load.atlas("leibniz", "characters/leibniz/atlas.png", "characters/leibniz/atlas.json");
         // this.load.atlas("ada_lovelace", "characters/ada/atlas.png", "characters/ada/atlas.json");
         // this.load.atlas("turing", "characters/turing/atlas.png", "characters/turing/atlas.json");
         // this.load.atlas("searle", "characters/searle/atlas.png", "characters/searle/atlas.json");
-         this.load.atlas("hannibal_barca_atlas", "characters/hannibal_barca/atlas.png", "characters/hannibal_barca/atlas.json");
+         this.load.atlas("hannibal_barca", "characters/hannibal_barca/atlas.png", "characters/hannibal_barca/atlas.json");
         // this.load.atlas("dennett", "characters/dennett/atlas.png", "characters/dennett/atlas.json");
         // this.load.atlas("miguel", "characters/miguel/atlas.png", "characters/miguel/atlas.json");
         // this.load.atlas("paul", "characters/paul/atlas.png", "characters/paul/atlas.json");
