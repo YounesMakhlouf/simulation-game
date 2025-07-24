@@ -365,6 +365,12 @@ export class Game extends Scene {
         this.scene.launch('CrisisModal', {text: crisisText, round: roundNumber});
     }
 
+    showIntelModal(intelReports) {
+        console.log("Game Scene: Launching IntelModal.");
+        this.scene.pause('Game');
+        this.scene.launch('IntelModal', {intelReports: intelReports});
+    }
+
     showActionModal() {
         console.log("Game Scene: Launching ActionModal.");
         this.scene.pause('Game');

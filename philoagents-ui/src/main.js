@@ -6,6 +6,7 @@ import {CharacterSelect} from "./scenes/CharacterSelect";
 import {HUDScene} from "./scenes/Hud";
 import {CrisisModal} from "./scenes/CrisisModal";
 import {ActionModal} from "./scenes/ActionModal";
+import {IntelModal} from "./scenes/IntelModal";
 
 const config = {
     type: Phaser.AUTO,
@@ -27,7 +28,8 @@ const config = {
         CharacterSelect,
         HUDScene,
         CrisisModal,
-        ActionModal
+        ActionModal,
+        IntelModal
     ],
     physics: {
         default: "arcade",

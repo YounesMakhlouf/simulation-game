@@ -3,8 +3,9 @@ import {Scene} from 'phaser';
 export class HUDScene extends Scene {
     constructor() {
         super('HUDScene');
-        this.gameManager = null;
 
+        this.gameManager = null;
+        this.intelButton = null;
         this.roundText = null;
         this.phaseText = null;
         this.resourceTexts = [];
@@ -23,12 +24,52 @@ export class HUDScene extends Scene {
             fontSize: '24px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
         }).setOrigin(1, 0);
         this.createEndDiplomacyButton();
+        this.createIntelButton();
+
         this.gameManager.events.on('stateUpdated', this.updateHUD, this);
         this.gameManager.events.on('phaseChanged', this.updatePhase, this);
 
         this.updateHUD(this.gameManager.gameState);
         this.updatePhase(this.gameManager.gamePhase);
     }
+
+    createIntelButton() {
+        const buttonWidth = 150;
+        const buttonHeight = 40;
+        const buttonX = this.cameras.main.width - 90; // Position in top-right corner
+        const buttonY = 80;
+
+        this.intelButton = this.add.container(buttonX, buttonY);
+
+        const buttonBackground = this.add.graphics()
+            .fillStyle(0x003366, 0.8) // Dark blue
+            .fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 10);
+
+        const buttonText = this.add.text(0, 0, 'View Intel (0)', {
+            fontSize: '18px', fontFamily: 'Georgia, serif', color: '#ffffff'
+        }).setOrigin(0.5);
+
+        this.intelButton.add([buttonBackground, buttonText]);
+        this.intelButton.setSize(buttonWidth, buttonHeight);
+        this.intelButton.setInteractive({useHandCursor: true});
+
+        // Initially, it might be disabled if there's no intel
+        this.intelButton.setData('text', buttonText); // Store reference for easy updates
+
+        this.intelButton.on('pointerdown', () => {
+            if (this.gameManager.gameState.your_character?.known_intel?.length > 0) {
+                // Get the latest intel from the game manager
+                const intelReports = this.gameManager.gameState.your_character.known_intel;
+                // Launch the modal, passing the intel data
+                this.scene.get('Game').showIntelModal(intelReports);
+            }
+        });
+
+        // Add hover effects for better UX
+        this.intelButton.on('pointerover', () => buttonBackground.setAlpha(1));
+        this.intelButton.on('pointerout', () => buttonBackground.setAlpha(0.8));
+    }
+
 
     createEndDiplomacyButton() {
         const buttonWidth = 280;
@@ -100,8 +141,16 @@ export class HUDScene extends Scene {
             yPos += 25;
         }
 
-        // TODO: Add an 'Intel' button here that listens for a click
-        // to show the intel modal.
+        const intelCount = gameState.your_character.known_intel?.length || 0;
+        const buttonText = this.intelButton.getData('text');
+        buttonText.setText(`View Intel (${intelCount})`);
+
+        // Disable the button visually if there is no intel
+        if (intelCount === 0) {
+            this.intelButton.setAlpha(0.5).disableInteractive();
+        } else {
+            this.intelButton.setAlpha(1).setInteractive({useHandCursor: true});
+        }
     }
 
     updatePhase(newPhase) {
