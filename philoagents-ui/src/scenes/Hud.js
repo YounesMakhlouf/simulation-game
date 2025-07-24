@@ -5,10 +5,10 @@ export class HUDScene extends Scene {
         super('HUDScene');
         this.gameManager = null;
 
-        // UI Text Objects
         this.roundText = null;
         this.phaseText = null;
         this.resourceTexts = [];
+        this.endDiplomacyButton = null;
     }
 
     init(data) {
@@ -22,11 +22,63 @@ export class HUDScene extends Scene {
         this.phaseText = this.add.text(this.cameras.main.width - 20, 20, 'Phase: INITIALIZING', {
             fontSize: '24px', color: '#ffffff', stroke: '#000000', strokeThickness: 4
         }).setOrigin(1, 0);
-
+        this.createEndDiplomacyButton();
         this.gameManager.events.on('stateUpdated', this.updateHUD, this);
         this.gameManager.events.on('phaseChanged', this.updatePhase, this);
 
         this.updateHUD(this.gameManager.gameState);
+        this.updatePhase(this.gameManager.gamePhase);
+    }
+
+    createEndDiplomacyButton() {
+        const buttonWidth = 280;
+        const buttonHeight = 50;
+        const buttonX = this.cameras.main.width / 2;
+        const buttonY = this.cameras.main.height - 40;
+
+        // Create a container for the button for easy show/hide
+        this.endDiplomacyButton = this.add.container(buttonX, buttonY);
+
+        const buttonBackground = this.add.graphics()
+            .fillStyle(0x8B0000, 0.8) // Dark red, semi-transparent
+            .fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 15)
+            .lineStyle(2, 0xffffff, 1)
+            .strokeRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 15);
+
+        const buttonText = this.add.text(0, 0, 'Proceed to Action Phase', {
+            fontSize: '20px', fontFamily: 'Georgia, serif', color: '#ffffff', fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        this.endDiplomacyButton.add([buttonBackground, buttonText]);
+        this.endDiplomacyButton.setSize(buttonWidth, buttonHeight);
+        this.endDiplomacyButton.setInteractive({useHandCursor: true});
+
+        // Initially hide the button
+        this.endDiplomacyButton.setVisible(false);
+
+        // --- Event Handlers ---
+        this.endDiplomacyButton.on('pointerdown', () => {
+            // Add a visual effect for the click
+            this.tweens.add({
+                targets: this.endDiplomacyButton,
+                scaleX: 0.95,
+                scaleY: 0.95,
+                duration: 100,
+                yoyo: true,
+                onComplete: () => {
+                    // Call the GameManager function to advance the phase
+                    this.gameManager.startActionPhase();
+                }
+            });
+        });
+
+        this.endDiplomacyButton.on('pointerover', () => {
+            buttonBackground.fillStyle(0xB22222, 1); // Lighter red on hover
+        });
+
+        this.endDiplomacyButton.on('pointerout', () => {
+            buttonBackground.fillStyle(0x8B0000, 0.8);
+        });
     }
 
     updateHUD(gameState) {
@@ -55,5 +107,10 @@ export class HUDScene extends Scene {
     updatePhase(newPhase) {
         const phaseName = newPhase.replace('_', ' ').toUpperCase();
         this.phaseText.setText(`Phase: ${phaseName}`);
+        if (newPhase === 'DIPLOMACY') {
+            this.endDiplomacyButton.setVisible(true);
+        } else {
+            this.endDiplomacyButton.setVisible(false);
+        }
     }
 }

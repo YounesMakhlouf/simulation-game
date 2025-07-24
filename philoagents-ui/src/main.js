@@ -1,10 +1,11 @@
-import { Game } from './scenes/Game';
-import { MainMenu } from './scenes/MainMenu';
-import { Preloader } from './scenes/Preloader';
-import { PauseMenu } from './scenes/PauseMenu';
+import {Game} from './scenes/Game';
+import {MainMenu} from './scenes/MainMenu';
+import {Preloader} from './scenes/Preloader';
+import {PauseMenu} from './scenes/PauseMenu';
 import {CharacterSelect} from "./scenes/CharacterSelect";
 import {HUDScene} from "./scenes/Hud";
 import {CrisisModal} from "./scenes/CrisisModal";
+import {ActionModal} from "./scenes/ActionModal";
 
 const config = {
     type: Phaser.AUTO,
@@ -15,6 +16,9 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
+    dom: {
+        createContainer: true
+    },
     scene: [
         Preloader,
         MainMenu,
@@ -22,7 +26,8 @@ const config = {
         PauseMenu,
         CharacterSelect,
         HUDScene,
-        CrisisModal
+        CrisisModal,
+        ActionModal
     ],
     physics: {
         default: "arcade",

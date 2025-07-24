@@ -13,3 +13,74 @@ body {
     justify-content: center;
     align-items: center;
 }
+
+/* Styling for the Action Modal Form */
+.action-modal-form {
+    width: 880px;
+    height: 620px;
+    color: #E0E0E0;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.action-modal-form h2 {
+    font-family: 'Georgia', serif;
+    color: #FFD700; /* Gold */
+    border-bottom: 1px solid #FFD700;
+    padding-bottom: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.action-modal-form textarea,
+.action-modal-form select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #1a1a1a;
+    border: 1px solid #555;
+    color: #E0E0E0;
+    font-size: 16px;
+    border-radius: 5px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.action-modal-form textarea {
+    height: 60px; /* Default height */
+}
+
+#analysis-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+#final-action-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#submit-button {
+    background-color: #006400; /* Dark Green */
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: auto; /* Pushes the button to the bottom */
+}
+
+#submit-button:hover {
+    background-color: #008000;
+}
+
+/* For validation feedback */
+.input-error {
+    border-color: #ff4d4d !important;
+}
