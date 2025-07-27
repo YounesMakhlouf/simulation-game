@@ -1,4 +1,4 @@
-import { Scene } from 'phaser';
+import {Scene} from 'phaser';
 
 export class MainMenu extends Scene {
     constructor() {
@@ -24,6 +24,9 @@ export class MainMenu extends Scene {
         this.createButton(centerX, startY + buttonSpacing * 2, 'Credits', () => {
             window.open('https://github.com/YounesMakhlouf/simulation-game', '_blank');
         });
+        this.input.once('pointerdown', () => {
+            this.game.audioManager.playMusic('gameplay-music');
+        });
     }
 
     createButton(x, y, text, callback) {
@@ -40,21 +43,15 @@ export class MainMenu extends Scene {
         const button = this.add.graphics();
         button.fillStyle(0xffffff, 1);
         button.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-        button.setInteractive(
-            new Phaser.Geom.Rectangle(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight),
-            Phaser.Geom.Rectangle.Contains
-        );
+        button.setInteractive(new Phaser.Geom.Rectangle(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
 
         let fontSize = maxFontSize;
         let buttonText;
         do {
             if (buttonText) buttonText.destroy();
-            
+
             buttonText = this.add.text(x, y, text, {
-                fontSize: `${fontSize}px`,
-                fontFamily: 'Arial',
-                color: '#000000',
-                fontStyle: 'bold'
+                fontSize: `${fontSize}px`, fontFamily: 'Arial', color: '#000000', fontStyle: 'bold'
             }).setOrigin(0.5);
 
             fontSize -= 1;
@@ -71,14 +68,14 @@ export class MainMenu extends Scene {
         });
 
         button.on('pointerdown', callback);
-        
-        return { button, shadow, text: buttonText };
+
+        return {button, shadow, text: buttonText};
     }
 
     updateButtonStyle(button, shadow, x, y, width, height, radius, isHover) {
         button.clear();
         shadow.clear();
-        
+
         if (isHover) {
             button.fillStyle(0x87CEEB, 1);
             shadow.fillStyle(0x888888, 1);
@@ -88,7 +85,7 @@ export class MainMenu extends Scene {
             shadow.fillStyle(0x666666, 1);
             shadow.fillRoundedRect(x - width / 2 + 4, y - height / 2 + 4, width, height, radius);
         }
-        
+
         button.fillRoundedRect(x - width / 2, y - height / 2, width, height, radius);
     }
 
@@ -97,102 +94,77 @@ export class MainMenu extends Scene {
         const height = this.cameras.main.height;
         const centerX = width / 2;
         const centerY = height / 2;
-        
+
         const elements = this.createInstructionPanel(centerX, centerY);
-        
+
         const instructionContent = this.addInstructionContent(centerX, centerY, elements.panel);
         elements.title = instructionContent.title;
         elements.textElements = instructionContent.textElements;
-        
+
         const closeElements = this.addCloseButton(centerX, centerY + 79, () => {
             this.destroyInstructionElements(elements);
         });
         elements.closeButton = closeElements.button;
         elements.closeText = closeElements.text;
-        
+
         elements.overlay.on('pointerdown', () => {
             this.destroyInstructionElements(elements);
         });
     }
-    
+
     createInstructionPanel(centerX, centerY) {
         const overlay = this.add.graphics();
         overlay.fillStyle(0x000000, 0.7);
         overlay.fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
-        overlay.setInteractive(
-            new Phaser.Geom.Rectangle(0, 0, this.cameras.main.width, this.cameras.main.height),
-            Phaser.Geom.Rectangle.Contains
-        );
-        
+        overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.cameras.main.width, this.cameras.main.height), Phaser.Geom.Rectangle.Contains);
+
         const panel = this.add.graphics();
         panel.fillStyle(0xffffff, 1);
         panel.fillRoundedRect(centerX - 200, centerY - 150, 400, 300, 20);
         panel.lineStyle(4, 0x000000, 1);
         panel.strokeRoundedRect(centerX - 200, centerY - 150, 400, 300, 20);
-        
-        return { overlay, panel };
+
+        return {overlay, panel};
     }
-    
+
     addInstructionContent(centerX, centerY, panel) {
         const title = this.add.text(centerX, centerY - 110, 'INSTRUCTIONS', {
-            fontSize: '28px',
-            fontFamily: 'Arial',
-            color: '#000000',
-            fontStyle: 'bold'
+            fontSize: '28px', fontFamily: 'Arial', color: '#000000', fontStyle: 'bold'
         }).setOrigin(0.5);
-        
-        const instructions = [
-            'Arrow keys for moving',
-            'SPACE for talking to philosophers',
-            'ESC for closing the dialogue',
-            '1. Read the Crisis Update each round.',
-            '2. Submit your action (Diplomacy, Military, etc.).',
-            '3. Negotiate privately with other delegates.',
-            '4. Achieve your goals and deduce the secret plot.',
-            'Good luck, diplomat.'
-        ];
-        
+
+        const instructions = ['Arrow keys for moving', 'SPACE for talking to philosophers', 'ESC for closing the dialogue', '1. Read the Crisis Update each round.', '2. Submit your action (Diplomacy, Military, etc.).', '3. Negotiate privately with other delegates.', '4. Achieve your goals and deduce the secret plot.', 'Good luck, diplomat.'];
+
         const textElements = [];
         let yPos = centerY - 59;
         instructions.forEach(instruction => {
-            textElements.push(
-                this.add.text(centerX, yPos, instruction, {
-                    fontSize: '22px',
-                    fontFamily: 'Arial',
-                    color: '#000000'
-                }).setOrigin(0.5)
-            );
+            textElements.push(this.add.text(centerX, yPos, instruction, {
+                fontSize: '22px', fontFamily: 'Arial', color: '#000000'
+            }).setOrigin(0.5));
             yPos += 40;
         });
-        
-        return { title, textElements };
+
+        return {title, textElements};
     }
-    
+
     addCloseButton(x, y, callback) {
         const adjustedY = y + 10;
-        
+
         const buttonWidth = 120;
         const buttonHeight = 40;
         const cornerRadius = 10;
-        
+
         const closeButton = this.add.graphics();
         closeButton.fillStyle(0x87CEEB, 1);
         closeButton.fillRoundedRect(x - buttonWidth / 2, adjustedY - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
         closeButton.lineStyle(2, 0x000000, 1);
         closeButton.strokeRoundedRect(x - buttonWidth / 2, adjustedY - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-        
+
         const closeText = this.add.text(x, adjustedY, 'Close', {
-            fontSize: '20px',
-            fontFamily: 'Arial',
-            color: '#000000',
-            fontStyle: 'bold'
+            fontSize: '20px', fontFamily: 'Arial', color: '#000000', fontStyle: 'bold'
         }).setOrigin(0.5);
-        
-        closeButton.setInteractive(
-            new Phaser.Geom.Rectangle(x - buttonWidth / 2, adjustedY - buttonHeight / 2, buttonWidth, buttonHeight),
-            Phaser.Geom.Rectangle.Contains
-        );
-        
+
+        closeButton.setInteractive(new Phaser.Geom.Rectangle(x - buttonWidth / 2, adjustedY - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
+
         closeButton.on('pointerover', () => {
             closeButton.clear();
             closeButton.fillStyle(0x5CACEE, 1);
@@ -200,7 +172,7 @@ export class MainMenu extends Scene {
             closeButton.lineStyle(2, 0x000000, 1);
             closeButton.strokeRoundedRect(x - buttonWidth / 2, adjustedY - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
         });
-        
+
         closeButton.on('pointerout', () => {
             closeButton.clear();
             closeButton.fillStyle(0x87CEEB, 1);
@@ -208,19 +180,19 @@ export class MainMenu extends Scene {
             closeButton.lineStyle(2, 0x000000, 1);
             closeButton.strokeRoundedRect(x - buttonWidth / 2, adjustedY - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
         });
-        
+
         closeButton.on('pointerdown', callback);
-        
-        return { button: closeButton, text: closeText };
+
+        return {button: closeButton, text: closeText};
     }
-    
+
     destroyInstructionElements(elements) {
         elements.overlay.destroy();
         elements.panel.destroy();
         elements.title.destroy();
-        
+
         elements.textElements.forEach(text => text.destroy());
-        
+
         elements.closeButton.destroy();
         elements.closeText.destroy();
     }

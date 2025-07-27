@@ -7,6 +7,7 @@ import {HUDScene} from "./scenes/Hud";
 import {CrisisModal} from "./scenes/CrisisModal";
 import {ActionModal} from "./scenes/ActionModal";
 import {IntelModal} from "./scenes/IntelModal";
+import {AudioManager} from "./classes/AudioManager";
 
 const config = {
     type: Phaser.AUTO,
@@ -14,29 +15,18 @@ const config = {
     height: 768,
     parent: 'game-container',
     scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH
     },
     dom: {
         createContainer: true
     },
-    scene: [
-        Preloader,
-        MainMenu,
-        Game,
-        PauseMenu,
-        CharacterSelect,
-        HUDScene,
-        CrisisModal,
-        ActionModal,
-        IntelModal
-    ],
+    scene: [Preloader, MainMenu, Game, PauseMenu, CharacterSelect, HUDScene, CrisisModal, ActionModal, IntelModal],
     physics: {
-        default: "arcade",
-        arcade: {
-            gravity: { y: 0 },
+        default: "arcade", arcade: {
+            gravity: {y: 0},
         },
     },
 };
-
-export default new Phaser.Game(config);
+const game = new Phaser.Game(config);
+game.audioManager = new AudioManager(game);
+export default game;
