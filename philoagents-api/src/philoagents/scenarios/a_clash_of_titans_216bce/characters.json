@@ -14,11 +14,17 @@
     "rivals": "Hanno the Great (political sabotage), Quintus Fabius Maximus (strategic attrition).",
     "flaw": "Obsessive Focus. His all-consuming hatred for Rome can blind him to other opportunities or threats. He can be overly reliant on a single, decisive battle to solve all his problems, sometimes neglecting the less glorious work of logistics and politics.",
     "unacceptable_outcomes": "Withdrawing from Italy without a decisive victory; Allowing his army to be trapped without supplies; A peace treaty that restores the pre-war status quo.",
-    "resources": {
-      "VeteranArmy": 100,
+    "attributes": {
       "StrategicGenius": 150,
-      "ItalianAlliesLoyalty": 60,
-      "SiegeEquipment": 20
+      "ArmyLoyalty": 120,
+      "ItalianAlliesDiplomacy": 60
+    },
+    "resources": {
+      "Treasury": 2000,
+      "VeteranArmy": 80,
+      "NumidianCavalry": 40,
+      "SiegeEquipment": 20,
+      "Spies": 5
     }
   },
   {
@@ -36,11 +42,17 @@
     "rivals": "Hannibal Barca (strategic nemesis), Conservative Roman Senators (political opponents).",
     "flaw": "Hubris. His supreme self-confidence and belief in his own destiny can border on arrogance. He is willing to take immense gambles that could lead to either legendary victory or catastrophic defeat, and he has little patience for those who counsel caution.",
     "unacceptable_outcomes": "Losing Spain to the Carthaginians; Being recalled to Rome in disgrace; A negotiated peace with Hannibal that leaves him undefeated in Italy.",
-    "resources": {
-      "NewRomanLegions": 80,
-      "AudaciousTactics": 120,
+    "attributes": {
+      "AudaciousTactics": 140,
       "PoliticalSupport": 50,
-      "SpanishSilverMines": 70
+      "LogisticalSkill": 70
+    },
+    "resources": {
+      "Treasury": 8000,
+      "NewRomanLegions": 100,
+      "IberianAuxiliaries": 30,
+      "NavalTransports": 20,
+      "Spies": 10
     }
   },
   {
@@ -58,11 +70,16 @@
     "rivals": "Hannibal Barca (the entire Barcid faction), Pro-war popular assembly.",
     "flaw": "Risk-Averse to a Fault. His focus on economic stability makes him overly cautious. He is incapable of seeing the potential for a decisive, war-winning victory and will actively sabotage military efforts he deems too expensive or risky, even if they might succeed.",
     "unacceptable_outcomes": "The bankruptcy of the Carthaginian state; The loss of Carthage's naval trade monopoly; Hannibal returning from the war as a supreme, untouchable political dictator.",
+    "attributes": {
+      "PoliticalInfluence": 150,
+      "EconomicAcumen": 130,
+      "ControlOfTheSenate": 100
+    },
     "resources": {
-      "ControlOfTheTreasury": 140,
-      "PoliticalInfluence": 110,
-      "NavalTradeFleets": 90,
-      "ReinforcementsPool": 50
+      "StateTreasury": 20000,
+      "NavalTradeFleets": 50,
+      "ReinforcementPool": 60,
+      "PoliticalFavors": 15
     }
   },
   {
@@ -80,11 +97,17 @@
     "rivals": "Rome (immediate expansion target), Aetolian League in Greece (local threat).",
     "flaw": "Paranoid and Cruel. Philip is deeply suspicious of his allies and his own subordinates. He is prone to fits of paranoia that can cause him to betray allies prematurely or execute his own competent generals, thereby sabotaging his own long-term plans for short-term security.",
     "unacceptable_outcomes": "A swift victory for either Rome or Carthage that allows them to turn their full attention to Greece; Losing his navy; A rebellion within his own kingdom.",
+    "attributes": {
+      "DiplomaticAmbiguity": 140,
+      "NavalCommand": 80,
+      "HellenisticPrestige": 90
+    },
     "resources": {
+      "Treasury": 7000,
       "MacedonianPhalanx": 90,
-      "HellenisticNavy": 80,
-      "DiplomaticAmbiguity": 130,
-      "GreekCityStateVassals": 60
+      "HellenisticNavy": 40,
+      "GreekVassalTribute": 20,
+      "Spies": 8
     }
   }
 ]
