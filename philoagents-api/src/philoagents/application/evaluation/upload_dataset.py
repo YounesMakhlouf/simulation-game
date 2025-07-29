@@ -16,14 +16,14 @@ def upload_dataset(name: str, data_path: Path) -> opik.Dataset:
     for sample in evaluation_data["samples"]:
         dataset_items.append(
             {
-                "philosopher_id": sample["philosopher_id"],
+                "character_id": sample["character_id"],
                 "messages": sample["messages"],
             }
         )
 
     dataset = opik_utils.create_dataset(
         name=name,
-        description="Dataset containing question-answer pairs for multiple philosophers.",
+        description="Dataset containing question-answer pairs for multiple characters.",
         items=dataset_items,
     )
 

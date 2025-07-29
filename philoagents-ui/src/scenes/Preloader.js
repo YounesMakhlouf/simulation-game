@@ -19,6 +19,7 @@ export class Preloader extends Scene {
         this.load.image('hanno_the_great_portrait', 'images/portraits/hanno_the_great.webp');
         this.load.image('scipio_africanus_portrait', 'images/portraits/scipio_africanus.webp');
         this.load.image('philip_v_of_macedon_portrait', 'images/portraits/philip_v_of_macedon.webp');
+        this.load.image('character_selection_background', 'character_selection_background.webp');
         // Tilesets
         this.load.image("tuxmon-tiles", "tilesets/tuxmon-sample-32px-extruded.png");
         this.load.image("greece-tiles", "tilesets/ancient_greece_tileset.png");

@@ -10,7 +10,7 @@ export class CharacterSelect extends Scene {
     }
 
     async create() {
-        this.add.image(0, 0, 'congress_background').setOrigin(0, 0).setAlpha(0.7);
+        this.add.image(0, 0, 'character_selection_background').setOrigin(0, 0).setAlpha(0.7);
         this.add.text(512, 80, 'Choose Your Delegate', {
             fontSize: '54px', fontFamily: 'Georgia, serif', color: '#FFFFFF', stroke: '#000000', strokeThickness: 6
         }).setOrigin(0.5);

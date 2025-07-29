@@ -1,42 +1,49 @@
 import time
-
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-)
-from langchain_groq import ChatGroq
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from typing import Dict, List
 from loguru import logger
 
-from philoagents.application.data.extract import get_extraction_generator
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_groq import ChatGroq
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from philoagents.application.data import RagExtractor
 from philoagents.config import settings
 from philoagents.domain import prompts
 from philoagents.domain.evaluation import EvaluationDataset, EvaluationDatasetSample
-from philoagents.domain.philosopher import PhilosopherExtract
 
 
 class EvaluationDatasetGenerator:
-    def __init__(self, temperature: float = 0.8, max_samples: int = 40) -> None:
+    def __init__(self, extractor: RagExtractor,  temperature: float = 0.8, max_samples: int = 40) -> None:
+        self.extractor = extractor
         self.temperature = temperature
         self.max_samples = max_samples
 
         self.__chain = self.__build_chain()
         self.__splitter = self.__build_splitter()
 
-    def __call__(self, philosophers: list[PhilosopherExtract]) -> EvaluationDataset:
+    def __call__(self, rag_sources: List[Dict]) -> EvaluationDataset:
+        """
+        Executes the full dataset generation pipeline for a given set of RAG sources.
+
+        Args:
+            rag_sources: A list of dictionaries loaded from the scenario's rag_sources.json.
+        """
         dataset_samples = []
-        extraction_generator = get_extraction_generator(philosophers)
-        for philosopher, docs in extraction_generator:
+
+        extraction_generator = self.extractor.get_extraction_generator(rag_sources)
+
+        for character, docs in extraction_generator:
             chunks = self.__splitter.split_documents(docs)
             for chunk in chunks[:4]:
                 try:
                     dataset_sample: EvaluationDatasetSample = self.__chain.invoke(
-                        {"philosopher": philosopher, "document": chunk.page_content}
+                        {"character": character, "document": chunk.page_content}
                     )
                 except Exception as e:
-                    logger.error(f"Error generating dataset sample: {e}")
+                    logger.error(f"Error generating dataset sample for {character.name}: {e}")
                     continue
 
-                dataset_sample.philosopher_id = philosopher.id
+                dataset_sample.character_id = character.id
 
                 if self.__validate_sample(dataset_sample):
                     dataset_samples.append(dataset_sample)
@@ -66,7 +73,7 @@ class EvaluationDatasetGenerator:
     def __build_chain(self):
         model = ChatGroq(
             api_key=settings.GROQ_API_KEY,
-            model_name=settings.GROQ_LLM_MODEL,
+            model=settings.GROQ_LLM_MODEL,
             temperature=self.temperature,
         )
         model = model.with_structured_output(EvaluationDatasetSample)

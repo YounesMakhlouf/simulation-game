@@ -76,13 +76,13 @@ DELEGATE_ACTION_PROMPT = Prompt(name="delegate_action_prompt", prompt=__DELEGATE
 
 # --- Summary ---
 
-__SUMMARY_PROMPT = """Create a summary of the conversation between {{philosopher_name}} and the user.
+__SUMMARY_PROMPT = """Create a summary of the conversation between {{character_name}} and the user.
 The summary must be a short description of the conversation so far, but that also captures all the
-relevant information shared between {{philosopher_name}} and the user: """
+relevant information shared between {{character_name}} and the user: """
 
 SUMMARY_PROMPT = Prompt(name="summary_prompt", prompt=__SUMMARY_PROMPT, )
 
-__EXTEND_SUMMARY_PROMPT = """This is a summary of the conversation to date between {{philosopher_name}} and the user:
+__EXTEND_SUMMARY_PROMPT = """This is a summary of the conversation to date between {{character_name}} and the user:
 
 {{summary}}
 
@@ -101,6 +101,43 @@ CONTEXT_SUMMARY_PROMPT = Prompt(name="context_summary_prompt", prompt=__CONTEXT_
 # ===================================================
 
 __EVALUATION_DATASET_GENERATION_PROMPT = """
+Generate a conversation between a character and a user based on the provided document. The character will respond to the user's questions by referencing the document. If a question is not related to the document, the character will respond with 'I don't know.' 
+
+The conversation should be in the following JSON format:
+
+{
+    "messages": [
+        {"role": "user", "content": "Hi my name is <user_name>. <question_related_to_document_and_character_perspective> ?"},
+        {"role": "assistant", "content": "<character_response>"},
+        {"role": "user", "content": "<question_related_to_document_and_character_perspective> ?"},
+        {"role": "assistant", "content": "<character_response>"},
+        {"role": "user", "content": "<question_related_to_document_and_character_perspective> ?"},
+        {"role": "assistant", "content": "<character_response>"}
+    ]
+}
+
+Generate a maximum of 4 questions and answers and a minimum of 2 questions and answers. Ensure that the character's responses accurately reflect the content of the document.
+
+Character: {{character}}
+Document: {{document}}
+
+Begin the conversation with a user question, and then generate the character's response based on the document. Continue the conversation with the user asking follow-up questions and the character responding accordingly."
+
+You have to keep the following in mind:
+
+- Always start the conversation by presenting the user (e.g., 'Hi my name is Sophia') Then with a question related to the document and character's perspective.
+- Always generate questions like the user is directly speaking with the character using pronouns such as 'you' or 'your', simulating a real conversation that happens in real time.
+- The character will answer the user's questions based on the document.
+- The user will ask the character questions about the document and character profile.
+- If the question is not related to the document, the character will say that they don't know.
+"""
+
+EVALUATION_DATASET_GENERATION_PROMPT = Prompt(
+    name="evaluation_dataset_generation_prompt",
+    prompt=__EVALUATION_DATASET_GENERATION_PROMPT,
+)
+
+__ACTION_EVALUATION_DATASET_GENERATION_PROMPT = """
 Generate a single, high-quality sample for an evaluation dataset for a historical crisis simulation game.
 The sample should consist of a plausible situation (`crisis_update`) and an `expected_action` that a specific character would realistically take in response.
 
@@ -129,8 +166,8 @@ Your response **MUST** be a single JSON object with the following structure:
 Ensure the `expected_action` is a strategically sound and in-character response to the `situation` you create.
 """
 
-EVALUATION_DATASET_GENERATION_PROMPT = Prompt(name="evaluation_dataset_generation_prompt",
-                                              prompt=__EVALUATION_DATASET_GENERATION_PROMPT, )
+ACTION_EVALUATION_DATASET_GENERATION_PROMPT = Prompt(name="evaluation_dataset_generation_prompt",
+                                              prompt=__ACTION_EVALUATION_DATASET_GENERATION_PROMPT, )
 
 # ===================================================
 # =====           JUDGE AGENT PROMPTS           =====

@@ -24,11 +24,11 @@ class EvaluationDatasetSample(BaseModel):
     typically consisting of 3 question-answer pairs.
 
     Attributes:
-        philosopher_id: The ID of the philosopher associated with this sample.
+        character_id: The ID of the philosopher associated with this sample.
         messages: A list of Message objects representing the conversation.
     """
 
-    philosopher_id: str | None = None
+    character_id: str | None = None
     messages: List[Message]
 
 
