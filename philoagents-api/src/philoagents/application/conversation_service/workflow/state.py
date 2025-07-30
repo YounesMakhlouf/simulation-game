@@ -1,6 +1,6 @@
-from typing import List, Optional, Annotated
+from typing import Annotated, List, Optional
 
-from langgraph.graph.message import add_messages, AnyMessage
+from langgraph.graph.message import AnyMessage, add_messages
 from typing_extensions import TypedDict
 
 
@@ -23,6 +23,7 @@ class ConversationState(TypedDict):
                            ground the conversation.
         summary: A running summary of the conversation to manage token count.
     """
+
     messages: Annotated[List[AnyMessage], add_messages]
     character_id: str
     character_name: str
@@ -42,7 +43,9 @@ def state_to_str(state: ConversationState) -> str:
         conversation_history = f"Summary: '{state['summary']}'"
     elif "messages" in state and state["messages"]:
         # Format messages for readability
-        formatted_messages = "\n  ".join([f"{m.type.capitalize()}: {m.content}" for m in state["messages"]])
+        formatted_messages = "\n  ".join(
+            [f"{m.type.capitalize()}: {m.content}" for m in state["messages"]]
+        )
         conversation_history = f"Messages:\n  {formatted_messages}"
     else:
         conversation_history = "No conversation history."
@@ -52,9 +55,9 @@ def state_to_str(state: ConversationState) -> str:
 
     return f"""
 --- Conversation State ---
-Character: {state.get('character_name', 'N/A')} (ID: {state.get('character_id', 'N/A')})
-Perspective: {state.get('character_perspective', 'N/A')[:80]}...
-Style: {state.get('character_style', 'N/A')[:80]}...
+Character: {state.get("character_name", "N/A")} (ID: {state.get("character_id", "N/A")})
+Perspective: {state.get("character_perspective", "N/A")[:80]}...
+Style: {state.get("character_style", "N/A")[:80]}...
 Retrieved Context: {retrieved_info[:100]}...
 {conversation_history}
 ------------------------

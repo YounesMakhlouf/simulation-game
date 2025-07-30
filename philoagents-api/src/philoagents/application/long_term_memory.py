@@ -8,7 +8,8 @@ from philoagents.application.rag.splitters import Splitter, get_splitter
 from philoagents.config import settings
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure.mongo import MongoClientWrapper, MongoIndex
-from .data import deduplicate_documents, RagExtractor
+
+from .data import RagExtractor, deduplicate_documents
 
 
 class LongTermMemoryCreator:
@@ -17,15 +18,22 @@ class LongTermMemoryCreator:
     embedding, and storing character knowledge in MongoDB.
     """
 
-    def __init__(self, retriever: Retriever, splitter: Splitter, extractor: RagExtractor):
+    def __init__(
+        self, retriever: Retriever, splitter: Splitter, extractor: RagExtractor
+    ):
         self.retriever = retriever
         self.splitter = splitter
         self.extractor = extractor
 
     @classmethod
-    def build_from_settings(cls, character_factory: CharacterFactory) -> "LongTermMemoryCreator":
-        retriever = get_retriever(embedding_model_id=settings.RAG_TEXT_EMBEDDING_MODEL_ID, k=settings.RAG_TOP_K,
-            device=settings.RAG_DEVICE, )
+    def build_from_settings(
+        cls, character_factory: CharacterFactory
+    ) -> "LongTermMemoryCreator":
+        retriever = get_retriever(
+            embedding_model_id=settings.RAG_TEXT_EMBEDDING_MODEL_ID,
+            k=settings.RAG_TOP_K,
+            device=settings.RAG_DEVICE,
+        )
         splitter = get_splitter(chunk_size=settings.RAG_CHUNK_SIZE)
 
         extractor = RagExtractor(character_factory=character_factory)
@@ -44,7 +52,9 @@ class LongTermMemoryCreator:
             return
 
         logger.info("Clearing existing long-term memory collection...")
-        with MongoClientWrapper(model=Document, collection_name=settings.MONGO_LONG_TERM_MEMORY_COLLECTION) as client:
+        with MongoClientWrapper(
+            model=Document, collection_name=settings.MONGO_LONG_TERM_MEMORY_COLLECTION
+        ) as client:
             client.clear_collection()
 
         logger.info("Starting document extraction from web sources...")
@@ -66,9 +76,17 @@ class LongTermMemoryCreator:
 
     def __create_index(self) -> None:
         """Creates the hybrid search index in MongoDB."""
-        with MongoClientWrapper(model=Document, collection_name=settings.MONGO_LONG_TERM_MEMORY_COLLECTION) as client:
-            index = MongoIndex(retriever=self.retriever, mongodb_client=client, )
-            index.create(is_hybrid=True, embedding_dim=settings.RAG_TEXT_EMBEDDING_MODEL_DIM)
+        with MongoClientWrapper(
+            model=Document, collection_name=settings.MONGO_LONG_TERM_MEMORY_COLLECTION
+        ) as client:
+            index = MongoIndex(
+                retriever=self.retriever,
+                mongodb_client=client,
+            )
+            index.create(
+                is_hybrid=True, embedding_dim=settings.RAG_TEXT_EMBEDDING_MODEL_DIM
+            )
+
 
 class LongTermMemoryRetriever:
     def __init__(self, retriever: Retriever) -> None:
@@ -76,8 +94,11 @@ class LongTermMemoryRetriever:
 
     @classmethod
     def build_from_settings(cls) -> "LongTermMemoryRetriever":
-        retriever = get_retriever(embedding_model_id=settings.RAG_TEXT_EMBEDDING_MODEL_ID, k=settings.RAG_TOP_K,
-            device=settings.RAG_DEVICE, )
+        retriever = get_retriever(
+            embedding_model_id=settings.RAG_TEXT_EMBEDDING_MODEL_ID,
+            k=settings.RAG_TOP_K,
+            device=settings.RAG_DEVICE,
+        )
         return cls(retriever)
 
     def __call__(self, query: str) -> list[Document]:

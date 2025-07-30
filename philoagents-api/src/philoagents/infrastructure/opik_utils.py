@@ -13,20 +13,31 @@ def configure() -> None:
             client = OpikConfigurator(api_key=settings.COMET_API_KEY)
             default_workspace = client._get_default_workspace()
         except Exception:
-            logger.warning("Default workspace not found. Setting workspace to None and enabling interactive mode.")
+            logger.warning(
+                "Default workspace not found. Setting workspace to None and enabling interactive mode."
+            )
             default_workspace = None
 
         os.environ["OPIK_PROJECT_NAME"] = settings.COMET_PROJECT
 
         try:
-            opik.configure(api_key=settings.COMET_API_KEY, workspace=default_workspace, use_local=False, force=True, )
-            logger.info(f"Opik configured successfully using workspace '{default_workspace}'")
+            opik.configure(
+                api_key=settings.COMET_API_KEY,
+                workspace=default_workspace,
+                use_local=False,
+                force=True,
+            )
+            logger.info(
+                f"Opik configured successfully using workspace '{default_workspace}'"
+            )
         except Exception:
             logger.warning(
-                "Couldn't configure Opik. There is probably a problem with the COMET_API_KEY or COMET_PROJECT environment variables or with the Opik server.")
+                "Couldn't configure Opik. There is probably a problem with the COMET_API_KEY or COMET_PROJECT environment variables or with the Opik server."
+            )
     else:
         logger.warning(
-            "COMET_API_KEY and COMET_PROJECT are not set. Set them to enable prompt monitoring with Opik (powered by Comet ML).")
+            "COMET_API_KEY and COMET_PROJECT are not set. Set them to enable prompt monitoring with Opik (powered by Comet ML)."
+        )
 
 
 def get_dataset(name: str) -> opik.Dataset | None:
@@ -45,7 +56,9 @@ def create_dataset(name: str, description: str, items: list[dict]) -> opik.Datas
 
     # Only try to delete it if it was found.
     if existing_dataset:
-        logger.warning(f"Dataset '{name}' already exists. Deleting it before creating a new one.")
+        logger.warning(
+            f"Dataset '{name}' already exists. Deleting it before creating a new one."
+        )
         try:
             client.delete_dataset(name=name)
             logger.info(f"Successfully deleted existing dataset '{name}'.")

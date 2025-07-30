@@ -23,19 +23,24 @@ class CharacterFactory:
             character_data: A list of dictionaries, where each dictionary
                             conforms to the structure of the Character model. This
                             data is typically loaded from a characters.json file.
-        
+
         Raises:
             pydantic.ValidationError: If any character dictionary in the list
                                       is missing required fields.
         """
-        self._raw_data: Dict[str, Dict] = {char_dict['id']: char_dict for char_dict in character_data}
+        self._raw_data: Dict[str, Dict] = {
+            char_dict["id"]: char_dict for char_dict in character_data
+        }
 
         # We process the list into a dictionary for fast, O(1) lookups by character ID.
         # Pydantic automatically validates the data during this conversion.
-        self._characters: Dict[str, Character] = {char_dict['id']: Character(**char_dict) for char_dict in
-                                                  character_data}
+        self._characters: Dict[str, Character] = {
+            char_dict["id"]: Character(**char_dict) for char_dict in character_data
+        }
         self.available_ids: List[str] = list(self._characters.keys())
-        print(f"CharacterFactory initialized with {len(self.available_ids)} characters.")
+        print(
+            f"CharacterFactory initialized with {len(self.available_ids)} characters."
+        )
 
     def get_character(self, character_id: str) -> Character:
         """

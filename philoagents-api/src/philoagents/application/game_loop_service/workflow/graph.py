@@ -2,11 +2,17 @@ from functools import lru_cache
 
 from langgraph.graph import END, START, StateGraph
 
-from philoagents.application.game_loop_service.workflow.nodes import (action_decision_node, resolution_node, )
-from philoagents.application.game_loop_service.workflow.state import (ActionState, ResolutionState, )
-
+from philoagents.application.game_loop_service.workflow.nodes import (
+    action_decision_node,
+    resolution_node,
+)
+from philoagents.application.game_loop_service.workflow.state import (
+    ActionState,
+    ResolutionState,
+)
 
 # --- Delegate Action Agent Graph ---
+
 
 @lru_cache(maxsize=1)
 def create_action_graph():
@@ -33,6 +39,7 @@ def create_action_graph():
 
 
 # --- AI Judge Agent Graph ---
+
 
 @lru_cache(maxsize=1)
 def create_judge_graph():

@@ -8,8 +8,12 @@ from philoagents.config import settings
 
 
 @click.command()
-@click.option("--scenario-path", type=click.Path(exists=True, path_type=Path), default=None,
-              help="Path to the scenario pack directory (e.g., './scenarios/a_clash_of_titans_216bce/'). Overrides the SCENARIO_PATH in your .env file.")
+@click.option(
+    "--scenario-path",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Path to the scenario pack directory (e.g., './scenarios/a_clash_of_titans_216bce/'). Overrides the SCENARIO_PATH in your .env file.",
+)
 def main(scenario_path: Path) -> None:
     """CLI command to create long-term memory for characters.
 
@@ -19,7 +23,9 @@ def main(scenario_path: Path) -> None:
 
     path_to_load = scenario_path if scenario_path else settings.SCENARIO_PATH
     if not path_to_load:
-        print("Error: No scenario path provided via command line or SCENARIO_PATH in .env file.")
+        print(
+            "Error: No scenario path provided via command line or SCENARIO_PATH in .env file."
+        )
         return
 
     print(f"--- Starting RAG Ingestion for Scenario: {path_to_load} ---")
@@ -32,7 +38,9 @@ def main(scenario_path: Path) -> None:
         print(f"Error loading scenario: {e}")
         return
 
-    long_term_memory_creator = LongTermMemoryCreator.build_from_settings(character_factory=character_factory)
+    long_term_memory_creator = LongTermMemoryCreator.build_from_settings(
+        character_factory=character_factory
+    )
 
     long_term_memory_creator(rag_sources=rag_sources)
 

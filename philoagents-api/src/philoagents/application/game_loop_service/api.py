@@ -1,11 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
 from philoagents.application.game_loop_service.service import GameLoopService
-from philoagents.domain import Character, CharacterFactory, Action
-from philoagents.infrastructure.dependencies import get_character_factory, get_game_service
+from philoagents.domain import Action, Character, CharacterFactory
+from philoagents.infrastructure.dependencies import (
+    get_character_factory,
+    get_game_service,
+)
 
-router = APIRouter(prefix="/game", tags=["Game Loop"], )
+router = APIRouter(
+    prefix="/game",
+    tags=["Game Loop"],
+)
 
 
 # --- Pydantic Models for API ---
@@ -24,6 +30,7 @@ class EndGameRequest(BaseModel):
 
 class CharacterProfile(BaseModel):
     """A simplified character model for the selection screen."""
+
     id: str
     name: str
     title: str
@@ -37,27 +44,42 @@ class CharacterListResponse(BaseModel):
 
 # --- API Endpoints ---
 
+
 @router.get("/status/{character_id}", response_model=GameStatusResponse)
-async def get_game_status(character_id: str, service: GameLoopService = Depends(get_game_service)):
+async def get_game_status(
+    character_id: str, service: GameLoopService = Depends(get_game_service)
+):
     """
     Endpoint for the player's UI to get the current state of the game
     from their character's perspective.
     """
     current_state = service.get_current_state()
     if character_id not in current_state.characters:
-        raise HTTPException(status_code=404, detail=f"Character '{character_id}' not found.")
+        raise HTTPException(
+            status_code=404, detail=f"Character '{character_id}' not found."
+        )
 
     player_char = current_state.characters[character_id]
-    other_chars = [name for cid, char in current_state.characters.items() if cid != character_id for name in
-                   [char.name]]
+    other_chars = [
+        name
+        for cid, char in current_state.characters.items()
+        if cid != character_id
+        for name in [char.name]
+    ]
 
-    return GameStatusResponse(round_number=current_state.round_number, crisis_update=current_state.crisis_update,
-                              your_character=player_char, other_characters=other_chars,
-                              known_intel=player_char.known_intel)
+    return GameStatusResponse(
+        round_number=current_state.round_number,
+        crisis_update=current_state.crisis_update,
+        your_character=player_char,
+        other_characters=other_chars,
+        known_intel=player_char.known_intel,
+    )
 
 
 @router.get("/characters", response_model=CharacterListResponse)
-async def get_all_characters(factory: CharacterFactory = Depends(get_character_factory)):
+async def get_all_characters(
+    factory: CharacterFactory = Depends(get_character_factory),
+):
     """
     Returns a list of all playable characters in the current scenario
     with the specific profile data needed for the character selection screen.
@@ -70,17 +92,27 @@ async def get_all_characters(factory: CharacterFactory = Depends(get_character_f
         raw_data = factory.get_character_raw_data(char_id)
         ui_profile_data = raw_data.get("ui_profile", {})
 
-        profiles.append(CharacterProfile(id=raw_data.get("id"), name=raw_data.get("name"),
-                                         title=ui_profile_data.get("title", "No Title Available"),
-                                         description=ui_profile_data.get("description", "No Description Available"),
-                                         portrait_key=ui_profile_data.get("portrait_key", "default_portrait")))
+        profiles.append(
+            CharacterProfile(
+                id=raw_data.get("id"),
+                name=raw_data.get("name"),
+                title=ui_profile_data.get("title", "No Title Available"),
+                description=ui_profile_data.get(
+                    "description", "No Description Available"
+                ),
+                portrait_key=ui_profile_data.get("portrait_key", "default_portrait"),
+            )
+        )
 
     return CharacterListResponse(characters=profiles)
 
 
 @router.post("/action", status_code=202)
-async def submit_action(action: Action, background_tasks: BackgroundTasks,
-                        service: GameLoopService = Depends(get_game_service)):
+async def submit_action(
+    action: Action,
+    background_tasks: BackgroundTasks,
+    service: GameLoopService = Depends(get_game_service),
+):
     """
     Endpoint for the human player to submit their official action for the round.
     This triggers the AI players and the Judge to process the round in the background.
@@ -93,9 +125,12 @@ async def submit_action(action: Action, background_tasks: BackgroundTasks,
         # This makes the API return instantly, providing a better user experience.
         background_tasks.add_task(service.advance_round)
 
-        return {"message": "Action received. The round is now being processed by all delegates."}
+        return {
+            "message": "Action received. The round is now being processed by all delegates."
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 
 # @router.post("/guess-undergame")
 # async def guess_undergame(request: EndGameRequest):

@@ -1,8 +1,9 @@
+from langgraph.graph import END
 from typing_extensions import Literal
 
-from langgraph.graph import END
-
-from philoagents.application.conversation_service.workflow.state import ConversationState
+from philoagents.application.conversation_service.workflow.state import (
+    ConversationState,
+)
 from philoagents.config import settings
 
 

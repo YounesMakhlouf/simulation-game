@@ -10,7 +10,8 @@ class Prompt:
             self.__prompt = opik.Prompt(name=name, prompt=prompt)
         except Exception:
             logger.warning(
-                "Can't use Opik to version the prompt (probably due to missing or invalid credentials). Falling back to local prompt. The prompt is not versioned, but it's still usable.")
+                "Can't use Opik to version the prompt (probably due to missing or invalid credentials). Falling back to local prompt. The prompt is not versioned, but it's still usable."
+            )
 
             self.__prompt = prompt
 
@@ -72,7 +73,10 @@ You must always follow these rules:
 - Your `action_details` must be a single, specific, and concrete plan, not a general statement of intent.
 """
 
-DELEGATE_ACTION_PROMPT = Prompt(name="delegate_action_prompt", prompt=__DELEGATE_ACTION_PROMPT, )
+DELEGATE_ACTION_PROMPT = Prompt(
+    name="delegate_action_prompt",
+    prompt=__DELEGATE_ACTION_PROMPT,
+)
 
 # --- Summary ---
 
@@ -80,7 +84,10 @@ __SUMMARY_PROMPT = """Create a summary of the conversation between {{character_n
 The summary must be a short description of the conversation so far, but that also captures all the
 relevant information shared between {{character_name}} and the user: """
 
-SUMMARY_PROMPT = Prompt(name="summary_prompt", prompt=__SUMMARY_PROMPT, )
+SUMMARY_PROMPT = Prompt(
+    name="summary_prompt",
+    prompt=__SUMMARY_PROMPT,
+)
 
 __EXTEND_SUMMARY_PROMPT = """This is a summary of the conversation to date between {{character_name}} and the user:
 
@@ -88,13 +95,19 @@ __EXTEND_SUMMARY_PROMPT = """This is a summary of the conversation to date betwe
 
 Extend the summary by taking into account the new messages above: """
 
-EXTEND_SUMMARY_PROMPT = Prompt(name="extend_summary_prompt", prompt=__EXTEND_SUMMARY_PROMPT, )
+EXTEND_SUMMARY_PROMPT = Prompt(
+    name="extend_summary_prompt",
+    prompt=__EXTEND_SUMMARY_PROMPT,
+)
 
 __CONTEXT_SUMMARY_PROMPT = """Your task is to summarise the following information into less than 50 words. Just return the summary, don't include any other text:
 
 {{context}}"""
 
-CONTEXT_SUMMARY_PROMPT = Prompt(name="context_summary_prompt", prompt=__CONTEXT_SUMMARY_PROMPT, )
+CONTEXT_SUMMARY_PROMPT = Prompt(
+    name="context_summary_prompt",
+    prompt=__CONTEXT_SUMMARY_PROMPT,
+)
 
 # ===================================================
 # =====          EVALUATION PROMPTS             =====
@@ -166,8 +179,10 @@ Your response **MUST** be a single JSON object with the following structure:
 Ensure the `expected_action` is a strategically sound and in-character response to the `situation` you create.
 """
 
-ACTION_EVALUATION_DATASET_GENERATION_PROMPT = Prompt(name="evaluation_dataset_generation_prompt",
-                                              prompt=__ACTION_EVALUATION_DATASET_GENERATION_PROMPT, )
+ACTION_EVALUATION_DATASET_GENERATION_PROMPT = Prompt(
+    name="evaluation_dataset_generation_prompt",
+    prompt=__ACTION_EVALUATION_DATASET_GENERATION_PROMPT,
+)
 
 # ===================================================
 # =====           JUDGE AGENT PROMPTS           =====
@@ -219,7 +234,10 @@ Do not state the Hidden Rule. Only show its consequences.
 
 """
 
-JUDGE_RESOLUTION_PROMPT = Prompt(name="judge_resolution_prompt", prompt=__JUDGE_RESOLUTION_PROMPT, )
+JUDGE_RESOLUTION_PROMPT = Prompt(
+    name="judge_resolution_prompt",
+    prompt=__JUDGE_RESOLUTION_PROMPT,
+)
 
 __DELEGATE_CONVERSATIONAL_PROMPT = """
 Let's roleplay. You are {{character_name}}, a historical figure engaged in a private conversation.
@@ -240,5 +258,7 @@ Retrieved facts relevant to this conversation:
 ---
 The conversation continues now.
 """
-DELEGATE_CONVERSATIONAL_PROMPT = Prompt(name="delegate_conversational_prompt",
-                                        prompt=__DELEGATE_CONVERSATIONAL_PROMPT, )
+DELEGATE_CONVERSATIONAL_PROMPT = Prompt(
+    name="delegate_conversational_prompt",
+    prompt=__DELEGATE_CONVERSATIONAL_PROMPT,
+)

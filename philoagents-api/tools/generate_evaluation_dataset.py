@@ -11,10 +11,10 @@ from philoagents.config import settings
 
 @click.command()
 @click.option(
-    '--scenario_path',
+    "--scenario_path",
     type=click.Path(exists=True, path_type=Path, file_okay=False, dir_okay=True),
     default=None,
-    help="The path to the scenario pack directory (e.g., './scenarios/a_clash_of_titans_216bce/')."
+    help="The path to the scenario pack directory (e.g., './scenarios/a_clash_of_titans_216bce/').",
 )
 @click.option(
     "--temperature",
@@ -39,12 +39,16 @@ def main(scenario_path: Path, temperature: float, max_samples: int) -> None:
     """
     path_to_load = scenario_path if scenario_path else settings.SCENARIO_PATH
     if not path_to_load:
-        print("Error: No scenario path provided via command line or SCENARIO_PATH in .env file.")
+        print(
+            "Error: No scenario path provided via command line or SCENARIO_PATH in .env file."
+        )
         return
 
     logger.info(f"--- Starting Evaluation Dataset Generation ---")
     logger.info(f"Scenario Path: {path_to_load}")
-    logger.info(f"Generation Parameters: temperature={temperature}, max_samples={max_samples}")
+    logger.info(
+        f"Generation Parameters: temperature={temperature}, max_samples={max_samples}"
+    )
 
     try:
         loader = ScenarioLoader(scenario_path=path_to_load)
@@ -54,14 +58,14 @@ def main(scenario_path: Path, temperature: float, max_samples: int) -> None:
         extractor = RagExtractor(character_factory=character_factory)
 
         dataset_generator = EvaluationDatasetGenerator(
-            extractor=extractor,
-            temperature=temperature,
-            max_samples=max_samples
+            extractor=extractor, temperature=temperature, max_samples=max_samples
         )
 
         dataset_generator(rag_sources=rag_sources)
 
-        logger.info(f"\n--- Dataset Generation for '{loader.manifest['name']}' Complete! ---")
+        logger.info(
+            f"\n--- Dataset Generation for '{loader.manifest['name']}' Complete! ---"
+        )
 
     except Exception as e:
         logger.error(f"An error occurred during dataset generation: {e}")

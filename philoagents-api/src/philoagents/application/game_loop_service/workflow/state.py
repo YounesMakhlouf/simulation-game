@@ -20,6 +20,7 @@ class ActionState(TypedDict):
         action: The final output of the graph will be stored here. This will be
                 a single, structured Action object.
     """
+
     character: Character
     crisis_update: str
     other_players_dossier: str
@@ -47,6 +48,7 @@ class ResolutionState(TypedDict):
                             *after* the Judge has updated their resources. This is a
                             primary output of the graph.
     """
+
     actions: List[Action]
     characters: Dict[str, Character]
     undergame_plot: str

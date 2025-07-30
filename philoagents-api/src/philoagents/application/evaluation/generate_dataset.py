@@ -1,10 +1,10 @@
 import time
 from typing import Dict, List
-from loguru import logger
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from loguru import logger
 
 from philoagents.application.data import RagExtractor
 from philoagents.config import settings
@@ -13,7 +13,9 @@ from philoagents.domain.evaluation import EvaluationDataset, EvaluationDatasetSa
 
 
 class EvaluationDatasetGenerator:
-    def __init__(self, extractor: RagExtractor,  temperature: float = 0.8, max_samples: int = 40) -> None:
+    def __init__(
+        self, extractor: RagExtractor, temperature: float = 0.8, max_samples: int = 40
+    ) -> None:
         self.extractor = extractor
         self.temperature = temperature
         self.max_samples = max_samples
@@ -40,7 +42,9 @@ class EvaluationDatasetGenerator:
                         {"character": character, "document": chunk.page_content}
                     )
                 except Exception as e:
-                    logger.error(f"Error generating dataset sample for {character.name}: {e}")
+                    logger.error(
+                        f"Error generating dataset sample for {character.name}: {e}"
+                    )
                     continue
 
                 dataset_sample.character_id = character.id
@@ -88,9 +92,7 @@ class EvaluationDatasetGenerator:
         return prompt | model
 
     @staticmethod
-    def __build_splitter(
-            max_token_limit: int = 6000
-    ) -> RecursiveCharacterTextSplitter:
+    def __build_splitter(max_token_limit: int = 6000) -> RecursiveCharacterTextSplitter:
         return RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             encoding_name="cl100k_base",
             chunk_size=int(max_token_limit * 0.25),
