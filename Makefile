@@ -25,7 +25,7 @@ check-docker-image:
 # --- Offline Pipelines ---
 
 call-agent: check-docker-image
-	docker run --rm --network=philoagents-network --env-file philoagents-api/.env -v ./philoagents-api/data:/app/data philoagents-course-api uv run python -m tools.call_agent --philosopher-id "turing" --query "How can we know the difference between a human and a machine?"
+	docker run --rm --network=philoagents-network --env-file philoagents-api/.env -v ./philoagents-api/data:/app/data philoagents-course-api uv run python -m tools.call_agent --receiver-id "hannibal_barca" --query "What were your most famous strategies?"
 
 create-long-term-memory: check-docker-image
 	docker run --rm --network=philoagents-network --env-file philoagents-api/.env -v ./philoagents-api/data:/app/data philoagents-course-api uv run python -m tools.create_long_term_memory

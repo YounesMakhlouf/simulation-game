@@ -8,7 +8,7 @@ from philoagents.domain.prompts import (CONTEXT_SUMMARY_PROMPT, EXTEND_SUMMARY_P
 
 
 def get_chat_model(temperature: float = 0.7, model_name: str = settings.GROQ_LLM_MODEL) -> ChatGroq:
-    return ChatGroq(api_key=settings.GROQ_API_KEY, model_name=model_name, temperature=temperature, )
+    return ChatGroq(api_key=settings.GROQ_API_KEY, model=model_name, temperature=temperature, )
 
 
 def get_character_response_chain():
@@ -24,7 +24,7 @@ def get_character_response_chain():
 
 
 def get_conversation_summary_chain(summary: str = ""):
-    model = get_chat_model(model_name=settings.GROQ_LLM_MODEL_SUMMARY)
+    model = get_chat_model(model=settings.GROQ_LLM_MODEL_SUMMARY)
 
     summary_message = EXTEND_SUMMARY_PROMPT if summary else SUMMARY_PROMPT
 
@@ -36,7 +36,7 @@ def get_conversation_summary_chain(summary: str = ""):
 
 
 def get_context_summary_chain():
-    model = get_chat_model(model_name=settings.GROQ_LLM_MODEL_CONTEXT_SUMMARY)
+    model = get_chat_model(model=settings.GROQ_LLM_MODEL_CONTEXT_SUMMARY)
     prompt = ChatPromptTemplate.from_messages([("human", CONTEXT_SUMMARY_PROMPT.prompt), ], template_format="jinja2", )
 
     return prompt | model

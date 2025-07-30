@@ -50,6 +50,6 @@ class Settings(BaseSettings):
     # --- Paths Configuration ---
     EVALUATION_DATASET_FILE_PATH: Path = Path("data/evaluation_dataset.json")
     EXTRACTION_METADATA_FILE_PATH: Path = Path("data/extraction_metadata.json")
-    SCENARIO_PATH: Path = Path("scenarios/a_clash_of_titans_216bce/")
+    SCENARIO_PATH: Path = Path("scenarios/a_clash_of_titans_216bce")
 
 settings = Settings()
