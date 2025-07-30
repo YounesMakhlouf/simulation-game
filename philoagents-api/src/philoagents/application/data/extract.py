@@ -56,7 +56,8 @@ class RagExtractor:
 
         return docs
 
-    def _extract_wikipedia(self, character: Character, query: str) -> List[Document]:
+    @staticmethod
+    def _extract_wikipedia(character: Character, query: str) -> List[Document]:
         """Extracts a document for a single character from Wikipedia."""
         loader = WikipediaLoader(query=query, lang="en", load_max_docs=1, doc_content_chars_max=2_000_000, )
         docs = loader.load()
@@ -66,7 +67,8 @@ class RagExtractor:
             doc.metadata["source_type"] = "Wikipedia"
         return docs
 
-    def _extract_britannica(self, character: Character, urls: List[str]) -> List[Document]:
+    @staticmethod
+    def _extract_britannica(character: Character, urls: List[str]) -> List[Document]:
         """Extracts documents from Encyclopedia Britannica URLs."""
         if not urls:
             return []
