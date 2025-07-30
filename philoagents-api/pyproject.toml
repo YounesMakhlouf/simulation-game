@@ -23,6 +23,7 @@ dependencies = [
     "ipykernel>=6.29.5",
     "pydantic>=2.11.7",
     "datasketch>=1.6.5",
+    "sentence-transformers>=5.0.0",
 ]
 
 [dependency-groups]

@@ -38,7 +38,7 @@ def get_character_response_chain():
 
 
 def get_conversation_summary_chain(summary: str = ""):
-    model = get_chat_model(model=settings.GROQ_LLM_MODEL_SUMMARY)
+    model = get_chat_model(model_name=settings.GROQ_LLM_MODEL_SUMMARY)
 
     summary_message = EXTEND_SUMMARY_PROMPT if summary else SUMMARY_PROMPT
 
@@ -54,7 +54,7 @@ def get_conversation_summary_chain(summary: str = ""):
 
 
 def get_context_summary_chain():
-    model = get_chat_model(model=settings.GROQ_LLM_MODEL_CONTEXT_SUMMARY)
+    model = get_chat_model(model_name=settings.GROQ_LLM_MODEL_CONTEXT_SUMMARY)
     prompt = ChatPromptTemplate.from_messages(
         [
             ("human", CONTEXT_SUMMARY_PROMPT.prompt),
