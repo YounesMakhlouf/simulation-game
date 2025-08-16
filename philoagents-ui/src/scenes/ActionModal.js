@@ -1,24 +1,26 @@
-import {Scene} from "phaser";
+import { BaseModal } from '../classes/BaseModal';
 
-export class ActionModal extends Scene {
+export class ActionModal extends BaseModal {
     constructor() {
-        super("ActionModal");
+        super("ActionModal", {
+            titleText: "Action Phase: Plan Your Move",
+            panelX: 50,
+            panelY: 50,
+            panelWidth: 924,
+            panelHeight: 668,
+            closeButtonText: "", // No close button, we'll use a submit button instead
+            resumeGameOnClose: false, // Don't resume game on close
+            closeOnEsc: false // Don't close on ESC
+        });
         this.gameManager = null;
     }
 
     init(data) {
+        super.init(data);
         this.gameManager = data.gameManager;
     }
 
-    create() {
-        // Create the background and panel like in the CrisisModal
-        const background = this.add.graphics().fillStyle(0x000000, 0.7).fillRect(0, 0, 1024, 768);
-        const panel = this.add.graphics().fillStyle(0x111111, 0.9).lineStyle(2, 0xffffff, 1).fillRoundedRect(50, 50, 924, 668, 15).strokeRoundedRect(50, 50, 924, 668, 15);
-        this.add
-            .text(512, 80, "Action Phase: Plan Your Move", {
-                fontSize: "32px", color: "#ffffff",
-            })
-            .setOrigin(0.5);
+    createContent() {
         const playerResources = this.gameManager.gameState.your_character.resources || {};
 
         // Disable keyboard capture to allow text input in form elements
@@ -51,7 +53,7 @@ export class ActionModal extends Scene {
             </div>
 
             <button id="submit-button">Submit Final Action</button>
-            <p id="error-message" style="color: red; text-align: center; visibility: hidden;">Please fill all required fields.</p>
+            <p id="error-message">Please fill all required fields.</p>
         </div>
     `;
 
@@ -60,10 +62,7 @@ export class ActionModal extends Scene {
         const resourceContainer = formElement.getChildByID("resource-cost-container");
         Object.keys(playerResources).forEach((resourceName) => {
             const resourceDiv = document.createElement("div");
-            resourceDiv.style.display = "flex";
-            resourceDiv.style.justifyContent = "space-between";
-            resourceDiv.style.alignItems = "center";
-            resourceDiv.style.marginBottom = "10px";
+            resourceDiv.className = "resource-item";
 
             const label = document.createElement("label");
             label.htmlFor = `resource-${resourceName}`;
@@ -76,7 +75,6 @@ export class ActionModal extends Scene {
             input.min = 0;
             input.max = playerResources[resourceName];
             input.value = 0;
-            input.style.width = "100px";
 
             resourceDiv.appendChild(label);
             resourceDiv.appendChild(input);
@@ -154,7 +152,7 @@ export class ActionModal extends Scene {
         this.gameManager.submitPlayerAction(finalAction);
 
         // --- 4. CLOSE MODAL ---
-        this.scene.stop("ActionModal");
+        this.closeModal();
         // NOTE: We don't resume the 'Game' scene here. We wait for the new round.
         // The GameManager will handle resuming/restarting scenes after polling.
     }

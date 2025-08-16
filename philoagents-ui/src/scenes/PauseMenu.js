@@ -1,37 +1,35 @@
-import { Scene } from 'phaser';
+import { BaseModal } from '../classes/BaseModal';
 import ApiService from '../services/ApiService';
 
-export class PauseMenu extends Scene {
+export class PauseMenu extends BaseModal {
     constructor() {
-        super('PauseMenu');
+        super('PauseMenu', {
+            titleText: 'GAME PAUSED',
+            titleColor: '#000000',
+            titleSize: '28px',
+            titleY: 180,
+            panelColor: 0xffffff,
+            panelBorderColor: 0x000000,
+            panelWidth: 400,
+            panelHeight: 300,
+            panelX: 312, // Centered: (1024 - 400) / 2
+            panelY: 234, // Centered: (768 - 300) / 2
+            showCloseButton: false,
+            closeOnEsc: true,
+            resumeGameOnClose: true,
+            backgroundAlpha: 0.7
+        });
     }
 
-    create() {
-        const overlay = this.add.graphics();
-        overlay.fillStyle(0x000000, 0.7);
-        overlay.fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
-
+    createContent() {
         const centerX = this.cameras.main.width / 2;
         const centerY = this.cameras.main.height / 2;
         
-        const panel = this.add.graphics();
-        panel.fillStyle(0xffffff, 1);
-        panel.fillRoundedRect(centerX - 200, centerY - 150, 400, 300, 20);
-        panel.lineStyle(4, 0x000000, 1);
-        panel.strokeRoundedRect(centerX - 200, centerY - 150, 400, 300, 20);
-
-        this.add.text(centerX, centerY - 120, 'GAME PAUSED', {
-            fontSize: '28px',
-            fontFamily: 'Arial',
-            color: '#000000',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-
         const buttonY = centerY - 50;
         const buttonSpacing = 70;
 
         this.createButton(centerX, buttonY, 'Resume Game', () => {
-            this.resumeGame();
+            this.closeModal();
         });
 
         this.createButton(centerX, buttonY + buttonSpacing, 'Main Menu', () => {
@@ -41,69 +39,14 @@ export class PauseMenu extends Scene {
         this.createButton(centerX, buttonY + buttonSpacing * 2, 'Reset Game', () => {
             this.resetGame();
         });
-
-        this.input.keyboard.on('keydown-ESC', () => {
-            this.resumeGame();
-        });
     }
 
-    createButton(x, y, text, callback) {
-        const buttonWidth = 250;
-        const buttonHeight = 50;
-        const cornerRadius = 15;
-        
-        const shadow = this.add.graphics();
-        shadow.fillStyle(0x000000, 0.4);
-        shadow.fillRoundedRect(x - buttonWidth / 2 + 5, y - buttonHeight / 2 + 5, buttonWidth, buttonHeight, cornerRadius);
-
-        const button = this.add.graphics();
-        button.fillStyle(0x4a90e2, 1); 
-        button.lineStyle(2, 0x3a70b2, 1); 
-        button.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-        button.strokeRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-        button.setInteractive(
-            new Phaser.Geom.Rectangle(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight),
-            Phaser.Geom.Rectangle.Contains
-        );
-
-        const buttonText = this.add.text(x, y, text, {
-            fontSize: '22px',
-            fontFamily: 'Arial',
-            color: '#FFFFFF', 
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        button.on('pointerover', () => {
-            button.clear();
-            button.fillStyle(0x5da0f2, 1); 
-            button.lineStyle(2, 0x3a70b2, 1);
-            button.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-            button.strokeRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-            buttonText.y -= 2;
-        });
-
-        button.on('pointerout', () => {
-            button.clear();
-            button.fillStyle(0x4a90e2, 1);
-            button.lineStyle(2, 0x3a70b2, 1);
-            button.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-            button.strokeRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-            buttonText.y += 2;
-        });
-
-        button.on('pointerdown', callback);
-        
-        return { button, shadow, text: buttonText };
-    }
-
-    resumeGame() {
-        this.scene.resume('Game');
-        this.scene.stop();
-    }
+    // Using the createButton method from BaseModal
 
     returnToMainMenu() {
         this.scene.stop('Game');
         this.scene.start('MainMenu');
+        this.closeModal();
     }
 
     async resetGame() {
@@ -112,7 +55,7 @@ export class PauseMenu extends Scene {
             
             this.scene.stop('Game');
             this.scene.start('Game');
-            this.scene.stop();
+            this.closeModal();
         } catch (error) {
             console.error('Failed to reset game:', error);
 
@@ -123,11 +66,11 @@ export class PauseMenu extends Scene {
                 fontSize: '16px',
                 fontFamily: 'Arial',
                 color: '#FF0000'
-            }).setOrigin(0.5);
+            }).setOrigin(0.5).setDepth(3);
             
             this.time.delayedCall(3000, () => {
                 errorText.destroy();
             });
         }
     }
-} 
+}

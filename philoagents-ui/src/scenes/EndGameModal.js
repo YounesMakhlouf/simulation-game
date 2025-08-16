@@ -1,37 +1,35 @@
-import { Scene } from 'phaser';
+import { BaseModal } from '../classes/BaseModal';
 
-export class EndGameModal extends Scene {
+export class EndGameModal extends BaseModal {
     constructor() {
-        super('EndGameModal');
+        super('EndGameModal', {
+            titleText: 'The Final Reckoning',
+            titleColor: '#ffffff',
+            titleSize: '48px',
+            titleY: 150,
+            panelColor: 0x111111,
+            panelBorderColor: 0xffd700, // Gold border
+            panelWidth: 824,
+            panelHeight: 568,
+            panelX: 100,
+            panelY: 100,
+            showCloseButton: false,
+            closeOnEsc: false,
+            resumeGameOnClose: false,
+            backgroundAlpha: 0.8
+        });
     }
 
     init(data) {
+        super.init(data);
         this.gameManager = data.gameManager;
     }
 
-    create() {
-        // --- 1. SETUP UI ELEMENTS ---
-
-        // Semi-transparent background overlay
-        this.add.graphics()
-            .fillStyle(0x000000, 0.8)
-            .fillRect(0, 0, this.cameras.main.width, this.cameras.main.height);
-
-        // Main modal panel
-        this.add.graphics()
-            .fillStyle(0x111111, 0.95)
-            .lineStyle(2, 0xffd700, 1) // Gold border
-            .fillRoundedRect(100, 100, 824, 568, 15)
-            .strokeRoundedRect(100, 100, 824, 568, 15);
-
-        // Title and instruction text
-        this.add.text(512, 150, 'The Final Reckoning', {
-            fontSize: '48px', fontFamily: 'Georgia, serif', color: '#ffffff'
-        }).setOrigin(0.5);
-
+    createContent() {
+        // Instruction text
         this.add.text(512, 220, 'The simulation has concluded. Now, you must answer the final question:\nWhat was the secret force guiding the events of this world?', {
             fontSize: '20px', color: '#dddddd', align: 'center', wordWrap: { width: 780 }
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setDepth(2);
 
         // --- 2. CREATE THE HTML FORM ---
 
@@ -43,7 +41,7 @@ export class EndGameModal extends Scene {
             </div>
         `;
 
-        const formElement = this.add.dom(512, 450).createFromHTML(formHTML);
+        const formElement = this.add.dom(512, 450).createFromHTML(formHTML).setDepth(2);
 
         // --- 3. ADD EVENT LISTENER ---
 
@@ -75,7 +73,7 @@ export class EndGameModal extends Scene {
                 );
 
                 // Stop this scene and launch the final scoreboard
-                this.scene.stop();
+                this.closeModal();
                 this.scene.start('ScoreboardScene', { scores: finalScores });
 
             } catch (apiError) {

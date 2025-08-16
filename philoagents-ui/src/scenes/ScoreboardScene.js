@@ -24,58 +24,58 @@ export class ScoreboardScene extends Scene {
             .fillRoundedRect(100, 100, 824, 568, 15)
             .strokeRoundedRect(100, 100, 824, 568, 15);
 
-        // Title
-        this.add.text(512, 140, 'Final Scores', {
-            fontSize: '48px', fontFamily: 'Georgia, serif', color: '#ffffff'
-        }).setOrigin(0.5);
+        // Create HTML content for the scoreboard
+        const scoreboardHTML = `
+            <div class="scoreboard-container">
+                <h1 class="scoreboard-title">Final Scores</h1>
+                <h2 class="scoreboard-subtitle">The Secret Undergame:</h2>
+                <p class="scoreboard-text">${this.scores.actual_undergame}</p>
+                
+                <table class="scoreboard-table">
+                    <thead>
+                        <tr>
+                            <th>Character</th>
+                            <th>Faction</th>
+                            <th>Undergame</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${this.generateScoreRows()}
+                    </tbody>
+                </table>
+                
+                <div class="scoreboard-return" id="return-button">[ Return to Main Menu ]</div>
+            </div>
+        `;
 
-        // Undergame reveal
-        this.add.text(512, 200, 'The Secret Undergame:', {
-            fontSize: '24px', color: '#ffd700', fontStyle: 'bold'
-        }).setOrigin(0.5);
-
-        this.add.text(512, 240, this.scores.actual_undergame, {
-            fontSize: '18px', color: '#dddddd', align: 'center',
-            wordWrap: { width: 700 }
-        }).setOrigin(0.5);
-
-        // --- 2. DISPLAY SCORES ---
-        const startY = 320;
-        const lineHeight = 40;
+        // Add the DOM element
+        const scoreboardElement = this.add.dom(512, 384).createFromHTML(scoreboardHTML).setOrigin(0.5);
         
-        // Header row
-        this.add.text(200, startY, 'Character', { fontSize: '22px', color: '#ffffff', fontStyle: 'bold' });
-        this.add.text(400, startY, 'Faction', { fontSize: '22px', color: '#ffffff', fontStyle: 'bold' });
-        this.add.text(500, startY, 'Undergame', { fontSize: '22px', color: '#ffffff', fontStyle: 'bold' });
-        this.add.text(650, startY, 'Total', { fontSize: '22px', color: '#ffffff', fontStyle: 'bold' });
-
+        // Add event listener to the return button
+        const returnButton = scoreboardElement.getChildByID('return-button');
+        returnButton.addEventListener('click', () => {
+            this.scene.start('MainMenu');
+        });
+    }
+    
+    generateScoreRows() {
         // Sort characters by total score (descending)
         const sortedScores = Object.entries(this.scores.scores)
             .sort((a, b) => b[1].total_score - a[1].total_score);
-
-        // Display each character's scores
-        sortedScores.forEach((entry, index) => {
+            
+        return sortedScores.map((entry, index) => {
             const [charId, scoreData] = entry;
-            const rowY = startY + (index + 1) * lineHeight;
+            const winnerClass = index === 0 ? 'scoreboard-winner' : '';
             
-            // Highlight the winner
-            const textColor = index === 0 ? '#ffd700' : '#ffffff';
-            
-            this.add.text(200, rowY, scoreData.name, { fontSize: '20px', color: textColor });
-            this.add.text(400, rowY, scoreData.faction_score.toString(), { fontSize: '20px', color: textColor });
-            this.add.text(500, rowY, scoreData.undergame_score.toString(), { fontSize: '20px', color: textColor });
-            this.add.text(650, rowY, scoreData.total_score.toString(), { fontSize: '20px', color: textColor, fontStyle: 'bold' });
-        });
-
-        // --- 3. ADD RETURN TO MENU BUTTON ---
-        const returnButton = this.add.text(512, 620, '[ Return to Main Menu ]', {
-            fontSize: '24px', color: '#ffd700', fontStyle: 'bold'
-        })
-            .setOrigin(0.5)
-            .setInteractive({ useHandCursor: true });
-
-        returnButton.on('pointerdown', () => {
-            this.scene.start('MainMenu');
-        });
+            return `
+                <tr class="${winnerClass}">
+                    <td>${scoreData.name}</td>
+                    <td>${scoreData.faction_score}</td>
+                    <td>${scoreData.undergame_score}</td>
+                    <td><strong>${scoreData.total_score}</strong></td>
+                </tr>
+            `;
+        }).join('');
     }
 }
