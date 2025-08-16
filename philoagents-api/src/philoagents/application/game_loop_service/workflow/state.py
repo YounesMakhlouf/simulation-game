@@ -52,6 +52,7 @@ class ResolutionState(TypedDict):
     actions: List[Action]
     characters: Dict[str, Character]
     undergame_plot: str
+    current_game_state_json: Optional[str]
     crisis_update: Optional[str]
     updated_characters: Optional[Dict[str, Character]]
     private_intel_reports: Optional[List[PrivateIntel]]

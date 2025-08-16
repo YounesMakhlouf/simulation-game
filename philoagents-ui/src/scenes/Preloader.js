@@ -11,10 +11,6 @@ export class Preloader extends Scene {
         // General assets
         this.load.image('background', 'hannibal_crossing_the_alps.png');
         this.load.image('logo', 'logo.png');
-        this.load.image('metternich_portrait', 'images/portraits/metternich.webp');
-        this.load.image('alexander_i_portrait', 'images/portraits/alexander_i.webp');
-        this.load.image('talleyrand_portrait', 'images/portraits/talleyrand.webp');
-        this.load.image('castlereagh_portrait', 'images/portraits/castlereagh.webp');
         this.load.image('hannibal_barca_portrait', 'images/portraits/hannibal_barca.webp');
         this.load.image('hanno_the_great_portrait', 'images/portraits/hanno_the_great.webp');
         this.load.image('scipio_africanus_portrait', 'images/portraits/scipio_africanus.webp');
@@ -32,9 +28,9 @@ export class Preloader extends Scene {
 
         // Character assets
         this.load.atlas("sophia", "characters/sophia/atlas.png", "characters/sophia/atlas.json");
-        this.load.atlas("metternich", "characters/metternich/atlas.png", "characters/metternich/atlas.json");
+        this.load.atlas("hanno_the_great", "characters/hanno_the_great/atlas.png", "characters/hanno_the_great/atlas.json");
         this.load.atlas("alexander_i", "characters/alexander_i/atlas.png", "characters/alexander_i/atlas.json");
-        this.load.atlas("talleyrand", "characters/talleyrand/atlas.png", "characters/talleyrand/atlas.json");
+        this.load.atlas("scipio_africanus", "characters/scipio_africanus/atlas.png", "characters/scipio_africanus/atlas.json");
         this.load.atlas("castlereagh", "characters/castlereagh/atlas.png", "characters/castlereagh/atlas.json");
         // this.load.atlas("leibniz", "characters/leibniz/atlas.png", "characters/leibniz/atlas.json");
         // this.load.atlas("ada_lovelace", "characters/ada/atlas.png", "characters/ada/atlas.json");

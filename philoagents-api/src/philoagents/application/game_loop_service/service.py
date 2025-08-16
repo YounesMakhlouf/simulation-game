@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Dict, List, Optional
 
 from opik.integrations.langchain import OpikTracer
@@ -9,7 +10,7 @@ from philoagents.application.game_loop_service.workflow.graph import (
 )
 from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.domain.game_state import GameState
-from philoagents.domain.resources import PrivateIntel
+from philoagents.domain.resources import PrivateIntel, VictoryPointAward
 
 
 class GameLoopService:
@@ -22,12 +23,18 @@ class GameLoopService:
     """
 
     def __init__(
-        self, initial_state: GameState, undergame_plot: str, factory: CharacterFactory
+        self,
+        initial_state: GameState,
+        undergame_plot: str,
+        factory: CharacterFactory,
+        max_rounds: int = 5, #TODO: increase after we're done testing. Needs higher model limits
     ):
         self.game_state = initial_state
         self.undergame_plot = undergame_plot
         self.factory = factory
         self.submitted_actions: Dict[str, Action] = {}
+        self.max_rounds = max_rounds
+        self.is_game_over = False
 
     def get_current_state(self) -> GameState:
         """Returns a copy of the current game state."""
@@ -66,6 +73,18 @@ class GameLoopService:
             else:
                 print(
                     f"Warning: Could not deliver intel to non-existent character ID: {recipient_id}"
+                )
+
+    def _apply_victory_points(self, vp_awards: Optional[List[VictoryPointAward]]):
+        if not vp_awards:
+            return
+        for award in vp_awards:
+            if award.character_id in self.game_state.characters:
+                self.game_state.characters[
+                    award.character_id
+                ].victory_points += award.points_awarded
+                print(
+                    f"Awarded {award.points_awarded} VP to {award.character_id} for: {award.reason}"
                 )
 
     async def _run_ai_delegate_turns(self) -> List[Action]:
@@ -110,7 +129,12 @@ class GameLoopService:
 
     async def _run_judge_turn(
         self, all_actions: List[Action]
-    ) -> tuple[str, Dict[str, Character], Optional[List[PrivateIntel]]]:
+    ) -> tuple[
+        str,
+        Dict[str, Character],
+        Optional[List[PrivateIntel]],
+        Optional[List[VictoryPointAward]],
+    ]:
         """
         Invokes the judge agent to resolve the round.
         """
@@ -119,8 +143,9 @@ class GameLoopService:
         opik_tracer = OpikTracer(graph=graph.get_graph(xray=True))
         thread_id = f"judge-resolution-round-{self.game_state.round_number}"
         config = {"configurable": {"thread_id": thread_id}, "callbacks": [opik_tracer]}
-
+        current_state_json_str = self.game_state.model_dump_json(indent=2)
         initial_state = {
+            "current_game_state_json": current_state_json_str,
             "actions": all_actions,
             "characters": self.game_state.characters,
             "undergame_plot": self.undergame_plot,
@@ -131,6 +156,7 @@ class GameLoopService:
             result["crisis_update"],
             result["updated_characters"],
             result.get("private_intel_reports", None),
+            result.get("victory_point_awards", None),
         )
 
     async def advance_round(self) -> GameState:
@@ -151,8 +177,10 @@ class GameLoopService:
             new_crisis_update,
             updated_characters,
             private_reports,
+            victory_point_awards,
         ) = await self._run_judge_turn(all_actions_for_round)
         self._deliver_private_intel(private_reports)
+        self._apply_victory_points(victory_point_awards)
 
         # 3. Update the master game state for the new round
         self.game_state.round_number += 1
@@ -164,4 +192,7 @@ class GameLoopService:
         self.submitted_actions = {}
 
         print(f"\n--- Round {self.game_state.round_number} has begun! ---")
+        if self.game_state.round_number > self.max_rounds:
+            self.is_game_over = True
+            print("--- FINAL ROUND COMPLETE. GAME OVER. ---")
         return self.get_current_state()

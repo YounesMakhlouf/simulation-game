@@ -83,8 +83,16 @@ export class Game extends Scene {
         this.gameManager.events.on('showCrisisUpdate', this.showCrisisModal, this);
         this.gameManager.events.on('showActionModal', this.showActionModal, this);
         this.gameManager.events.on('error', this.showError, this);
+        this.gameManager.events.on('showEndGameModal', this.showEndGameModal, this);
 
         this.gameManager.startGame();
+    }
+
+    showEndGameModal() {
+        console.log("Game Scene: Game Over. Launching EndGameModal.");
+        this.scene.pause('Game');
+        this.scene.pause('HUDScene');
+        this.scene.launch('EndGameModal', {gameManager: this.gameManager});
     }
 
     createDelegates(map, layers) {

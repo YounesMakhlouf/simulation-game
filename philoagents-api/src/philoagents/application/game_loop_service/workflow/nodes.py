@@ -10,7 +10,8 @@ from philoagents.application.game_loop_service.workflow.state import (
     ResolutionState,
 )
 from philoagents.domain import Character
-from philoagents.domain.resources import UpdatedResource
+from philoagents.domain.resources import UpdatedCharacterState
+
 
 # --- Delegate Action Agent Node ---
 
@@ -55,14 +56,15 @@ async def action_decision_node(state: ActionState) -> Dict:
 
 
 def _apply_resource_updates(
-    characters: Dict[str, Character], updated_resources: List[UpdatedResource]
+    characters: Dict[str, Character], updated_character_state: List[UpdatedCharacterState]
 ) -> Dict[str, Character]:
     """
     A helper function to safely update character resources based on the Judge's output.
     """
-    for update in updated_resources:
+    for update in updated_character_state:
         if update.character_id in characters:
             characters[update.character_id].resources = update.resources
+            characters[update.character_id].statuses = update.statuses
     return characters
 
 
@@ -80,16 +82,21 @@ async def resolution_node(state: ResolutionState) -> Dict:
 
     # Convert the list of Action Pydantic models to a JSON string for the prompt.
     actions_json_str = json.dumps([a.model_dump() for a in state["actions"]], indent=2)
+    current_game_state_json = state.get("current_game_state_json", "{}")
 
     judge_output = await resolution_chain.ainvoke(
-        {"undergame_plot": state["undergame_plot"], "actions_json": actions_json_str}
+        {
+            "undergame_plot": state["undergame_plot"],
+            "actions_json": actions_json_str,
+            "current_game_state_json": current_game_state_json
+        }
     )
 
     print("Judge has made a decision. Crafting new crisis update...")
 
     original_characters = state["characters"]
     updated_characters = _apply_resource_updates(
-        original_characters, judge_output.updated_resources
+        original_characters, judge_output.updated_character_states
     )
     return {
         "crisis_update": judge_output.crisis_update,

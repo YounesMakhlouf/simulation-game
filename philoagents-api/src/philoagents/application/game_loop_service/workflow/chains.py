@@ -55,7 +55,7 @@ def get_judge_resolution_chain():
         A compiled LCEL chain ready for invocation.
     """
     # Use a higher temperature to encourage more creative and narrative-rich crisis updates.
-    model = get_chat_model(temperature=0.7)
+    model = get_chat_model(temperature=0.7, model_name=settings.GROQ_LLM_MODEL_JUDGE)
 
     structured_llm = model.with_structured_output(JudgeOutput)
     prompt = ChatPromptTemplate.from_messages(

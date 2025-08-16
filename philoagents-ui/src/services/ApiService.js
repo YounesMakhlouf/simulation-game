@@ -91,6 +91,24 @@ class ApiService {
             throw error;
         }
     }
+
+    /**
+     * Submits the player's final Undergame guess and retrieves the final scores.
+     * @param {string} characterId - The ID of the player's character.
+     * @param {string} guess - The player's text guess for the Undergame.
+     * @returns {Promise<object>} The final scores object from the server.
+     */
+    async submitGuessAndGetScores(characterId, guess) {
+        try {
+            return await this.request('/game/end', 'POST', {
+                player_character_id: characterId,
+                undergame_guess: guess,
+            });
+        } catch (error) {
+            console.error('Error submitting final guess:', error);
+            throw error;
+        }
+    }
 }
 
 

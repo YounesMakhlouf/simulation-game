@@ -1,7 +1,10 @@
+from typing import Dict
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
 from philoagents.application.game_loop_service.service import GameLoopService
+from philoagents.application.scoring_service import ScoringService
 from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.infrastructure.dependencies import (
     get_character_factory,
@@ -21,6 +24,7 @@ class GameStatusResponse(BaseModel):
     your_character: Character
     other_characters: list[str]
     known_intel: list[str]
+    is_game_over: bool
 
 
 class EndGameRequest(BaseModel):
@@ -40,6 +44,23 @@ class CharacterProfile(BaseModel):
 
 class CharacterListResponse(BaseModel):
     characters: list[CharacterProfile]
+
+
+class EndGameRequest(BaseModel):
+    player_character_id: str
+    undergame_guess: str
+
+
+class ScoreDetails(BaseModel):
+    name: str
+    faction_score: int
+    undergame_score: int
+    total_score: int
+
+
+class ScoreboardResponse(BaseModel):
+    scores: Dict[str, ScoreDetails]
+    actual_undergame: str
 
 
 # --- API Endpoints ---
@@ -73,6 +94,7 @@ async def get_game_status(
         your_character=player_char,
         other_characters=other_chars,
         known_intel=player_char.known_intel,
+        is_game_over=service.is_game_over,
     )
 
 
@@ -132,21 +154,63 @@ async def submit_action(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# @router.post("/guess-undergame")
-# async def guess_undergame(request: EndGameRequest):
-#     """
-#     Endpoint for the player to submit their final guess for the undergame.
-#     """
-#     # In a real implementation, this would compare the guess to the actual undergame
-#     # plot stored in the service and return a score.
-#     actual_undergame = game_service_instance.undergame_plot
-#     guess = request.undergame_guess
-#
-#     print(f"Player '{request.player_character_id}' guessed: {guess}")
-#     print(f"Actual Undergame: {actual_undergame}")
-#
-#     # Simple similarity check for demonstration
-#     from ares import AReS # Fictional similarity scoring library
-#     score = AReS.text_similarity(guess, actual_undergame)
-#
-#     return {"message": "Your guess has been recorded.", "similarity_score": score}
+@router.post("/end", response_model=ScoreboardResponse)
+async def end_game(
+    request: EndGameRequest, service: GameLoopService = Depends(get_game_service)
+):
+    """
+    Receives the player's final Undergame guess, triggers the final scoring for
+    all players, and returns the complete scoreboard.
+    """
+    if not service.is_game_over:
+        raise HTTPException(
+            status_code=400,
+            detail="The game is not over yet. This endpoint cannot be called.",
+        )
+
+    # --- 1. Gather Guesses ---
+    # The human player's guess comes from the request.
+    # For this simulation, we'll generate simple placeholder guesses for the AI.
+    # TODO: In a more advanced version, have a final "guess_undergame" agent or have the AIs guess the undergame at each step (internally).
+    undergame_guesses = {request.player_character_id: request.undergame_guess}
+    ai_characters = [
+        char
+        for char_id, char in service.game_state.characters.items()
+        if char_id != request.player_character_id
+    ]
+    for ai_char in ai_characters:
+        # Simple placeholder logic for AI guesses
+        if "genius" in ai_char.id or "scipio" in ai_char.id:
+            undergame_guesses[ai_char.id] = (
+                "I believe a supernatural force rewarded audacity, but it came at a price."
+            )
+        else:
+            undergame_guesses[ai_char.id] = (
+                "The events were simply the result of political maneuvering."
+            )
+
+    # --- 2. Get Final Game State ---
+    all_characters_final_state = list(service.game_state.characters.values())
+
+    # --- 3. Calculate Scores ---
+    scoring_service = ScoringService()
+    raw_scores = scoring_service.calculate_final_scores(
+        characters=all_characters_final_state,
+        undergame_guesses=undergame_guesses,
+        actual_undergame=service.undergame_plot,
+    )
+
+    # Convert raw scores to ScoreDetails format
+    formatted_scores = {}
+    for char_id, score_data in raw_scores.items():
+        formatted_scores[char_id] = ScoreDetails(
+            name=score_data["name"],
+            faction_score=score_data["faction_score"],
+            undergame_score=score_data["undergame_score"],
+            total_score=score_data["total_score"],
+        )
+
+    # --- 4. Return the complete scoreboard ---
+    return ScoreboardResponse(
+        scores=formatted_scores, actual_undergame=service.undergame_plot
+    )

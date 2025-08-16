@@ -3,15 +3,24 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-class UpdatedResource(BaseModel):
-    """Defines the structure for a single character's updated resources."""
-
+class UpdatedCharacterState(BaseModel):
+    """
+    Defines the complete, updated state for a single character after a round.
+    """
     character_id: str = Field(
-        description="The ID of the character whose resources are being updated."
+        description="The ID of the character whose state is being updated."
     )
     resources: Dict[str, int] = Field(
-        description="The new resource dictionary for the character."
+        description="The character's new, updated dictionary of consumable numerical resources."
     )
+    statuses: Dict[str, str] = Field(
+        description="The character's new, updated dictionary of descriptive statuses."
+    )
+
+class VictoryPointAward(BaseModel):
+    character_id: str
+    points_awarded: int
+    reason: str
 
 
 class PrivateIntel(BaseModel):
@@ -31,10 +40,14 @@ class JudgeOutput(BaseModel):
     """The expected JSON output structure from the Judge LLM."""
 
     crisis_update: str = Field(description="The narrative update for the next round.")
-    updated_resources: List[UpdatedResource] = Field(
-        description="A list of all characters with their updated resources."
+    updated_character_states: List[UpdatedCharacterState] = Field(
+        description="A list containing the complete, updated state (resources and statuses) for EVERY character in the game."
     )
     private_intel_reports: Optional[List[PrivateIntel]] = Field(
         default=None,
         description="A list of secret reports for specific players, generated from successful espionage actions.",
     )
+    victory_point_awards: Optional[List[VictoryPointAward]] = Field(
+        default=None, description="A list of VP awards for the round."
+    )
+

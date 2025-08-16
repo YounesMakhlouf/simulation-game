@@ -12,4 +12,5 @@ __all__ = [
     "CharacterFactory",
     "Character",
     "CharacterNotFound",
+    "Action",
 ]
