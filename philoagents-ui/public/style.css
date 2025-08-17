@@ -7,10 +7,6 @@ body {
     background-color: #121212;
     font-family: 'Lato', sans-serif;
     line-height: 1.6;
-    /* Accessibility improvements */
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
 }
 
 #app {
@@ -28,8 +24,7 @@ body {
     width: 880px;
     height: 620px;
     color: #F5F5F5;
-    font-family: 'Lato', sans-serif;
-    padding: 24px;
+    padding: 1.5rem;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -50,7 +45,8 @@ body {
 }
 
 .action-modal-form textarea,
-.action-modal-form select {
+.action-modal-form select,
+.end-game-form textarea {
     width: 100%;
     padding: 12px;
     margin-bottom: 16px;
@@ -80,7 +76,7 @@ body {
 }
 
 .action-modal-form textarea {
-    height: 80px; /* Increased height for better usability */
+    height: 80px;
     line-height: 1.5;
 }
 
@@ -219,7 +215,7 @@ body {
         width: 90%;
         max-width: 880px;
     }
-    
+
     .base-modal-content {
         padding: 16px;
     }
@@ -278,22 +274,6 @@ body {
     outline: none;
     border-color: #4a90e2;
     box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
-}
-
-.end-game-form textarea {
-    width: 100%;
-    height: 150px;
-    padding: 12px;
-    margin-bottom: 16px;
-    background-color: #2a2a2a;
-    border: 1px solid #555;
-    color: #F5F5F5;
-    font-size: 16px;
-    font-family: 'Lato', sans-serif;
-    border-radius: 6px;
-    box-sizing: border-box;
-    resize: vertical;
-    transition: border-color 0.3s, box-shadow 0.3s;
 }
 
 .end-game-form textarea:focus {

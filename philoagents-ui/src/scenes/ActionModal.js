@@ -1,16 +1,10 @@
-import { BaseModal } from '../classes/BaseModal';
+import {BaseModal} from '../classes/BaseModal';
 
 export class ActionModal extends BaseModal {
     constructor() {
-        super("ActionModal", {
-            titleText: "Action Phase: Plan Your Move",
-            panelX: 50,
-            panelY: 50,
-            panelWidth: 924,
-            panelHeight: 668,
-            closeButtonText: "", // No close button, we'll use a submit button instead
-            resumeGameOnClose: false, // Don't resume game on close
-            closeOnEsc: false // Don't close on ESC
+        super('ActionModal', {
+            titleText: 'Action Phase: Plan Your Move', closeButtonText: '',  // No close button; we use a form submit
+            resumeGameOnClose: false, closeOnEsc: false
         });
         this.gameManager = null;
     }
@@ -22,138 +16,119 @@ export class ActionModal extends BaseModal {
 
     createContent() {
         const playerResources = this.gameManager.gameState.your_character.resources || {};
-
-        // Disable keyboard capture to allow text input in form elements
         this.input.keyboard.disableGlobalCapture();
 
-        // --- Create the HTML Form using Phaser's DOM Element ---
-        // This is a placeholder for the HTML you would write in an external file or string.
-        const formHTML = `
-        <div class="action-modal-form">
-            <h2>Final Action</h2>
-            <div id="final-action-container">
-                <label for="action-type">Action Type:</label>
-                <select id="action-type">
-                    <option value="DIPLOMACY">DIPLOMACY</option>
-                    <option value="MILITARY">MILITARY</option>
-                    <option value="ECONOMIC">ECONOMIC</option>
-                    <option value="ESPIONAGE">ESPIONAGE</option>
-                </select>
+        const content = this.getContentBounds();
 
-                <label for="action-details">Action Details:</label>
-                <textarea id="action-details" placeholder="Specific details of your chosen action..."></textarea>
+        const formElement = this.addScrollableDom(`
 
-                <label for="reasoning">Reasoning:</label>
-                <textarea id="reasoning" placeholder="Your in-character reasoning..."></textarea>
-            </div>
+<div class="action-modal-form" style="box-sizing:border-box; padding:12px 16px 16px;"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
+  <label for="action-details">Action Details:</label>
+  <textarea id="action-details" placeholder="Specific details of your chosen action..."></textarea>
 
-            <h2>Resource Cost</h2>
-            <div id="resource-cost-container">
-                <!-- This will be populated dynamically -->
-            </div>
+  <label for="reasoning">Reasoning:</label>
+  <textarea id="reasoning" placeholder="Your in-character reasoning..."></textarea>
+</div>
 
-            <button id="submit-button">Submit Final Action</button>
-            <p id="error-message">Please fill all required fields.</p>
-        </div>
-    `;
+<h2>Resource Cost</h2>
+<div id="resource-cost-container"></div>
 
-        const formElement = this.add.dom(512, 400).createFromHTML(formHTML);
+<button id="submit-button">Submit Final Action</button>
+<p id="error-message">Please fill all required fields.</p>
+</div> `);
 
-        const resourceContainer = formElement.getChildByID("resource-cost-container");
+
+        // Populate resources
+        const resourceContainer = formElement.getChildByID('resource-cost-container');
         Object.keys(playerResources).forEach((resourceName) => {
-            const resourceDiv = document.createElement("div");
-            resourceDiv.className = "resource-item";
+            const max = playerResources[resourceName] ?? 0;
+            const resourceDiv = document.createElement('div');
+            resourceDiv.className = 'resource-item';
 
-            const label = document.createElement("label");
+            const label = document.createElement('label');
             label.htmlFor = `resource-${resourceName}`;
-            label.innerText = `${resourceName} (Max: ${playerResources[resourceName]}):`;
+            label.innerText = `${resourceName} (Max: ${max}):`;
 
-            const input = document.createElement("input");
-            input.type = "number";
+            const input = document.createElement('input');
+            input.type = 'number';
             input.id = `resource-${resourceName}`;
-            input.className = "resource-input"; // For selecting all resource inputs later
-            input.min = 0;
-            input.max = playerResources[resourceName];
-            input.value = 0;
+            input.className = 'resource-input';
+            input.min = '0';
+            input.max = String(max);
+            input.value = '0';
+            input.addEventListener('input', () => {
+                // Clamp to [0, max]
+                const v = Math.max(0, Math.min(max, parseInt(input.value || '0', 10)));
+                input.value = String(isFinite(v) ? v : 0);
+            });
 
             resourceDiv.appendChild(label);
             resourceDiv.appendChild(input);
             resourceContainer.appendChild(resourceDiv);
         });
-        // Add event listener to the submit button
-        const submitButton = formElement.getChildByID("submit-button");
-        submitButton.addEventListener("click", () => {
-            this.handleSubmit(formElement);
+
+        // Submit
+        const submitButton = formElement.getChildByID('submit-button');
+        submitButton.addEventListener('click', () => this.handleSubmit(formElement));
+
+        // Prevent Phaser keyboard capture when focusing inputs
+        const inputs = formElement.node.querySelectorAll('textarea, input, select');
+        inputs.forEach((el) => {
+            el.addEventListener('focus', () => this.input.keyboard.disableGlobalCapture());
+            el.addEventListener('blur', () => this.input.keyboard.enableGlobalCapture());
         });
 
-        // Add event listeners to prevent Phaser from capturing keyboard events when form elements are focused
-        const textareas = formElement.node.querySelectorAll("textarea");
-        textareas.forEach((textarea) => {
-            textarea.addEventListener("focus", () => {
-                this.input.keyboard.disableGlobalCapture();
-            });
+        // Keep DOM aligned if window/game resizes
+        this.events.on('modal-resize', (bounds) => {
+            formElement.setPosition(bounds.x, bounds.y);
+            formElement.node.style.width = `${bounds.width}px`;
+            formElement.node.style.maxHeight = `${bounds.height}px`;
         });
 
-        // Re-enable keyboard capture when the modal is closed
-        this.events.on("shutdown", () => {
-            this.input.keyboard.enableGlobalCapture();
-        });
+        // Re-enable capture when shutting down
+        this.events.once('shutdown', () => this.input.keyboard.enableGlobalCapture());
     }
 
     handleSubmit(form) {
-        const errorMessageElement = form.getChildByID("error-message");
-        errorMessageElement.style.visibility = "hidden";
+        const errorMessageElement = form.getChildByID('error-message');
+        errorMessageElement.style.visibility = 'hidden';
 
-        // --- 1. VALIDATION ---
-        const requiredFields = ["action-details", "reasoning"];
+        const requiredFields = ['action-details', 'reasoning'];
         let isValid = true;
 
         requiredFields.forEach((id) => {
-            const element = form.getChildByID(id);
-            element.classList.remove("input-error");
-            if (element.value.trim() === "") {
-                element.classList.add("input-error");
+            const el = form.getChildByID(id);
+            el.classList.remove('input-error');
+            if (!el.value || el.value.trim() === '') {
+                el.classList.add('input-error');
                 isValid = false;
             }
         });
 
         if (!isValid) {
-            errorMessageElement.innerText = "Please fill all required text fields.";
-            errorMessageElement.style.visibility = "visible";
+            errorMessageElement.innerText = 'Please fill all required text fields.';
+            errorMessageElement.style.visibility = 'visible';
             return;
         }
 
-        // --- 2. GATHER DATA and CONSTRUCT THE FINAL ACTION OBJECT ---
-
-        // a. Gather resource costs
+        // Gather resource costs
         const resourceCost = {};
-        const resourceInputs = form.node.querySelectorAll(".resource-input"); // Use querySelectorAll
+        const resourceInputs = form.node.querySelectorAll('.resource-input');
         resourceInputs.forEach((input) => {
-            const value = parseInt(input.value, 10);
-            if (value > 0) {
-                // Get the resource name from the input's ID (e.g., "resource-MilitaryPower")
-                const resourceName = input.id.replace("resource-", "");
-                resourceCost[resourceName] = value;
-            }
+            const value = Math.max(0, parseInt(input.value || '0', 10));
+            const name = input.id.replace('resource-', '');
+            if (value > 0) resourceCost[name] = value;
         });
 
-        // b. Construct the final object
         const finalAction = {
             character_id: this.gameManager.playerCharacterId,
-            reasoning: form.getChildByID("reasoning").value,
-            action_type: form.getChildByID("action-type").value,
-            action_details: form.getChildByID("action-details").value,
-            resource_cost: resourceCost, // Add the dynamically gathered costs
+            reasoning: form.getChildByID('reasoning').value,
+            action_type: form.getChildByID('action-type').value,
+            action_details: form.getChildByID('action-details').value,
+            resource_cost: resourceCost
         };
 
-        console.log("Submitting Action Object:", finalAction);
-
-        // --- 3. SUBMIT TO GAMEMANAGER ---
         this.gameManager.submitPlayerAction(finalAction);
-
-        // --- 4. CLOSE MODAL ---
         this.closeModal();
-        // NOTE: We don't resume the 'Game' scene here. We wait for the new round.
-        // The GameManager will handle resuming/restarting scenes after polling.
     }
 }
