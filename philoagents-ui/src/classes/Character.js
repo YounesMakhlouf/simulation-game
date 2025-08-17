@@ -238,12 +238,8 @@ class Character {
     } else {
       this.sprite.body.setVelocity(0);
     }
-    
-    // Update name label position
-    if (this.nameLabel) {
-      this.nameLabel.x = this.sprite.x;
-      this.nameLabel.y = this.sprite.y - 40;
-    }
+
+    this.updateNameLabelPosition();
   }
 
   get position() {
@@ -274,7 +270,7 @@ class Character {
     if (this.nameLabel && this.sprite) {
       this.nameLabel.setPosition(
         this.sprite.x,
-        this.sprite.y - this.sprite.height/2 - 10
+        this.sprite.y - this.sprite.height / 2 - 10
       );
     }
   }

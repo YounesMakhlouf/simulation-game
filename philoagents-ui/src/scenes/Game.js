@@ -1,13 +1,13 @@
-import {Scene} from 'phaser';
-import Character from '../classes/Character';
-import DialogueBox from '../classes/DialogueBox';
-import DialogueManager from '../classes/DialogueManager';
+import {Scene} from "phaser";
+import Character from "../classes/Character";
+import DialogueBox from "../classes/DialogueBox";
+import DialogueManager from "../classes/DialogueManager";
 import {CHARACTER_CONFIG} from "../configs/CharacterConfig";
 import {GameManager} from "../classes/GameManager";
 
 export class Game extends Scene {
     constructor() {
-        super('Game');
+        super("Game");
         this.controls = null;
         this.player = null;
         this.cursors = null;
@@ -37,7 +37,7 @@ export class Game extends Scene {
 
     create() {
         this.gameManager = new GameManager(this, this.playerCharacterId);
-        this.playerConfig = CHARACTER_CONFIG.find(char => char.id === this.playerCharacterId);
+        this.playerConfig = CHARACTER_CONFIG.find((char) => char.id === this.playerCharacterId);
         if (!this.playerConfig) {
             console.error(`FATAL: Configuration for character ID "${this.playerCharacterId}" not found!`);
             this.playerConfig = CHARACTER_CONFIG[0];
@@ -57,42 +57,23 @@ export class Game extends Scene {
 
         this.setupDialogueSystem();
 
-        this.dialogueBox = new DialogueBox(this);
-        this.dialogueText = this.add
-            .text(60, this.game.config.height - maxDialogueHeight - screenPadding + screenPadding, '', {
-                font: "18px monospace",
-                fill: "#ffffff",
-                padding: {x: 20, y: 10},
-                wordWrap: {width: 680},
-                lineSpacing: 6,
-                maxLines: 5
-            })
-            .setScrollFactor(0)
-            .setDepth(30)
-            .setVisible(false);
+        this.scene.run("HUDScene", {gameManager: this.gameManager});
 
-        this.spaceKey = this.input.keyboard.addKey('SPACE');
-
-        // Initialize the dialogue manager
-        this.dialogueManager = new DialogueManager(this);
-        this.dialogueManager.initialize(this.dialogueBox);
-        this.scene.run('HUDScene', {gameManager: this.gameManager});
-
-        this.gameManager.events.on('stateUpdated', this.handleStateUpdate, this);
-        this.gameManager.events.on('phaseChanged', this.handlePhaseChange, this);
-        this.gameManager.events.on('showCrisisUpdate', this.showCrisisModal, this);
-        this.gameManager.events.on('showActionModal', this.showActionModal, this);
-        this.gameManager.events.on('error', this.showError, this);
-        this.gameManager.events.on('showEndGameModal', this.showEndGameModal, this);
+        this.gameManager.events.on("stateUpdated", this.handleStateUpdate, this);
+        this.gameManager.events.on("phaseChanged", this.handlePhaseChange, this);
+        this.gameManager.events.on("showCrisisUpdate", this.showCrisisModal, this);
+        this.gameManager.events.on("showActionModal", this.showActionModal, this);
+        this.gameManager.events.on("error", this.showError, this);
+        this.gameManager.events.on("showEndGameModal", this.showEndGameModal, this);
 
         this.gameManager.startGame();
     }
 
     showEndGameModal() {
         console.log("Game Scene: Game Over. Launching EndGameModal.");
-        this.scene.pause('Game');
-        this.scene.pause('HUDScene');
-        this.scene.launch('EndGameModal', {gameManager: this.gameManager});
+        this.scene.pause("Game");
+        this.scene.pause("HUDScene");
+        this.scene.launch("EndGameModal", {gameManager: this.gameManager});
     }
 
     createDelegates(map, layers) {
@@ -100,12 +81,12 @@ export class Game extends Scene {
 
         this.delegates = [];
 
-        delegateConfigs.forEach(config => {
+        delegateConfigs.forEach((config) => {
             if (config.id !== this.playerCharacterId) {
                 const spawnPoint = map.findObject("Objects", (obj) => obj.name === config.name);
 
                 if (!spawnPoint) {
-                    console.log(config)
+                    console.log(config);
                     console.error(`ERROR: Spawn point not found for delegate: "${config.name}". Check your Tiled map for an object with this exact name in the "DelegateSpawns" object layer.`);
                     return; // Skip creating this character to prevent a crash.
                 }
@@ -122,7 +103,7 @@ export class Game extends Scene {
                     moveSpeed: config.moveSpeed || 40,
                     pauseChance: config.pauseChance || 0.2,
                     directionChangeChance: config.directionChangeChance || 0.3,
-                    handleCollisions: true
+                    handleCollisions: true,
                 });
 
                 this.delegates.push(this[config.id]);
@@ -192,13 +173,14 @@ export class Game extends Scene {
         const spawnPoint = map.findObject("Objects", (obj) => obj.name === "Spawn Point");
         const atlasKey = this.playerConfig.atlas;
         const initialFrame = `${atlasKey}-front`;
-        this.player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, atlasKey, initialFrame)
+        this.player = this.physics.add
+            .sprite(spawnPoint.x, spawnPoint.y, atlasKey, initialFrame)
             .setSize(30, 40)
             .setOffset(0, 6);
 
         this.physics.add.collider(this.player, worldLayer);
 
-        this.delegates.forEach(delegate => {
+        this.delegates.forEach((delegate) => {
             this.physics.add.collider(this.player, delegate.sprite);
         });
 
@@ -212,17 +194,16 @@ export class Game extends Scene {
     createPlayerAnimations(atlasKey) {
         const anims = this.anims;
         const animConfig = [{
-            key: `${atlasKey}-left-walk`, prefix: `${atlasKey}-left-walk-`
+            key: `${atlasKey}-left-walk`, prefix: `${atlasKey}-left-walk-`,
         }, {key: `${atlasKey}-right-walk`, prefix: `${atlasKey}-right-walk-`}, {
-            key: `${atlasKey}-front-walk`, prefix: `${atlasKey}-front-walk-`
-        }, {key: `${atlasKey}-back-walk`, prefix: `${atlasKey}-back-walk-`}];
+            key: `${atlasKey}-front-walk`, prefix: `${atlasKey}-front-walk-`,
+        }, {key: `${atlasKey}-back-walk`, prefix: `${atlasKey}-back-walk-`},];
 
-        animConfig.forEach(config => {
+        animConfig.forEach((config) => {
             anims.create({
-                key: config.key,
-                frames: anims.generateFrameNames(atlasKey, {prefix: config.prefix, start: 0, end: 8, zeroPad: 4}),
-                frameRate: 10,
-                repeat: -1,
+                key: config.key, frames: anims.generateFrameNames(atlasKey, {
+                    prefix: config.prefix, start: 0, end: 8, zeroPad: 4,
+                }), frameRate: 10, repeat: -1,
             });
         });
     }
@@ -248,10 +229,10 @@ export class Game extends Scene {
         this.labelsVisible = true;
 
         // Add ESC key for pause menu
-        this.input.keyboard.on('keydown-ESC', () => {
+        this.input.keyboard.on("keydown-ESC", () => {
             if (!this.dialogueBox.isVisible()) {
                 this.scene.pause();
-                this.scene.launch('PauseMenu');
+                this.scene.launch("PauseMenu");
             }
         });
     }
@@ -262,19 +243,19 @@ export class Game extends Scene {
 
         this.dialogueBox = new DialogueBox(this);
         this.dialogueText = this.add
-            .text(60, this.game.config.height - maxDialogueHeight - screenPadding + screenPadding, '', {
+            .text(60, this.game.config.height - maxDialogueHeight - screenPadding + screenPadding, "", {
                 font: "18px monospace",
                 fill: "#ffffff",
                 padding: {x: 20, y: 10},
                 wordWrap: {width: 680},
                 lineSpacing: 6,
-                maxLines: 5
+                maxLines: 5,
             })
             .setScrollFactor(0)
             .setDepth(30)
             .setVisible(false);
 
-        this.spaceKey = this.input.keyboard.addKey('SPACE');
+        this.spaceKey = this.input.keyboard.addKey("SPACE");
 
         this.dialogueManager = new DialogueManager(this);
         this.dialogueManager.initialize(this.dialogueBox);
@@ -289,9 +270,9 @@ export class Game extends Scene {
 
         this.checkDelegateInteraction();
 
-        this.delegates.forEach(delegate => {
+        this.delegates.forEach((delegate) => {
             delegate.update(this.player, isInDialogue);
-        })
+        });
 
         if (this.controls) {
             this.controls.update(delta);
@@ -350,7 +331,7 @@ export class Game extends Scene {
     }
 
     toggleDelegatesLabels(visible) {
-        this.delegates.forEach(delegate => {
+        this.delegates.forEach((delegate) => {
             if (delegate.nameLabel) {
                 delegate.nameLabel.setVisible(visible);
             }
@@ -369,21 +350,21 @@ export class Game extends Scene {
 
     showCrisisModal(crisisText, roundNumber) {
         console.log(`Game Scene: Launching CrisisModal for round ${roundNumber}.`);
-        this.scene.pause('Game'); // Pause the game world
-        this.scene.launch('CrisisModal', {text: crisisText, round: roundNumber});
+        this.scene.pause("Game"); // Pause the game world
+        this.scene.launch("CrisisModal", {text: crisisText, round: roundNumber});
     }
 
     showIntelModal(intelReports) {
         console.log("Game Scene: Launching IntelModal.");
-        this.scene.pause('Game');
-        this.scene.launch('IntelModal', {intelReports: intelReports});
+        this.scene.pause("Game");
+        this.scene.launch("IntelModal", {intelReports: intelReports});
     }
 
     showActionModal() {
         console.log("Game Scene: Launching ActionModal.");
-        this.scene.pause('Game');
+        this.scene.pause("Game");
         // Pass the gameManager instance so the modal can call back to it
-        this.scene.launch('ActionModal', {gameManager: this.gameManager});
+        this.scene.launch("ActionModal", {gameManager: this.gameManager});
     }
 
     showError(errorMessage) {
