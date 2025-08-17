@@ -1,4 +1,4 @@
-import { BaseModal } from '../classes/BaseModal';
+import {BaseModal} from '../classes/BaseModal';
 
 export class EndGameModal extends BaseModal {
     constructor() {
@@ -26,9 +26,10 @@ export class EndGameModal extends BaseModal {
     }
 
     createContent() {
+        this.input.keyboard.disableGlobalCapture();
         // Instruction text
         this.add.text(512, 220, 'The simulation has concluded. Now, you must answer the final question:\nWhat was the secret force guiding the events of this world?', {
-            fontSize: '20px', color: '#dddddd', align: 'center', wordWrap: { width: 780 }
+            fontSize: '20px', color: '#dddddd', align: 'center', wordWrap: {width: 780}
         }).setOrigin(0.5).setDepth(2);
 
         // --- 2. CREATE THE HTML FORM ---
@@ -48,6 +49,12 @@ export class EndGameModal extends BaseModal {
         const guessInput = formElement.getChildByID('undergame-guess');
         const submitButton = formElement.getChildByID('submit-guess-button');
         const errorText = formElement.getChildByID('error-text');
+        // Prevent Phaser keyboard capture when focusing inputs
+        const inputs = formElement.node.querySelectorAll('textarea, input, select');
+        inputs.forEach((el) => {
+            el.addEventListener('focus', () => this.input.keyboard.disableGlobalCapture());
+            el.addEventListener('blur', () => this.input.keyboard.enableGlobalCapture());
+        });
 
         submitButton.addEventListener('click', async () => {
             const guess = guessInput.value;
@@ -67,14 +74,11 @@ export class EndGameModal extends BaseModal {
 
             try {
                 // Call the ApiService via the GameManager
-                const finalScores = await this.gameManager.api.submitGuessAndGetScores(
-                    this.gameManager.playerCharacterId,
-                    guess
-                );
+                const finalScores = await this.gameManager.api.submitGuessAndGetScores(this.gameManager.playerCharacterId, guess);
 
                 // Stop this scene and launch the final scoreboard
                 this.closeModal();
-                this.scene.start('ScoreboardScene', { scores: finalScores });
+                this.scene.start('ScoreboardScene', {scores: finalScores});
 
             } catch (apiError) {
                 console.error("API Error during score calculation:", apiError);
@@ -84,5 +88,6 @@ export class EndGameModal extends BaseModal {
                 submitButton.textContent = 'Submit Final Guess';
             }
         });
+        this.events.once('shutdown', () => this.input.keyboard.enableGlobalCapture());
     }
 }

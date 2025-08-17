@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from typing_extensions import TypedDict
 
 from philoagents.domain import Action, Character
-from philoagents.domain.resources import PrivateIntel
+from philoagents.domain.resources import PrivateIntel, VictoryPointAward
 
 
 class ActionState(TypedDict):
@@ -55,4 +55,5 @@ class ResolutionState(TypedDict):
     current_game_state_json: Optional[str]
     crisis_update: Optional[str]
     updated_characters: Optional[Dict[str, Character]]
+    victory_point_awards: Optional[List[VictoryPointAward]]
     private_intel_reports: Optional[List[PrivateIntel]]

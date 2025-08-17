@@ -21,21 +21,20 @@ export class ActionModal extends BaseModal {
         const content = this.getContentBounds();
 
         const formElement = this.addScrollableDom(`
-
-<div class="action-modal-form" style="box-sizing:border-box; padding:12px 16px 16px;"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
-  <label for="action-details">Action Details:</label>
-  <textarea id="action-details" placeholder="Specific details of your chosen action..."></textarea>
-
-  <label for="reasoning">Reasoning:</label>
-  <textarea id="reasoning" placeholder="Your in-character reasoning..."></textarea>
-</div>
-
-<h2>Resource Cost</h2>
-<div id="resource-cost-container"></div>
-
-<button id="submit-button">Submit Final Action</button>
-<p id="error-message">Please fill all required fields.</p>
-</div> `);
+            <div class="action-modal-form" style="box-sizing:border-box; padding:12px 16px 16px;"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
+              <label for="action-details">Action Details:</label>
+              <textarea id="action-details" placeholder="Specific details of your chosen action..."></textarea>
+            
+              <label for="reasoning">Reasoning:</label>
+              <textarea id="reasoning" placeholder="Your in-character reasoning..."></textarea>
+            </div>
+            
+            <h2>Resource Cost</h2>
+            <div id="resource-cost-container"></div>
+            
+            <button id="submit-button">Submit Final Action</button>
+            <p id="error-message">Please fill all required fields.</p>
+            </div> `);
 
 
         // Populate resources

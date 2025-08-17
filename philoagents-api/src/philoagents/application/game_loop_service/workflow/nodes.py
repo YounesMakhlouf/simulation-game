@@ -102,4 +102,5 @@ async def resolution_node(state: ResolutionState) -> Dict:
         "crisis_update": judge_output.crisis_update,
         "updated_characters": updated_characters,
         "private_intel_reports": judge_output.private_intel_reports,
+        "victory_point_awards": judge_output.victory_point_awards,
     }
