@@ -21,17 +21,18 @@ export class CrisisModal extends BaseModal {
         if (this.title) {
             this.title.setText(`Round ${this.roundNumber} - Situation Report`);
         }
-        
+        const b = this.getContentBounds();
         // Add crisis text content
-        this.add.text(
-            120, 
-            200, 
+        const text = this.add.text(
+            b.x,
+            b.y,
             this.crisisText, 
             { 
                 fontSize: '20px', 
-                color: '#dddddd', 
-                wordWrap: { width: 784 } 
+                color: '#dddddd',
+                wordWrap: { width: b.width, useAdvancedWrap: true },
+                lineSpacing: 6
             }
-        );
+        ).setOrigin(0, 0);
     }
 }
