@@ -8,6 +8,7 @@ import {CrisisModal} from "./scenes/CrisisModal";
 import {ActionModal} from "./scenes/ActionModal";
 import {IntelModal} from "./scenes/IntelModal";
 import {EndGameModal} from "./scenes/EndGameModal";
+import {InstructionsModal} from "./scenes/InstructionsModal";
 import {ScoreboardScene} from "./scenes/ScoreboardScene";
 import {AudioManager} from "./classes/AudioManager";
 
@@ -22,7 +23,7 @@ const config = {
     dom: {
         createContainer: true
     },
-    scene: [Preloader, MainMenu, Game, PauseMenu, CharacterSelect, HUDScene, CrisisModal, ActionModal, IntelModal, EndGameModal, ScoreboardScene],
+    scene: [Preloader, MainMenu, Game, PauseMenu, CharacterSelect, HUDScene, CrisisModal, ActionModal, IntelModal, EndGameModal, InstructionsModal, ScoreboardScene],
     physics: {
         default: "arcade", arcade: {
             gravity: {y: 0},
