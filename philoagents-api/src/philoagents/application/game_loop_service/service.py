@@ -27,10 +27,12 @@ class GameLoopService:
         initial_state: GameState,
         undergame_plot: str,
         factory: CharacterFactory,
-        max_rounds: int = 5, #TODO: increase after we're done testing. Needs higher model limits
+        undergame_plot_display: str,
+        max_rounds: int = 4, #TODO: increase after we're done testing. Needs higher model limits
     ):
         self.game_state = initial_state
         self.undergame_plot = undergame_plot
+        self.undergame_plot_display = undergame_plot_display
         self.factory = factory
         self.submitted_actions: Dict[str, Action] = {}
         self.max_rounds = max_rounds

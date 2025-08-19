@@ -212,5 +212,5 @@ async def end_game(
 
     # --- 4. Return the complete scoreboard ---
     return ScoreboardResponse(
-        scores=formatted_scores, actual_undergame=service.undergame_plot
+        scores=formatted_scores, actual_undergame=service.undergame_plot_display
     )

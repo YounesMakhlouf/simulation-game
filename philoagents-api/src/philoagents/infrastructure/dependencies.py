@@ -14,10 +14,12 @@ character_factory_instance = scenario_loader.create_character_factory()
 
 initial_game_state = scenario_loader.create_initial_game_state()
 undergame_plot = scenario_loader.get_undergame_plot()
+undergame_plot_display = scenario_loader.get_undergame_plot_for_display()
 game_service_instance = GameLoopService(
     initial_state=initial_game_state,
     undergame_plot=undergame_plot,
     factory=character_factory_instance,
+    undergame_plot_display=undergame_plot_display
 )
 print(f"Game service initialized for scenario: '{scenario_loader.manifest['name']}'")
 

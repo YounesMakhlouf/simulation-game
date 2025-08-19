@@ -23,7 +23,6 @@ export class InstructionsModal extends BaseModal {
 
         // Function to recenter text
         const recenter = (bounds) => {
-            // Phaser text doesn't auto-shrink, so measure height after wrap
             const textHeight = this.instructionsText.height;
             const textWidth = this.instructionsText.width;
 

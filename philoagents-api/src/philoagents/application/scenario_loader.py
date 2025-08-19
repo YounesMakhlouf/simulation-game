@@ -52,6 +52,10 @@ class ScenarioLoader:
         """Returns the secret undergame plot for the scenario."""
         return self.manifest["undergame_plot"]
 
+    def get_undergame_plot_for_display(self) -> str:
+        """Returns the secret undergame plot for the scenario."""
+        return self.manifest["undergame_plot_display"]
+
     def get_rag_sources(self) -> List[Dict]:
         """Returns the list of RAG sources for the scenario."""
         return self.rag_sources_data
