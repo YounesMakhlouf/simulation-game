@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from pydantic import BaseModel, Field
 
@@ -37,7 +37,7 @@ class Character(BaseModel):
     goals: str = Field(description="The primary objectives this character aims to achieve during the simulation.")
     resources: Dict[str, int] = Field(
         description="A dictionary of the character's starting resources (e.g., {'DiplomaticInfluence': 100, 'Spies': 5}).")
-    statuses: Dict[str, str] = Field(default_factory=dict,
+    statuses: Dict[str, Union[str, int, bool]] = Field(default_factory=dict,
                                      description="A dictionary of statuses (e.g.,  { 'PeaceNegotiationWithRome': 'Ongoing, 'SenateSupport': 'High'}).")
     known_intel: List[str] = Field(default_factory=list,
         description="A list of intelligence reports this character has received.", )

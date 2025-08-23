@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +13,7 @@ class UpdatedCharacterState(BaseModel):
     resources: Dict[str, int] = Field(
         description="The character's new, updated dictionary of consumable numerical resources."
     )
-    statuses: Dict[str, str] = Field(
+    statuses: Dict[str, Union[str, int, bool]] = Field(
         description="The character's new, updated dictionary of descriptive statuses."
     )
 

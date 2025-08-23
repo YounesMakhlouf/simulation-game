@@ -31,7 +31,7 @@ def get_character_action_chain():
         A compiled LCEL chain ready for invocation.
     """
     # Use a low temperature for more deterministic, strategic, and less "creative" actions.
-    model = get_chat_model(temperature=0.2)
+    model = get_chat_model(temperature=0.2, model_name=settings.GROQ_LLM_MODEL_JUDGE)
     structured_llm = model.with_structured_output(Action)
     prompt = ChatPromptTemplate.from_messages(
         [

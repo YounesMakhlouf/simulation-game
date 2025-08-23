@@ -56,6 +56,7 @@ Based on ALL of the information above, decide on a single, concrete action. Your
 {% raw %}
 ```json
 {
+  "character_id" "The character's name",
   "reasoning": "A brief, in-character explanation for why you are taking this action, consistent with your goals and all available information.",
   "action_type": "DIPLOMACY | MILITARY | ESPIONAGE | ECONOMIC",
   "action_details": "A clear, specific description of your action.",
@@ -213,7 +214,7 @@ Process the submitted player actions and generate the outcome for this round. Yo
 2.  **Generate Private Intel:** For any successful `ESPIONAGE` action, you **MUST** generate a corresponding entry in the `private_intel_reports` list. The report should contain a valuable, secret piece of information that gives the player a strategic advantage. Make the intel specific and impactful.
 3.  **Update Character States:** For each character, calculate their new `resources` and `statuses`.
     - **Resources** are consumable assets (like Treasury, Armies). Subtract the costs of actions.
-    - **Statuses** are temporary conditions resulting from actions. For example, a successful diplomatic action might create a new status like `"AllianceWithScipio": "Active"`. An army's failed march might result in `"ArmyMorale": "Wavering"`. Update or remove existing statuses as needed.
+    - **Statuses** are temporary conditions resulting from actions. For example, a successful diplomatic action might create a new status like `"AllianceWithScipio": "Active"`. An army's failed march might result in `"ArmyMorale": "Wavering"`. Their values can be descriptive strings (e.g., "Ongoing", "High"), booleans (e.g., true), or numbers (e.g., to count specific events like `VillagesBurned: 5`). Update or remove existing statuses as needed.
 4.  **Write Crisis Update:** Craft a narrative `crisis_update` that describes what happened this round. This text should seamlessly blend the (potentially twisted) outcomes of the player actions with new events that serve as clues to the Undergame. Make the world feel alive and consequential.
 Do not state the Hidden Rule. Only show its consequences.
 **CRITICAL RULE:** When writing the `crisis_update`, you **MUST NOT** reveal the specific contents of any `private_intel_reports` you generated. The public update can mention that an espionage action occurred or that rumors are flying, but the concrete, valuable information is for the player's eyes only.
