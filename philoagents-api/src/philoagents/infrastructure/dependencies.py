@@ -19,7 +19,7 @@ game_service_instance = GameLoopService(
     initial_state=initial_game_state,
     undergame_plot=undergame_plot,
     factory=character_factory_instance,
-    undergame_plot_display=undergame_plot_display
+    undergame_plot_display=undergame_plot_display,
 )
 print(f"Game service initialized for scenario: '{scenario_loader.manifest['name']}'")
 

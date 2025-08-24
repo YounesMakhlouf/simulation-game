@@ -7,6 +7,7 @@ class UpdatedCharacterState(BaseModel):
     """
     Defines the complete, updated state for a single character after a round.
     """
+
     character_id: str = Field(
         description="The ID of the character whose state is being updated."
     )
@@ -16,6 +17,7 @@ class UpdatedCharacterState(BaseModel):
     statuses: Dict[str, Union[str, int, bool]] = Field(
         description="The character's new, updated dictionary of descriptive statuses."
     )
+
 
 class VictoryPointAward(BaseModel):
     character_id: str
@@ -50,4 +52,3 @@ class JudgeOutput(BaseModel):
     victory_point_awards: Optional[List[VictoryPointAward]] = Field(
         default=None, description="A list of VP awards for the round."
     )
-

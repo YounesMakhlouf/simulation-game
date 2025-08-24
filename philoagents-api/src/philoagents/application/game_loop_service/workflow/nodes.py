@@ -12,7 +12,6 @@ from philoagents.application.game_loop_service.workflow.state import (
 from philoagents.domain import Character
 from philoagents.domain.resources import UpdatedCharacterState
 
-
 # --- Delegate Action Agent Node ---
 
 
@@ -56,7 +55,8 @@ async def action_decision_node(state: ActionState) -> Dict:
 
 
 def _apply_resource_updates(
-    characters: Dict[str, Character], updated_character_state: List[UpdatedCharacterState]
+    characters: Dict[str, Character],
+    updated_character_state: List[UpdatedCharacterState],
 ) -> Dict[str, Character]:
     """
     A helper function to safely update character resources based on the Judge's output.
@@ -88,7 +88,7 @@ async def resolution_node(state: ResolutionState) -> Dict:
         {
             "undergame_plot": state["undergame_plot"],
             "actions_json": actions_json_str,
-            "current_game_state_json": current_game_state_json
+            "current_game_state_json": current_game_state_json,
         }
     )
 
