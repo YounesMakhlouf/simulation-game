@@ -1101,7 +1101,7 @@ wheels = [
 
 [[package]]
 name = "langgraph"
-version = "0.6.5"
+version = "0.6.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain-core" },
@@ -1111,9 +1111,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/ea/ce85312450e98a01d0974da404fa7572f2a90ec01013f8d2dfd94b714b67/langgraph-0.6.5.tar.gz", hash = "sha256:59639927997457fe04f802b39f0e7179cedf8db1cf85f33db764de02ae23c2f0", size = 455213, upload-time = "2025-08-13T23:42:35.063Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/2b/59f0b2985467ec84b006dd41ec31c0aae43a7f16722d5514292500b871c9/langgraph-0.6.6.tar.gz", hash = "sha256:e7d3cefacf356f8c01721b166b67b3bf581659d5361a3530f59ecd9b8448eca7", size = 465452, upload-time = "2025-08-20T04:02:13.915Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b4/09/93774886995cccb9110280887f7b489e5b951bbc928f078a9788254290be/langgraph-0.6.5-py3-none-any.whl", hash = "sha256:042b2ee7af6f308659520eea5ba6def50f2d109475691666045850d0661b1082", size = 153154, upload-time = "2025-08-13T23:42:33.263Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/ef/81fce0a80925cd89987aa641ff01573e3556a24f2d205112862a69df7fd3/langgraph-0.6.6-py3-none-any.whl", hash = "sha256:a2283a5236abba6c8307c1a485c04e8a0f0ffa2be770878782a7bf2deb8d7954", size = 153274, upload-time = "2025-08-20T04:02:12.251Z" },
 ]
 
 [[package]]
@@ -1159,15 +1159,15 @@ wheels = [
 
 [[package]]
 name = "langgraph-sdk"
-version = "0.2.0"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "orjson" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/3e/3dc45dc7682c9940db9edaf8773d2e157397c5bd6881f6806808afd8731e/langgraph_sdk-0.2.0.tar.gz", hash = "sha256:cd8b5f6595e5571be5cbffd04cf936978ab8f5d1005517c99715947ef871e246", size = 72510, upload-time = "2025-07-22T17:31:06.745Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/50/1f5e4d129e3969973674db01bf5dcb85e2233e5e4fdffa53eefff1399902/langgraph_sdk-0.2.3.tar.gz", hash = "sha256:17398aeae0f937cae1c8eb9027ada2969abdb50fe8ed3246c78f543b679cf959", size = 78468, upload-time = "2025-08-21T23:01:06.674Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/03/a8ab0e8ea74be6058cb48bb1d85485b5c65d6ea183e3ee1aa8ca1ac73b3e/langgraph_sdk-0.2.0-py3-none-any.whl", hash = "sha256:150722264f225c4d47bbe7394676be102fdbf04c4400a0dd1bd41a70c6430cc7", size = 50569, upload-time = "2025-07-22T17:31:04.582Z" },
+    { url = "https://files.pythonhosted.org/packages/06/51/e6e3eb6b3cbad394d00cad128155781bc01e672ff01c5fc1c8a627b35a92/langgraph_sdk-0.2.3-py3-none-any.whl", hash = "sha256:059edfe2f62708c2e54239e170f5a33f796d456dbdbde64276c16cac8b97ba99", size = 52603, upload-time = "2025-08-21T23:01:05.379Z" },
 ]
 
 [[package]]
@@ -1715,7 +1715,7 @@ wheels = [
 
 [[package]]
 name = "opik"
-version = "1.8.27"
+version = "1.8.33"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3-stubs", extra = ["bedrock-runtime"] },
@@ -1734,9 +1734,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "uuid6" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/30/622c1fa0c83a26f2f90172287748664c0691264303a381c82e2a6fcff97d/opik-1.8.27.tar.gz", hash = "sha256:5abf20801db9c689c937024ce0eae7dfb52dd6b8670359e4f231923a36864f94", size = 360315, upload-time = "2025-08-14T14:31:54.721Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/71/a66b3bd7f8ba85d7dcd0fcf6e95ffb952dc6cf5db4d64dfd91412da6498b/opik-1.8.33.tar.gz", hash = "sha256:ba2c62b980f1d3a9e026dc1daf090170710068e361d4e946eed7de57fb2211b3", size = 363893, upload-time = "2025-08-22T07:49:27.418Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/08/11/fc73eafd97bd97a18aad96fd92f4696c24eac714bdf73310fc56780b8c43/opik-1.8.27-py3-none-any.whl", hash = "sha256:ae6833225e98955e8d73c5a91d7423f692a8d22acc2fb817658a022411fb00a3", size = 676322, upload-time = "2025-08-14T14:31:52.828Z" },
+    { url = "https://files.pythonhosted.org/packages/94/c7/260d0aa7b06983a5d35fde010f7b21d6c077a79dc88c8cdd0991ffb84283/opik-1.8.33-py3-none-any.whl", hash = "sha256:202e4c2d709656026598fec1e50fea577784c461f04245910ec512f1549d4fe3", size = 681544, upload-time = "2025-08-22T07:49:25.174Z" },
 ]
 
 [[package]]
@@ -1889,10 +1889,10 @@ requires-dist = [
     { name = "langchain-groq", specifier = ">=0.3.7" },
     { name = "langchain-huggingface", specifier = ">=0.3.1" },
     { name = "langchain-mongodb", specifier = ">=0.6.2" },
-    { name = "langgraph", specifier = ">=0.6.5" },
+    { name = "langgraph", specifier = ">=0.6.6" },
     { name = "langgraph-checkpoint-mongodb", specifier = ">=0.1.4" },
     { name = "loguru", specifier = ">=0.7.3" },
-    { name = "opik", specifier = ">=1.8.27" },
+    { name = "opik", specifier = ">=1.8.33" },
     { name = "pre-commit", specifier = ">=4.3.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },

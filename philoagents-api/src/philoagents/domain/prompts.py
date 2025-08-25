@@ -56,7 +56,7 @@ Based on ALL of the information above, decide on a single, concrete action. Your
 {% raw %}
 ```json
 {
-  "character_id" "The character's name",
+  "character_id": "The character's name",
   "reasoning": "A brief, in-character explanation for why you are taking this action, consistent with your goals and all available information.",
   "action_type": "DIPLOMACY | MILITARY | ESPIONAGE | ECONOMIC",
   "action_details": "A clear, specific description of your action.",

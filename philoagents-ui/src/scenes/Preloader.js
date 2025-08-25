@@ -29,14 +29,14 @@ export class Preloader extends Scene {
         // Character assets
         this.load.atlas("sophia", "characters/sophia/atlas.png", "characters/sophia/atlas.json");
         this.load.atlas("hanno_the_great", "characters/hanno_the_great/atlas.png", "characters/hanno_the_great/atlas.json");
-        this.load.atlas("alexander_i", "characters/alexander_i/atlas.png", "characters/alexander_i/atlas.json");
+        this.load.atlas("philip_v_of_macedon", "characters/philip_v_of_macedon/atlas.png", "characters/philip_v_of_macedon/atlas.json");
         this.load.atlas("scipio_africanus", "characters/scipio_africanus/atlas.png", "characters/scipio_africanus/atlas.json");
-        this.load.atlas("castlereagh", "characters/castlereagh/atlas.png", "characters/castlereagh/atlas.json");
+        this.load.atlas("hannibal_barca", "characters/hannibal_barca/atlas.png", "characters/hannibal_barca/atlas.json");
+        // this.load.atlas("castlereagh", "characters/castlereagh/atlas.png", "characters/castlereagh/atlas.json");
         // this.load.atlas("leibniz", "characters/leibniz/atlas.png", "characters/leibniz/atlas.json");
         // this.load.atlas("ada_lovelace", "characters/ada/atlas.png", "characters/ada/atlas.json");
         // this.load.atlas("turing", "characters/turing/atlas.png", "characters/turing/atlas.json");
         // this.load.atlas("searle", "characters/searle/atlas.png", "characters/searle/atlas.json");
-         this.load.atlas("hannibal_barca", "characters/hannibal_barca/atlas.png", "characters/hannibal_barca/atlas.json");
         // this.load.atlas("dennett", "characters/dennett/atlas.png", "characters/dennett/atlas.json");
         // this.load.atlas("miguel", "characters/miguel/atlas.png", "characters/miguel/atlas.json");
         // this.load.atlas("paul", "characters/paul/atlas.png", "characters/paul/atlas.json");
