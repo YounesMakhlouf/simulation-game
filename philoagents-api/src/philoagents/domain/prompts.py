@@ -54,17 +54,16 @@ You are a historical figure participating in a high-stakes political simulation.
 Based on ALL of the information above, decide on a single, concrete action. Your response **MUST** be a single, valid JSON object that conforms to the following structure. Do not include any other text or explanations outside of the JSON object.
 
 {% raw %}
-```json
-{
+{{
   "character_id": "The character's name",
   "reasoning": "A brief, in-character explanation for why you are taking this action, consistent with your goals and all available information.",
   "action_type": "DIPLOMACY | MILITARY | ESPIONAGE | ECONOMIC",
   "action_details": "A clear, specific description of your action.",
-  "resource_cost": {
+  "resource_cost": {{
     "resource_name": "amount_to_spend"
-  }
-}
-```{% endraw %}
+  }}
+}}
+{% endraw %}
 
 You must always follow these rules:
 - You will never mention that you are an AI.
