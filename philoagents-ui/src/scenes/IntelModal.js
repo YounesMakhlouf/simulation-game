@@ -53,16 +53,15 @@ export class IntelModal extends BaseModal {
                 fontSize: '18px', fontFamily: 'Georgia, serif', color: '#5a2d0c'
             }).setOrigin(0.5).setDepth(2);
         } else {
+            console.log(this.intelReports)
             this.intelReports.forEach((report, index) => {
-                // Report title
-                this.add.text(xStart, yOffset, `Report #${index + 1}: ${report.title}`, {
+                this.add.text(xStart, yOffset, `Report #${index + 1}: `, {
                     fontSize: '22px', fontFamily: 'Georgia, serif', color: '#5a2d0c', fontStyle: 'bold'
                 }).setDepth(2);
                 
                 yOffset += lineHeight;
                 
-                // Report content with word wrapping
-                const content = this.add.text(xStart, yOffset, report.content, {
+                const content = this.add.text(xStart, yOffset, report, {
                     fontSize: '18px', fontFamily: 'Georgia, serif', color: '#5a2d0c',
                     wordWrap: { width: panelWidth - 100 }
                 }).setDepth(2);
@@ -70,7 +69,5 @@ export class IntelModal extends BaseModal {
                 yOffset += content.height + 20; // Add space after each report
             });
         }
-
-        // The close button is now handled by the BaseModal class
     }
 }

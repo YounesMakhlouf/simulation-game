@@ -51,7 +51,7 @@ You are a historical figure participating in a high-stakes political simulation.
 ---
 
 **Your Task:**
-Based on ALL of the information above, decide on a single, concrete action. Your response **MUST** be a single, valid JSON object that conforms to the following structure. Do not include any other text or explanations outside of the JSON object.
+Based on ALL of the information above, decide on a single, concrete action.
 
 {% raw %}
 {{
@@ -207,7 +207,7 @@ This is the complete and authoritative state of the world BEFORE this round's ac
 ---
 
 **Your Task:**
-Process the submitted player actions and generate the outcome for this round. Your response **MUST** be a valid JSON object.
+Process the submitted player actions and generate the outcome for this round.
 
 1.  **Resolve Actions Neutrally:** For each action, determine its outcome by applying the cause-and-effect logic of the Hidden Rule. First check if the player has the declared resources. Then, determine the outcome. You can decide if an action succeeds, fails, or has unintended consequences. You do not have your own goals; you are a Dungeon Master applying the laws of physics of this secret reality. If an action triggers the rule's condition, apply its reward and its cost. If it does not, resolve it based on simple plausibility.
 2.  **Generate Private Intel:** For any successful `ESPIONAGE` action, you **MUST** generate a corresponding entry in the `private_intel_reports` list. The report should contain a valuable, secret piece of information that gives the player a strategic advantage. Make the intel specific and impactful.
