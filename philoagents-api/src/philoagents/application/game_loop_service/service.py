@@ -1,5 +1,4 @@
 import asyncio
-import json
 from typing import Dict, List, Optional
 
 from opik.integrations.langchain import OpikTracer

@@ -44,7 +44,7 @@ def main(scenario_path: Path, temperature: float, max_samples: int) -> None:
         )
         return
 
-    logger.info(f"--- Starting Evaluation Dataset Generation ---")
+    logger.info("--- Starting Evaluation Dataset Generation ---")
     logger.info(f"Scenario Path: {path_to_load}")
     logger.info(
         f"Generation Parameters: temperature={temperature}, max_samples={max_samples}"

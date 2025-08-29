@@ -1,5 +1,5 @@
 from .action import Action
-from .character import Character, CharacterExtract
+from .character import Character
 from .character_factory import CharacterFactory
 from .evaluation import EvaluationDataset, EvaluationDatasetSample
 from .exceptions import CharacterNotFound

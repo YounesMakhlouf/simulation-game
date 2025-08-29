@@ -27,11 +27,6 @@ class GameStatusResponse(BaseModel):
     is_game_over: bool
 
 
-class EndGameRequest(BaseModel):
-    player_character_id: str
-    undergame_guess: str
-
-
 class CharacterProfile(BaseModel):
     """A simplified character model for the selection screen."""
 
