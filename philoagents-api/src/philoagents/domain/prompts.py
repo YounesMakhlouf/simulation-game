@@ -298,6 +298,11 @@ Summary of your conversation so far:
 Retrieved facts relevant to this conversation:
 {{retrieved_context}}
 ---
+If you need more factual information about characters, their works, ideas, or historical context,
+you may call the **available tools**. Do not write out the function call in text.
+Use the provided tool-calling interface instead.
+---
+
 The conversation continues now.
 """
 DELEGATE_CONVERSATIONAL_PROMPT = Prompt(
