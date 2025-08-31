@@ -1,53 +1,6 @@
-<table style="border-collapse: collapse; border: none;">
-  <tr style="border: none;">
-    <td width="20%" style="border: none;">
-      <a href="https://theneuralmaze.substack.com/" aria-label="The Neural Maze">
-        <img src="https://avatars.githubusercontent.com/u/151655127?s=400&u=2fff53e8c195ac155e5c8ee65c6ba683a72e655f&v=4" alt="The Neural Maze Logo" width="150"/>
-      </a>
-    </td>
-    <td width="80%" style="border: none;">
-      <div>
-        <h2>📬 Stay Updated</h2>
-        <p><b><a href="https://theneuralmaze.substack.com/">Join The Neural Maze</a></b> and learn to build AI Systems that actually work, from principles to production. Every Wednesday, directly to your inbox. Don't miss out!
-</p>
-      </div>
-    </td>
-  </tr>
-</table>
-
-<p align="center">
-  <a href="https://theneuralmaze.substack.com/">
-    <img src="https://img.shields.io/static/v1?label&logo=substack&message=Subscribe%20Now&style=for-the-badge&color=black&scale=2" alt="Subscribe Now" height="40">
-  </a>
-</p>
-
-<table style="border-collapse: collapse; border: none;">
-  <tr style="border: none;">
-    <td width="20%" style="border: none;">
-      <a href="https://decodingml.substack.com/" aria-label="Decoding ML">
-        <img src="https://github.com/user-attachments/assets/f2f2f9c0-54b7-4ae3-bf8d-23a359c86982" alt="Decoding ML Logo" width="150"/>
-      </a>
-    </td>
-    <td width="80%" style="border: none;">
-      <div>
-        <h2>📬 Stay Updated</h2>
-        <p><b><a href="https://decodingml.substack.com/">Join Decoding ML</a></b> for proven content on designing, coding, and deploying production-grade AI systems with software engineering and MLOps best practices to help you ship AI applications. Every week, straight to your inbox.</p>
-      </div>
-    </td>
-  </tr>
-</table>
-
-<p align="center">
-  <a href="https://decodingml.substack.com/">
-    <img src="https://img.shields.io/static/v1?label&logo=substack&message=Subscribe%20Now&style=for-the-badge&color=black&scale=2" alt="Subscribe Now" height="40">
-  </a>
-</p>
-
-------
-
 # 🚀 Installation and Usage Guide
 
-This guide will help you set up and run a ...
+This guide will help you set up and run the project.
 
 # 📑 Table of Contents
 
@@ -62,7 +15,7 @@ This guide will help you set up and run a ...
 
 ## Local Tools
 
-For all the modules, you'll need the following tools installed locally:
+You'll need the following tools installed locally:
 
 | Tool | Version | Purpose | Installation Link |
 |------|---------|---------|------------------|
@@ -75,14 +28,14 @@ For all the modules, you'll need the following tools installed locally:
 <details>
 <summary><b>📌 Windows users also need to install WSL (Click to expand)</b></summary>
 
-We will be using Unix commands across the course, so if you are using Windows, you will need to **install WSL**, which will install a Linux kernel on your Windows machine and allow you to use the Unix commands from our course (this is the recommended way to write software on Windows). 
+We will be using Unix commands, so if you are using Windows, you will need to **install WSL**, which will install a Linux kernel on your Windows machine and allow you to use the Unix commands (this is the recommended way to write software on Windows). 
 
 🔗 [Follow this guide to install WSL](https://www.youtube.com/watch?v=YByZ_sOOWsQ).
 </details>
 
 ## Cloud Services
 
-Also, the course requires access to these cloud services. The authentication to these services is done by adding the corresponding environment variables to the `.env` file:
+Also, the project requires access to these cloud services. The authentication to these services is done by adding the corresponding environment variables to the `.env` file:
 
 | Service | Purpose | Cost | Environment Variable | Setup Guide | Starting with Module |
 |---------|---------|------|---------------------|-------------| ---------------------|
@@ -104,7 +57,7 @@ But, in case you want to deploy the code, you'll need to setup the following ser
 
 Start by cloning the repository and navigating to the `philoagents-api` project directory:
 ```
-git clone https://github.com/neural-maze/philoagents-course.git
+git clone https://github.com/YounesMakhlouf/simulation-game.git
 cd philoagents-course/philoagents-api
 ```
 
@@ -147,7 +100,6 @@ The project follows a clean architecture structure commonly used in production P
 ```bash
 philoagents-api/
     ├── data/                  # Data files
-    ├── notebooks/             # Notebooks
     ├── src/philoagents/       # Main package directory
     │   ├── application/       # Application layer
     │   ├── domain/            # Domain layer
@@ -183,13 +135,9 @@ From the root `philoagents-course` directory, to build the Docker images (withou
 make infrastructure-build
 ```
 
-# ⚡️ Running the Code for Each Lesson
+# ⚡️ Running the Code
 
 After you have set up your environment (through the `.env` file) and local infrastructure (through Docker), you are ready to run and test out the game simulation.
-
-## Modules 1, 2, 3, 4 and 6
-
-As most of the modules are coupled, you must test them all at once.
 
 First, from the root `philoagents-course` directory, populate the long term memory within your MongoDB instance (required for agentic RAG) with the following command:
 ```bash
@@ -209,7 +157,7 @@ Which will open the game UI, similar to the screenshot below:
 
 To see the instructions for playing the game, you can click on the `Instructions` button. Click the `Let's Play!` button to start the game.
 
-Now you can start playing the game, wander around the town and talk to our philosophers, as seen in the screenshot below:
+Now you can start playing the game, wander around the town and talk to fellow delegates, as seen in the screenshot below:
 
 ![Philosopher Town](static/game_socrates_example.png)
 
@@ -228,11 +176,7 @@ To delete the long term memory from your MongoDB instance, you can run the follo
 make delete-long-term-memory
 ```
 
-## Module 5
-
-Only module 5 on evaluation and monitoring has its own instructions.
-
-First, to visualize the prompt traces, as seen in the screenshot below, visit [Opik](https://rebrand.ly/philoagents-opik-dashboard).
+To visualize the prompt traces, as seen in the screenshot below, visit [Opik](https://rebrand.ly/philoagents-opik-dashboard).
 
 ![Opik](static/opik_monitoring_example.png)
 
