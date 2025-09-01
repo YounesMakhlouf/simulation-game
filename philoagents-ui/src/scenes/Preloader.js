@@ -10,7 +10,6 @@ export class Preloader extends Scene {
 
         // General assets
         this.load.image("background", "hannibal_crossing_the_alps.png");
-        this.load.image("logo", "logo.png");
         this.load.image("hannibal_barca_portrait", "images/portraits/hannibal_barca.webp");
         this.load.image("hanno_the_great_portrait", "images/portraits/hanno_the_great.webp");
         this.load.image("scipio_africanus_portrait", "images/portraits/scipio_africanus.webp");

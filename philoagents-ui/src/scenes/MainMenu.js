@@ -1,31 +1,30 @@
-import {Scene} from 'phaser';
+import {Scene} from "phaser";
 
 export class MainMenu extends Scene {
     constructor() {
-        super('MainMenu');
+        super("MainMenu");
     }
 
     create() {
-        this.add.image(0, 0, 'background').setOrigin(0, 0);
-        // this.add.image(510, 260, 'logo').setScale(0.55); // TODO: See if we want to get this back
+        this.add.image(0, 0, "background").setOrigin(0, 0);
 
         const centerX = this.cameras.main.width / 2;
         const startY = 524;
         const buttonSpacing = 70;
 
-        this.createButton(centerX, startY, 'Let\'s Play!', () => {
-            this.scene.start('CharacterSelect');
+        this.createButton(centerX, startY, "Let's Play!", () => {
+            this.scene.start("CharacterSelect");
         });
 
-        this.createButton(centerX, startY + buttonSpacing, 'Instructions', () => {
-            this.scene.launch('InstructionsModal');
+        this.createButton(centerX, startY + buttonSpacing, "Instructions", () => {
+            this.scene.launch("InstructionsModal");
         });
 
-        this.createButton(centerX, startY + buttonSpacing * 2, 'Credits', () => {
-            window.open('https://github.com/YounesMakhlouf/simulation-game', '_blank');
+        this.createButton(centerX, startY + buttonSpacing * 2, "Credits", () => {
+            window.open("https://github.com/YounesMakhlouf/simulation-game", "_blank");
         });
-        this.input.once('pointerdown', () => {
-            this.game.audioManager.playMusic('gameplay-music');
+        this.input.once("pointerdown", () => {
+            this.game.audioManager.playMusic("gameplay-music");
         });
     }
 
@@ -50,24 +49,26 @@ export class MainMenu extends Scene {
         do {
             if (buttonText) buttonText.destroy();
 
-            buttonText = this.add.text(x, y, text, {
-                fontSize: `${fontSize}px`, fontFamily: 'Arial', color: '#000000', fontStyle: 'bold'
-            }).setOrigin(0.5);
+            buttonText = this.add
+                .text(x, y, text, {
+                    fontSize: `${fontSize}px`, fontFamily: "Arial", color: "#000000", fontStyle: "bold",
+                })
+                .setOrigin(0.5);
 
             fontSize -= 1;
         } while (buttonText.width > buttonWidth - padding && fontSize > 10);
 
-        button.on('pointerover', () => {
+        button.on("pointerover", () => {
             this.updateButtonStyle(button, shadow, x, y, buttonWidth, buttonHeight, cornerRadius, true);
             buttonText.y -= 2;
         });
 
-        button.on('pointerout', () => {
+        button.on("pointerout", () => {
             this.updateButtonStyle(button, shadow, x, y, buttonWidth, buttonHeight, cornerRadius, false);
             buttonText.y += 2;
         });
 
-        button.on('pointerdown', callback);
+        button.on("pointerdown", callback);
 
         return {button, shadow, text: buttonText};
     }
@@ -77,7 +78,7 @@ export class MainMenu extends Scene {
         shadow.clear();
 
         if (isHover) {
-            button.fillStyle(0x87CEEB, 1);
+            button.fillStyle(0x87ceeb, 1);
             shadow.fillStyle(0x888888, 1);
             shadow.fillRoundedRect(x - width / 2 + 2, y - height / 2 + 2, width, height, radius);
         } else {
@@ -88,6 +89,4 @@ export class MainMenu extends Scene {
 
         button.fillRoundedRect(x - width / 2, y - height / 2, width, height, radius);
     }
-
-
 }

@@ -47,9 +47,9 @@ When working locally, the infrastructure is set up using Docker. Thus, you can u
 
 But, in case you want to deploy the code, you'll need to setup the following services with their corresponding environment variables:
 
-| Service | Purpose | Cost | Required Credentials | Setup Guide |
-|---------|---------|------|---------------------|-------------| 
-| [MongoDB](https://rebrand.ly/philoagents-mongodb) | Document database | Free tier | `MONGODB_URI` | 1. [Create a free MongoDB Atlas account](https://rebrand.ly/philoagents-mongodb-setup-1) <br> 2. [Create a Cluster](https://rebrand.ly/philoagents-mongodb-setup-2) </br> 3. [Add a Database User](https://rebrand.ly/philoagents-mongodb-setup-3) </br> 4. [Configure a Network Connection](https://rebrand.ly/philoagents-mongodb-setup-4) |
+| Service                                           | Purpose           | Cost      | Required Credentials | Setup Guide                                                                                                                                                                                                                                                                                                                                  |
+|---------------------------------------------------|-------------------|-----------|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| 
+| [MongoDB](https://rebrand.ly/philoagents-mongodb) | Document database | Free tier | `MONGODB_URI`        | 1. [Create a free MongoDB Atlas account](https://rebrand.ly/philoagents-mongodb-setup-1) <br> 2. [Create a Cluster](https://rebrand.ly/philoagents-mongodb-setup-2) </br> 3. [Add a Database User](https://rebrand.ly/philoagents-mongodb-setup-3) </br> 4. [Configure a Network Connection](https://rebrand.ly/philoagents-mongodb-setup-4) |
 
 # 🎯 Getting Started
 

@@ -323,12 +323,20 @@ export class Game extends Scene {
 
     handleStateUpdate(newState) {
         console.log("Game Scene: Received new state. Updating HUD.");
-        // TODO: Create a HUD class and call hud.update(newState);
+        // Forward to HUDScene if available
+        const hud = this.scene.get('HUDScene');
+        if (hud && typeof hud.updateHUD === 'function') {
+            hud.updateHUD(newState);
+        }
     }
 
     handlePhaseChange(newPhase) {
         console.log(`Game Scene: Phase is now ${newPhase}.`);
-        // TODO: Update a UI text element to show the current phase.
+        // Forward to HUDScene if available
+        const hud = this.scene.get('HUDScene');
+        if (hud && typeof hud.updatePhase === 'function') {
+            hud.updatePhase(newPhase);
+        }
     }
 
     showCrisisModal(crisisText, roundNumber) {
@@ -352,6 +360,25 @@ export class Game extends Scene {
 
     showError(errorMessage) {
         console.error(`Game Scene: Displaying error: ${errorMessage}`);
-        // TODO: Show an error message to the player.
+        // Minimal in-game notification (non-blocking)
+        const x = this.cameras.main.centerX;
+        const y = 100;
+        const text = this.add
+            .text(x, y, errorMessage, {
+                fontSize: '20px',
+                fontFamily: 'Arial',
+                color: '#ffffff',
+                backgroundColor: 'rgba(139,0,0,0.8)',
+                padding: {x: 12, y: 8},
+                stroke: '#000000',
+                strokeThickness: 3,
+            })
+            .setOrigin(0.5)
+            .setScrollFactor(0)
+            .setDepth(1000);
+
+        this.tweens.add({
+            targets: text, alpha: 0, duration: 1500, delay: 1500, onComplete: () => text.destroy(),
+        });
     }
 }
