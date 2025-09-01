@@ -57,8 +57,6 @@ export class Game extends Scene {
 
         this.scene.run("HUDScene", {gameManager: this.gameManager});
 
-        this.gameManager.events.on("stateUpdated", this.handleStateUpdate, this);
-        this.gameManager.events.on("phaseChanged", this.handlePhaseChange, this);
         this.gameManager.events.on("showCrisisUpdate", this.showCrisisModal, this);
         this.gameManager.events.on("showActionModal", this.showActionModal, this);
         this.gameManager.events.on("error", this.showError, this);
@@ -263,6 +261,9 @@ export class Game extends Scene {
     }
 
     updatePlayerMovement() {
+        if (!this.player || !this.player.body) {
+            return;
+        }
         const speed = 175;
         const prevVelocity = this.player.body.velocity.clone();
         const atlasKey = this.playerConfig.atlas;
@@ -320,25 +321,7 @@ export class Game extends Scene {
             }
         });
     }
-
-    handleStateUpdate(newState) {
-        console.log("Game Scene: Received new state. Updating HUD.");
-        // Forward to HUDScene if available
-        const hud = this.scene.get('HUDScene');
-        if (hud && typeof hud.updateHUD === 'function') {
-            hud.updateHUD(newState);
-        }
-    }
-
-    handlePhaseChange(newPhase) {
-        console.log(`Game Scene: Phase is now ${newPhase}.`);
-        // Forward to HUDScene if available
-        const hud = this.scene.get('HUDScene');
-        if (hud && typeof hud.updatePhase === 'function') {
-            hud.updatePhase(newPhase);
-        }
-    }
-
+    
     showCrisisModal(crisisText, roundNumber) {
         console.log(`Game Scene: Launching CrisisModal for round ${roundNumber}.`);
         this.scene.pause("Game"); // Pause the game world
@@ -365,12 +348,12 @@ export class Game extends Scene {
         const y = 100;
         const text = this.add
             .text(x, y, errorMessage, {
-                fontSize: '20px',
-                fontFamily: 'Arial',
-                color: '#ffffff',
-                backgroundColor: 'rgba(139,0,0,0.8)',
+                fontSize: "20px",
+                fontFamily: "Arial",
+                color: "#ffffff",
+                backgroundColor: "rgba(139,0,0,0.8)",
                 padding: {x: 12, y: 8},
-                stroke: '#000000',
+                stroke: "#000000",
                 strokeThickness: 3,
             })
             .setOrigin(0.5)
