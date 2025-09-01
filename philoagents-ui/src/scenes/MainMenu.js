@@ -1,4 +1,5 @@
 import {Scene} from "phaser";
+import {createUIButton} from "../classes/ButtonFactory";
 
 export class MainMenu extends Scene {
     constructor() {
@@ -12,15 +13,15 @@ export class MainMenu extends Scene {
         const startY = 524;
         const buttonSpacing = 70;
 
-        this.createButton(centerX, startY, "Let's Play!", () => {
+        this.createMenuButton(centerX, startY, "Let's Play!", () => {
             this.scene.start("CharacterSelect");
         });
 
-        this.createButton(centerX, startY + buttonSpacing, "Instructions", () => {
+        this.createMenuButton(centerX, startY + buttonSpacing, "Instructions", () => {
             this.scene.launch("InstructionsModal");
         });
 
-        this.createButton(centerX, startY + buttonSpacing * 2, "Credits", () => {
+        this.createMenuButton(centerX, startY + buttonSpacing * 2, "Credits", () => {
             window.open("https://github.com/YounesMakhlouf/simulation-game", "_blank");
         });
         this.input.once("pointerdown", () => {
@@ -28,65 +29,21 @@ export class MainMenu extends Scene {
         });
     }
 
-    createButton(x, y, text, callback) {
-        const buttonWidth = 350;
-        const buttonHeight = 60;
-        const cornerRadius = 20;
-        const maxFontSize = 28;
-        const padding = 10;
-
-        const shadow = this.add.graphics();
-        shadow.fillStyle(0x666666, 1);
-        shadow.fillRoundedRect(x - buttonWidth / 2 + 4, y - buttonHeight / 2 + 4, buttonWidth, buttonHeight, cornerRadius);
-
-        const button = this.add.graphics();
-        button.fillStyle(0xffffff, 1);
-        button.fillRoundedRect(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight, cornerRadius);
-        button.setInteractive(new Phaser.Geom.Rectangle(x - buttonWidth / 2, y - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
-
-        let fontSize = maxFontSize;
-        let buttonText;
-        do {
-            if (buttonText) buttonText.destroy();
-
-            buttonText = this.add
-                .text(x, y, text, {
-                    fontSize: `${fontSize}px`, fontFamily: "Arial", color: "#000000", fontStyle: "bold",
-                })
-                .setOrigin(0.5);
-
-            fontSize -= 1;
-        } while (buttonText.width > buttonWidth - padding && fontSize > 10);
-
-        button.on("pointerover", () => {
-            this.updateButtonStyle(button, shadow, x, y, buttonWidth, buttonHeight, cornerRadius, true);
-            buttonText.y -= 2;
+    createMenuButton(x, y, text, callback) {
+        const {container} = createUIButton(this, x, y, text, callback, {
+            width: 350,
+            height: 60,
+            radius: 20,
+            maxFontSize: 28,
+            padding: 10,
+            bgColor: 0xffffff,
+            hoverBgColor: 0x87ceeb,
+            shadowColor: 0x666666,
+            textColor: "#000000",
+            fontFamily: "Arial",
+            fontStyle: "bold",
+            liftOnHover: true,
         });
-
-        button.on("pointerout", () => {
-            this.updateButtonStyle(button, shadow, x, y, buttonWidth, buttonHeight, cornerRadius, false);
-            buttonText.y += 2;
-        });
-
-        button.on("pointerdown", callback);
-
-        return {button, shadow, text: buttonText};
-    }
-
-    updateButtonStyle(button, shadow, x, y, width, height, radius, isHover) {
-        button.clear();
-        shadow.clear();
-
-        if (isHover) {
-            button.fillStyle(0x87ceeb, 1);
-            shadow.fillStyle(0x888888, 1);
-            shadow.fillRoundedRect(x - width / 2 + 2, y - height / 2 + 2, width, height, radius);
-        } else {
-            button.fillStyle(0xffffff, 1);
-            shadow.fillStyle(0x666666, 1);
-            shadow.fillRoundedRect(x - width / 2 + 4, y - height / 2 + 4, width, height, radius);
-        }
-
-        button.fillRoundedRect(x - width / 2, y - height / 2, width, height, radius);
+        return container;
     }
 }

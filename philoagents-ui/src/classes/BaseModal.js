@@ -1,4 +1,5 @@
 import {Scene} from "phaser";
+import {createUIButton} from "./ButtonFactory";
 
 export class BaseModal extends Scene {
     constructor(key, options = {}) {
@@ -227,5 +228,13 @@ export class BaseModal extends Scene {
         dom.node.style.boxSizing = "border-box";
         dom.node.style.webkitOverflowScrolling = "touch";
         return dom;
+    }
+
+    createButton(x, y, text, onClick, opts = {}) {
+        const defaults = {width: 280, height: 50, radius: 12};
+        const {container} = createUIButton(this, x, y, text, onClick, {
+            ...defaults, ...opts,
+        });
+        return container;
     }
 }
