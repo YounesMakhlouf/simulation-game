@@ -174,15 +174,10 @@ async def end_game(
         if char_id != request.player_character_id
     ]
     for ai_char in ai_characters:
-        # Simple placeholder logic for AI guesses
-        if "genius" in ai_char.id or "scipio" in ai_char.id:
-            undergame_guesses[ai_char.id] = (
-                "I believe a supernatural force rewarded audacity, but it came at a price."
-            )
-        else:
-            undergame_guesses[ai_char.id] = (
-                "The events were simply the result of political maneuvering."
-            )
+        # Simple placeholder for AI guesses
+        undergame_guesses[ai_char.id] = (
+            "The events were simply the result of political maneuvering."
+        )
 
     # --- 2. Get Final Game State ---
     all_characters_final_state = list(service.game_state.characters.values())
