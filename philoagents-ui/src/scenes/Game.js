@@ -45,8 +45,6 @@ export class Game extends Scene {
         const map = this.createTilemap();
         const tileset = this.addTileset(map);
         const layers = this.createLayers(map, tileset);
-        let screenPadding = 20;
-        let maxDialogueHeight = 200;
 
         this.createDelegates(map, layers);
 
@@ -238,22 +236,7 @@ export class Game extends Scene {
     }
 
     setupDialogueSystem() {
-        const screenPadding = 20;
-        const maxDialogueHeight = 200;
-
         this.dialogueBox = new DialogueBox(this);
-        this.dialogueText = this.add
-            .text(60, this.game.config.height - maxDialogueHeight - screenPadding + screenPadding, "", {
-                font: "18px monospace",
-                fill: "#ffffff",
-                padding: {x: 20, y: 10},
-                wordWrap: {width: 680},
-                lineSpacing: 6,
-                maxLines: 5,
-            })
-            .setScrollFactor(0)
-            .setDepth(30)
-            .setVisible(false);
 
         this.spaceKey = this.input.keyboard.addKey("SPACE");
 
