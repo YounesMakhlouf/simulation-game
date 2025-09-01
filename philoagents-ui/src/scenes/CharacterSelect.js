@@ -11,6 +11,12 @@ export class CharacterSelect extends Scene {
     }
 
     async create() {
+        // Reset scene state in case this Scene instance is reused
+        this.characters = [];
+        this.selectedCharacter = null;
+        this.portraits = [];
+        this.infoPanel = {};
+
         const {width, height} = this.sys.game.config;
         this.add
             .image(0, 0, "character_selection_background")
@@ -68,8 +74,10 @@ export class CharacterSelect extends Scene {
             });
         });
 
-        // Initially select the first character
-        this.selectCharacter(this.portraits[0]);
+        // Initially select the first character if available
+        if (this.portraits.length > 0) {
+            this.selectCharacter(this.portraits[0]);
+        }
     }
 
     selectCharacter(selectedPortrait) {

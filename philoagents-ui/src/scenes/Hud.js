@@ -31,8 +31,19 @@ export class HUDScene extends Scene {
         this.gameManager.events.on("stateUpdated", this.updateHUD, this);
         this.gameManager.events.on("phaseChanged", this.updatePhase, this);
 
+        // Detach listeners when this scene shuts down or is destroyed to avoid updates on dead objects
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachGameManagerEvents());
+        this.events.once(Phaser.Scenes.Events.DESTROY, () => this.detachGameManagerEvents());
+
         this.updateHUD(this.gameManager.gameState);
         this.updatePhase(this.gameManager.gamePhase);
+    }
+
+    detachGameManagerEvents() {
+        if (this.gameManager && this.gameManager.events) {
+            this.gameManager.events.off("stateUpdated", this.updateHUD, this);
+            this.gameManager.events.off("phaseChanged", this.updatePhase, this);
+        }
     }
 
     createIntelButton() {
@@ -155,10 +166,12 @@ export class HUDScene extends Scene {
         buttonText.setText(`View Intel (${intelCount})`);
 
         // Disable the button visually if there is no intel
-        if (intelCount === 0) {
-            this.intelButton.setAlpha(0.5).disableInteractive();
-        } else {
-            this.intelButton.setAlpha(1).setInteractive({useHandCursor: true});
+        if (this.intelButton && !this.intelButton.destroyed) {
+            if (intelCount === 0) {
+                this.intelButton.setAlpha(0.5).disableInteractive();
+            } else {
+                this.intelButton.setAlpha(1).setInteractive({useHandCursor: true});
+            }
         }
     }
 
