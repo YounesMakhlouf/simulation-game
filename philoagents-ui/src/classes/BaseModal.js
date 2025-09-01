@@ -1,4 +1,4 @@
-import {Scene} from 'phaser';
+import {Scene} from "phaser";
 
 export class BaseModal extends Scene {
     constructor(key, options = {}) {
@@ -17,35 +17,35 @@ export class BaseModal extends Scene {
             panelRadius: 16,
 
             // Layout
-            margin: 24,      // distance from screen edges
-            padding: 20,     // inner padding
+            margin: 24, // distance from screen edges
+            padding: 20, // inner padding
             maxPanelWidth: 924,
             maxPanelHeight: 668,
             autoCenter: true,
 
             // Title
-            titleText: 'Modal Dialog',
-            titleFontSize: '32px',
-            titleColor: '#ffffff',
+            titleText: "Modal Dialog",
+            titleFontSize: "32px",
+            titleColor: "#ffffff",
 
             // Close button
-            closeButtonText: '[ Continue ]',
-            closeButtonFontSize: '24px',
-            closeButtonColor: '#ffd700',
-            closeButtonHoverColor: '#ffffff',
+            closeButtonText: "[ Continue ]",
+            closeButtonFontSize: "24px",
+            closeButtonColor: "#ffd700",
+            closeButtonHoverColor: "#ffffff",
 
             // Keyboard
             closeOnEsc: true,
             resumeGameOnClose: true,
 
-            ...options
+            ...options,
         };
 
         this.modalData = null;
 
         // store objects for layout updates
         this._layout = {
-            panel: null, overlay: null, title: null
+            panel: null, overlay: null, title: null,
         };
     }
 
@@ -62,7 +62,7 @@ export class BaseModal extends Scene {
         this.setupKeyboardHandling();
 
         // keep layout correct on resize
-        this.scale.on('resize', this.updateLayout, this);
+        this.scale.on("resize", this.updateLayout, this);
         this.events.once(Phaser.Scenes.Events.SLEEP, () => {
             this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
         });
@@ -75,7 +75,7 @@ export class BaseModal extends Scene {
     }
 
     shutdown() {
-        this.scale.off('resize', this.updateLayout, this);
+        this.scale.off("resize", this.updateLayout, this);
     }
 
     createOverlay() {
@@ -120,8 +120,8 @@ export class BaseModal extends Scene {
         const panelWidth = Math.max(320, maxW);
         const panelHeight = Math.max(220, maxH);
 
-        const panelX = this.options.autoCenter ? (width - panelWidth) / 2 : (this.options.panelX ?? margin);
-        const panelY = this.options.autoCenter ? (height - panelHeight) / 2 : (this.options.panelY ?? margin);
+        const panelX = this.options.autoCenter ? (width - panelWidth) / 2 : this.options.panelX ?? margin;
+        const panelY = this.options.autoCenter ? (height - panelHeight) / 2 : this.options.panelY ?? margin;
 
         return {panelX, panelY, panelWidth, panelHeight};
     }
@@ -132,9 +132,11 @@ export class BaseModal extends Scene {
         const x = this.panelX + this.panelWidth / 2;
         const y = this.panelY + this.options.padding + 6;
 
-        this.title = this.add.text(x, y, this.options.titleText, {
-            fontSize: this.options.titleFontSize, color: this.options.titleColor
-        }).setOrigin(0.5, 0);
+        this.title = this.add
+            .text(x, y, this.options.titleText, {
+                fontSize: this.options.titleFontSize, color: this.options.titleColor,
+            })
+            .setOrigin(0.5, 0);
 
         this._layout.title = this.title;
     }
@@ -159,27 +161,28 @@ export class BaseModal extends Scene {
     createCloseButton() {
         const y = this.panelY + this.panelHeight - this.options.padding - 8;
 
-        this.closeButton = this.add.text(this.panelX + this.panelWidth / 2, y, this.options.closeButtonText, {
-            fontSize: this.options.closeButtonFontSize, color: this.options.closeButtonColor, fontStyle: 'bold'
-        })
+        this.closeButton = this.add
+            .text(this.panelX + this.panelWidth / 2, y, this.options.closeButtonText, {
+                fontSize: this.options.closeButtonFontSize, color: this.options.closeButtonColor, fontStyle: "bold",
+            })
             .setOrigin(0.5, 1)
             .setInteractive({useHandCursor: true});
 
-        this.closeButton.on('pointerover', () => this.closeButton.setColor(this.options.closeButtonHoverColor));
-        this.closeButton.on('pointerout', () => this.closeButton.setColor(this.options.closeButtonColor));
-        this.closeButton.on('pointerdown', () => this.closeModal());
+        this.closeButton.on("pointerover", () => this.closeButton.setColor(this.options.closeButtonHoverColor));
+        this.closeButton.on("pointerout", () => this.closeButton.setColor(this.options.closeButtonColor));
+        this.closeButton.on("pointerdown", () => this.closeModal());
     }
 
     setupKeyboardHandling() {
         if (this.options.closeOnEsc) {
-            this.input.keyboard.on('keydown-ESC', () => this.closeModal());
+            this.input.keyboard.on("keydown-ESC", () => this.closeModal());
         }
     }
 
     closeModal() {
         this.scene.stop(this.scene.key);
-        if (this.options.resumeGameOnClose) this.scene.resume('Game');
-        if (typeof this.options.onClose === 'function') this.options.onClose();
+        if (this.options.resumeGameOnClose) this.scene.resume("Game");
+        if (typeof this.options.onClose === "function") this.options.onClose();
     }
 
     updateLayout() {
@@ -206,20 +209,23 @@ export class BaseModal extends Scene {
         }
 
         // Subclasses that use getContentBounds() can reflow if needed in their own resize handlers
-        this.events.emit('modal-resize', this.getContentBounds());
+        this.events.emit("modal-resize", this.getContentBounds());
     }
 
     // Optional helper to place a scrollable DOM container inside the content bounds
     addScrollableDom(html) {
         const b = this.getContentBounds();
         const dom = this.add.dom(b.x, b.y).createFromHTML(html).setOrigin(0, 0);
-        // Ensure it fits
+        // Ensure it fits. Reserve some space for the close button if present to avoid overlap.
+        const reservedForCloseBtn = this.options.closeButtonText ? 56 : 0; // ~24px text + margins
+        const maxH = Math.max(0, Math.floor(b.height - reservedForCloseBtn));
         dom.node.style.width = `${Math.floor(b.width)}px`;
-        dom.node.style.maxHeight = `${Math.floor(b.height)}px`;
-        dom.node.style.overflowY = 'auto';
-        dom.node.style.overflowX = 'hidden';     // <- prevent horizontal scroll
-        dom.node.style.boxSizing = 'border-box';
-        dom.node.style.webkitOverflowScrolling = 'touch';
+        dom.node.style.maxHeight = `${maxH}px`;
+        dom.node.style.marginBottom = `${reservedForCloseBtn}px`;
+        dom.node.style.overflowY = "auto";
+        dom.node.style.overflowX = "hidden"; // <- prevent horizontal scroll
+        dom.node.style.boxSizing = "border-box";
+        dom.node.style.webkitOverflowScrolling = "touch";
         return dom;
     }
 }
