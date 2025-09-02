@@ -1,5 +1,5 @@
 <div align="center">
-<h1>Congress of Shadows</h1>
+<h1>Clash of Titans</h1>
 <h3>An AI-powered grand strategy game engine for historical simulations.</h3>
 <p class="tagline">
 Originally based on the <a href="https://github.com/neural-maze/philoagents-course">PhiloAgents Course</a> by <a href="https://theneuralmaze.substack.com/">The Neural Maze</a> and <a href="https://decodingml.substack.com">Decoding ML</a>.
@@ -14,7 +14,7 @@ Powered by <a href="https://rebrand.ly/philoagents-mongodb">MongoDB</a>, <a href
 
 ## 📖 About This Project
 
-Have you ever wanted to change the course of history? Congress of Shadows is a sophisticated, open-source engine for building and playing turn-based historical simulations, powered by a multi-agent AI system.
+Have you ever wanted to change the course of history? Clash of Titans is a sophisticated, open-source engine for building and playing turn-based historical simulations, powered by a multi-agent AI system.
 This project transforms the original PhiloAgents framework into a dynamic grand strategy game. Instead of just chatting with historical figures, you become one. You will navigate a high-stakes crisis, competing against other AI-powered characters, each with their own secret goals and personalities. The entire simulation is refereed by an autonomous AI Judge, who secretly guides the narrative based on a hidden "Undergame" that players must deduce to truly win.
 
 ### Key Features:

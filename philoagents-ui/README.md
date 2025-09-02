@@ -1,8 +1,8 @@
-# Congress of Shadows — Game Client 🎮
+# Clash of Titans — Game Client 🎮
 
 ![Game Screenshot](public/assets/game_screenshot.png)
 
-Welcome to the Congress of Shadows Game Client, the interactive UI that places you directly into the heart of a historical crisis. As a delegate, you will navigate treacherous political landscapes, forge secret alliances, and make the strategic decisions that will shape the fate of empires.
+Welcome to the Clash of Titans Game Client, the interactive UI that places you directly into the heart of a historical crisis. As a delegate, you will navigate treacherous political landscapes, forge secret alliances, and make the strategic decisions that will shape the fate of empires.
 
 # Overview
 This web-based game client renders the world of your chosen historical scenario. Built with Phaser 3, it provides a top-down, explorable environment where you can interact with other AI-powered historical figures. The client connects to the powerful multi-agent backend, which drives the simulation's turn-based logic, AI behavior, and the secret "Undergame" narrative.
