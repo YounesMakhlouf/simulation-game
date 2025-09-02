@@ -27,6 +27,9 @@ This project transforms the original PhiloAgents framework into a dynamic grand 
 ### 🎮 The "Clash of Titans" Experience
 The scenario places you in the Second Punic War in the aftermath of Cannae. As Hannibal, Scipio, or other key figures, you will decide the fate of the Mediterranean. Will you conquer Rome, sabotage your rivals from within, or discover the true, hidden force manipulating the conflict?
 
+https://github.com/user-attachments/assets/1265ac48-7027-410b-9794-674fa45b5bb6
+
+
 ### 🏗️ Project Structure
 The project is a modular monolith, separating the backend engine from the frontend game client.
 code
