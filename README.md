@@ -18,7 +18,7 @@ Have you ever wanted to change the course of history? Clash of Titans is a sophi
 This project transforms the original PhiloAgents framework into a dynamic grand strategy game. Instead of just chatting with historical figures, you become one. You will navigate a high-stakes crisis, competing against other AI-powered characters, each with their own secret goals and personalities. The entire simulation is refereed by an autonomous AI Judge, who secretly guides the narrative based on a hidden "Undergame" that players must deduce to truly win.
 
 ### Key Features:
-- Become a Historical Figure: Embody characters like Hannibal Barca or Talleyrand, with unique attributes, resources, and goals.
+- Become a Historical Figure: Embody characters like Hannibal Barca or Scipio Africanus, with unique attributes, resources, and goals.
 - Turn-Based Strategy: Participate in game rounds, engaging in private diplomacy and submitting strategic actions.
 - Autonomous AI Opponents: Compete against intelligent AI agents that reason, strategize, and form alliances based on their personalities.
 - The AI Judge & The Undergame: The world is controlled by an AI narrator with a secret agenda. Its interventions create a deep layer of mystery and deduction.
