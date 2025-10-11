@@ -180,7 +180,7 @@ Ensure the `expected_action` is a strategically sound and in-character response 
 """
 
 ACTION_EVALUATION_DATASET_GENERATION_PROMPT = Prompt(
-    name="evaluation_dataset_generation_prompt",
+    name="action_evaluation_dataset_generation_prompt",
     prompt=__ACTION_EVALUATION_DATASET_GENERATION_PROMPT,
 )
 
