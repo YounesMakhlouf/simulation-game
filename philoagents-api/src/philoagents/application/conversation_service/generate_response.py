@@ -2,7 +2,7 @@ import uuid
 from typing import Any, AsyncGenerator, List, Union
 
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
-from langgraph.checkpoint.mongodb.aio import AsyncMongoDBSaver
+from langgraph.checkpoint.mongodb.saver import MongoDBSaver
 from opik.integrations.langchain import OpikTracer
 
 from philoagents.application.conversation_service.workflow.graph import (
@@ -53,7 +53,7 @@ async def get_response(
     graph_builder = create_workflow_graph()
 
     try:
-        async with AsyncMongoDBSaver.from_conn_string(
+        with MongoDBSaver.from_conn_string(
             conn_string=settings.MONGO_URI,
             db_name=settings.MONGO_DB_NAME,
             checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
@@ -107,7 +107,7 @@ async def get_streaming_response(
     graph_builder = create_workflow_graph()
 
     try:
-        async with AsyncMongoDBSaver.from_conn_string(
+        with MongoDBSaver.from_conn_string(
             conn_string=settings.MONGO_URI,
             db_name=settings.MONGO_DB_NAME,
             checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
