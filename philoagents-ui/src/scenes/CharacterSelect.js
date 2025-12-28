@@ -1,5 +1,6 @@
 import {Scene} from "phaser";
 import ApiService from "../services/ApiService";
+import {createPresetButton} from "../classes/ButtonFactory";
 
 export class CharacterSelect extends Scene {
     constructor() {
@@ -141,30 +142,8 @@ export class CharacterSelect extends Scene {
     }
 
     createSelectButton() {
-        const buttonX = 512;
-        const buttonY = 720;
-        const buttonWidth = 250;
-        const buttonHeight = 60;
-
-        const button = this.add.graphics();
-        button.fillStyle(0x006400, 1); // Dark green
-        button.fillRoundedRect(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight, 15);
-
-        const buttonText = this.add
-            .text(buttonX, buttonY, "Confirm Delegate", {
-                fontSize: "24px", fontFamily: "Georgia, serif", color: "#ffffff", fontStyle: "bold",
-            })
-            .setOrigin(0.5);
-
-        button.setInteractive(new Phaser.Geom.Rectangle(buttonX - buttonWidth / 2, buttonY - buttonHeight / 2, buttonWidth, buttonHeight), Phaser.Geom.Rectangle.Contains);
-
-        button.on("pointerover", () => button.fillStyle(0x008000, 1));
-
-        button.on("pointerout", () => button.fillStyle(0x006400, 1));
-
-        button.on("pointerdown", () => {
+        createPresetButton(this, "confirm", 512, 720, "Confirm Delegate", () => {
             if (this.selectedCharacter) {
-                // Pass the selected character's ID to the Game scene
                 this.scene.start("Game", {characterId: this.selectedCharacter.id});
             }
         });

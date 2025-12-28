@@ -1,4 +1,5 @@
 import {Scene} from "phaser";
+import {createPresetButton} from "../classes/ButtonFactory";
 
 export class HUDScene extends Scene {
     constructor() {
@@ -47,77 +48,25 @@ export class HUDScene extends Scene {
     }
 
     createIntelButton() {
-        const buttonWidth = 150;
-        const buttonHeight = 40;
-        const buttonX = this.cameras.main.width - 90; // Position in top-right corner
+        const buttonX = this.cameras.main.width - 90;
         const buttonY = 80;
 
-        this.intelButton = this.add.container(buttonX, buttonY);
-
-        const buttonBackground = this.add
-            .graphics()
-            .fillStyle(0x003366, 0.8) // Dark blue
-            .fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 10);
-
-        const buttonText = this.add
-            .text(0, 0, "View Intel (0)", {
-                fontSize: "18px", fontFamily: "Georgia, serif", color: "#ffffff",
-            })
-            .setOrigin(0.5);
-
-        this.intelButton.add([buttonBackground, buttonText]);
-        this.intelButton.setSize(buttonWidth, buttonHeight);
-        this.intelButton.setInteractive({useHandCursor: true});
-
-        // Initially, it might be disabled if there's no intel
-        this.intelButton.setData("text", buttonText); // Store reference for easy updates
-
-        this.intelButton.on("pointerdown", () => {
+        const {container, label} = createPresetButton(this, "info", buttonX, buttonY, "View Intel (0)", () => {
             if (this.gameManager.gameState.your_character?.known_intel?.length > 0) {
-                // Get the latest intel from the game manager
                 const intelReports = this.gameManager.gameState.your_character.known_intel;
-                // Launch the modal, passing the intel data
                 this.scene.get("Game").showIntelModal(intelReports);
             }
-        });
+        }, {alpha: 0.8});
 
-        // Add hover effects for better UX
-        this.intelButton.on("pointerover", () => buttonBackground.setAlpha(1));
-        this.intelButton.on("pointerout", () => buttonBackground.setAlpha(0.8));
+        this.intelButton = container;
+        this.intelButton.setData("label", label);
     }
 
     createEndDiplomacyButton() {
-        const buttonWidth = 280;
-        const buttonHeight = 50;
         const buttonX = this.cameras.main.width / 2;
         const buttonY = this.cameras.main.height - 40;
 
-        // Create a container for the button for easy show/hide
-        this.endDiplomacyButton = this.add.container(buttonX, buttonY);
-
-        const buttonBackground = this.add
-            .graphics()
-            .fillStyle(0x8b0000, 0.8) // Dark red, semi-transparent
-            .fillRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 15)
-            .lineStyle(2, 0xffffff, 1)
-            .strokeRoundedRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 15);
-
-        const buttonText = this.add
-            .text(0, 0, "Proceed to Action Phase", {
-                fontSize: "20px", fontFamily: "Georgia, serif", color: "#ffffff", fontStyle: "bold",
-            })
-            .setOrigin(0.5);
-
-        this.endDiplomacyButton.add([buttonBackground, buttonText]);
-        this.endDiplomacyButton.setSize(buttonWidth, buttonHeight);
-        this.endDiplomacyButton.setInteractive({useHandCursor: true});
-
-        // Initially hide the button
-        this.endDiplomacyButton.setVisible(false);
-
-        // --- Event Handlers ---
-        this.endDiplomacyButton.on("pointerdown", () => {
-            // Add a visual effect for the click
+        const {container} = createPresetButton(this, "danger", buttonX, buttonY, "Proceed to Action Phase", () => {
             this.tweens.add({
                 targets: this.endDiplomacyButton,
                 scaleX: 0.95,
@@ -125,19 +74,13 @@ export class HUDScene extends Scene {
                 duration: 100,
                 yoyo: true,
                 onComplete: () => {
-                    // Call the GameManager function to advance the phase
                     this.gameManager.startActionPhase();
                 },
             });
-        });
+        }, {alpha: 0.8});
 
-        this.endDiplomacyButton.on("pointerover", () => {
-            buttonBackground.fillStyle(0xb22222, 1); // Lighter red on hover
-        });
-
-        this.endDiplomacyButton.on("pointerout", () => {
-            buttonBackground.fillStyle(0x8b0000, 0.8);
-        });
+        this.endDiplomacyButton = container;
+        this.endDiplomacyButton.setVisible(false);
     }
 
     updateHUD(gameState) {
@@ -162,8 +105,8 @@ export class HUDScene extends Scene {
         }
 
         const intelCount = gameState.your_character.known_intel?.length || 0;
-        const buttonText = this.intelButton.getData("text");
-        buttonText.setText(`View Intel (${intelCount})`);
+        const buttonLabel = this.intelButton.getData("label");
+        if (buttonLabel) buttonLabel.setText(`View Intel (${intelCount})`);
 
         // Disable the button visually if there is no intel
         if (this.intelButton && !this.intelButton.destroyed) {
