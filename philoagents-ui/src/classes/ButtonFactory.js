@@ -147,7 +147,10 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
 
     container.add([shadow, bg, label]);
     container.setSize(width, height);
-    container.setInteractive(new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height), Phaser.Geom.Rectangle.Contains);
+    container.setInteractive(
+        new Phaser.Geom.Rectangle(0, 0, width, height),
+        Phaser.Geom.Rectangle.Contains
+    );
 
     // Interactions
     container.on("pointerover", () => {
