@@ -6,13 +6,13 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi[standard]>=0.125.0",
-    "langchain-core>=1.2.4",
+    "fastapi[standard]>=0.128.0",
+    "langchain-core>=1.2.7",
     "langchain-groq>=1.1.1",
-    "langchain-mongodb>=0.9.0",
-    "langgraph>=1.0.5",
+    "langchain-mongodb>=0.11.0",
+    "langgraph>=1.0.6",
     "langgraph-checkpoint-mongodb>=0.3.0",
-    "opik>=1.9.60",
+    "opik>=1.9.92",
     "pydantic-settings>=2.12.0",
     "pymongo>=4.15.5",
     "langchain-community>=0.4.1",
@@ -21,14 +21,14 @@ dependencies = [
     "wikipedia>=1.4.0",
     "ipykernel>=7.1.0",
     "pydantic>=2.12.5",
-    "datasketch>=1.8.0",
+    "datasketch>=1.9.0",
     "sentence-transformers>=5.2.0",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
-    "ruff>=0.14.10",
+    "ruff>=0.14.13",
     "pre-commit>=4.5.1",
 ]
 
