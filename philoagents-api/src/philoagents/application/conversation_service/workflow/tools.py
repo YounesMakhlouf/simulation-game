@@ -1,4 +1,4 @@
-from langchain.tools.retriever import create_retriever_tool
+from langchain.tools import tool
 
 from philoagents.application.rag.retrievers import get_retriever
 from philoagents.config import settings
@@ -9,10 +9,15 @@ retriever = get_retriever(
     device=settings.RAG_DEVICE,
 )
 
-retriever_tool = create_retriever_tool(
-    retriever,
-    "retrieve_character_context",
-    "Search and return information about a specific character. Always use this tool when the user asks you about a character, their works, ideas or historical context.",
-)
 
-tools = [retriever_tool]
+@tool
+def retrieve_character_context(query: str):
+    """Search and return information about a specific character.
+
+    Always use this tool when the user asks you about a character,
+    their works, ideas or historical context.
+    """
+    return retriever.invoke(query)
+
+
+tools = [retrieve_character_context]

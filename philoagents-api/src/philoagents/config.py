@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     GROQ_LLM_MODEL_JUDGE: str = "openai/gpt-oss-120b"
 
     # --- OpenAI Configuration (Required for evaluation) ---
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: str | None = Field(
+        default=None, description="API key for OpenAI (only required for evaluation)"
+    )
 
     # --- MongoDB Configuration ---
     MONGO_URI: str = Field(
