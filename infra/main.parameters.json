@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "${AZURE_ENV_NAME}"
+    },
+    "location": {
+      "value": "${AZURE_LOCATION}"
+    },
+    "principalId": {
+      "value": "${AZURE_PRINCIPAL_ID}"
+    },
+    "apiContainerImage": {
+      "value": "${SERVICE_API_IMAGE_NAME}"
+    },
+    "uiContainerImage": {
+      "value": "${SERVICE_UI_IMAGE_NAME}"
+    },
+    "groqApiKey": {
+      "value": "${GROQ_API_KEY}"
+    },
+    "mongoUri": {
+      "value": "${MONGO_URI}"
+    },
+    "cometApiKey": {
+      "value": "${COMET_API_KEY}"
+    },
+    "openaiApiKey": {
+      "value": "${OPENAI_API_KEY}"
+    }
+  }
+}

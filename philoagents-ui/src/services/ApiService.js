@@ -1,12 +1,19 @@
 class ApiService {
     constructor() {
         const isHttps = window.location.protocol === 'https:';
+        const currentHostname = window.location.hostname;
 
-        if (isHttps) {
-            console.log('Using GitHub Codespaces');
-            const currentHostname = window.location.hostname;
+        if (currentHostname.includes('azurecontainerapps.io')) {
+            // Azure Container Apps: replace UI hostname with API hostname
+            if (!currentHostname.includes('philoagents-ui')) {
+                throw new Error(`Unexpected hostname format for Azure Container Apps UI: "${currentHostname}". Expected hostname to contain "philoagents-ui".`);
+            }
+            this.apiUrl = `https://${currentHostname.replace('philoagents-ui', 'philoagents-api')}`;
+        } else if (isHttps) {
+            // GitHub Codespaces
             this.apiUrl = `https://${currentHostname.replace('8080', '8000')}`;
         } else {
+            // Local development
             this.apiUrl = 'http://localhost:8000';
         }
     }
@@ -112,4 +119,4 @@ class ApiService {
 }
 
 
-export default new ApiService(); 
+export default new ApiService();

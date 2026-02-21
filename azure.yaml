@@ -1,0 +1,48 @@
+# Azure Developer CLI (azd) configuration
+# https://learn.microsoft.com/azure/developer/azure-developer-cli/
+name: philoagents
+metadata:
+  template: philoagents-game
+
+# Azure infrastructure configuration
+infra:
+  provider: bicep
+  path: infra
+
+# Services to deploy
+services:
+  # Python FastAPI Backend with AI Agents
+  api:
+    project: philoagents-api
+    language: python
+    host: containerapp
+    docker:
+      path: Dockerfile
+      context: .
+
+  # Phaser.js Game Frontend
+  ui:
+    project: philoagents-ui
+    language: js
+    host: containerapp
+    docker:
+      path: Dockerfile
+      context: .
+
+# Hooks for deployment lifecycle
+hooks:
+  # Post-provision: Display connection info
+  postprovision:
+    shell: sh
+    run: |
+      echo "============================================"
+      echo "🎮 PhiloAgents Deployment Complete!"
+      echo "============================================"
+      echo ""
+      echo "🌐 Your app is available at:"
+      echo "   UI:  ${SERVICE_UI_URI}"
+      echo "   API: ${SERVICE_API_URI}"
+      echo "   API Docs: ${SERVICE_API_URI}/docs"
+      echo ""
+      echo "🔑 Key Vault: ${AZURE_KEY_VAULT_NAME}"
+      echo "============================================"

@@ -17,11 +17,47 @@ class WebSocketApiService {
 
     determineWebSocketBaseUrl() {
         const isHttps = window.location.protocol === 'https:';
+        const currentHostname = window.location.hostname;
 
-        if (isHttps) {
-            console.log('Using GitHub Codespaces');
-            const currentHostname = window.location.hostname;
-            return `ws://${currentHostname.replace('8080', '8000')}`;
+        if (currentHostname.endsWith('azurecontainerapps.io')) {
+            // Azure Container Apps: derive API hostname from UI hostname, use wss://
+            const uiPrefix = 'philoagents-ui';
+            let apiHostname;
+
+            if (currentHostname.startsWith(`${uiPrefix}.`)) {
+                // Replace only the leading "philoagents-ui" label with "philoagents-api"
+                apiHostname = `philoagents-api${currentHostname.substring(uiPrefix.length)}`;
+            } else if (currentHostname.includes('.')) {
+                // Fallback: replace the first subdomain label with "philoagents-api"
+                const parts = currentHostname.split('.');
+                parts[0] = 'philoagents-api';
+                apiHostname = parts.join('.');
+            } else {
+                // Malformed hostname; log and fall back to using it as-is
+                console.warn(
+                    'Unexpected Azure Container Apps hostname format; using hostname as-is for WebSocket URL:',
+                    currentHostname,
+                );
+                apiHostname = currentHostname;
+            }
+
+            return `wss://${apiHostname}`;
+        } else if (isHttps) {
+            // GitHub Codespaces or other HTTPS environments
+            const currentHost = window.location.host; // may include port
+            let wsHost = currentHost;
+
+            if (currentHost.includes('8080')) {
+                wsHost = currentHost.replace('8080', '8000');
+            } else {
+                // If 8080 is not present, avoid silent failure and log for debugging
+                console.warn(
+                    'Expected port 8080 in host for HTTPS WebSocket URL, using host as-is:',
+                    currentHost,
+                );
+            }
+
+            return `wss://${wsHost}`;
         }
 
         return 'ws://localhost:8000';
@@ -157,4 +193,4 @@ class WebSocketApiService {
     }
 }
 
-export default new WebSocketApiService(); 
+export default new WebSocketApiService();

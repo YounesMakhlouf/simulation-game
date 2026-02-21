@@ -42,6 +42,12 @@ app.add_middleware(
 )
 
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Azure Container Apps probes."""
+    return {"status": "healthy"}
+
+
 class ChatMessage(BaseModel):
     """
     Defines the payload for initiating a conversation turn.

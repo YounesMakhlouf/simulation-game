@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:24.14.0-alpine
 
 WORKDIR /app
 
@@ -11,11 +11,14 @@ RUN npm install
 # Copy project files
 COPY . .
 
-# Build the application
+# Build the production bundle
 RUN npm run build
 
-# Expose port 8080 (matches webpack dev server port)
+# Install a lightweight static file server
+RUN npm install -g serve
+
+# Expose port 8080
 EXPOSE 8080
 
-# Start the development server
-CMD ["npm", "run", "dev"]
+# Serve the built static files
+CMD ["serve", "-s", "dist", "-l", "8080", "--no-clipboard"]
