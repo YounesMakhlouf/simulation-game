@@ -30,6 +30,7 @@ services:
     build:
       context: ./philoagents-ui
       dockerfile: Dockerfile
+    command: npx webpack-dev-server --config webpack/config.js
     ports:
       - "8080:8080"
     volumes:
