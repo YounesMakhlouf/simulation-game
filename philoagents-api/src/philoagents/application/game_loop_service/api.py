@@ -25,6 +25,7 @@ class GameStatusResponse(BaseModel):
     other_characters: list[str]
     known_intel: list[str]
     is_game_over: bool
+    is_processing_round: bool = False
 
 
 class CharacterProfile(BaseModel):
@@ -90,6 +91,7 @@ async def get_game_status(
         other_characters=other_chars,
         known_intel=player_char.known_intel,
         is_game_over=service.is_game_over,
+        is_processing_round=service.is_processing_round,
     )
 
 
@@ -137,16 +139,37 @@ async def submit_action(
     try:
         # Submit the human player's action first
         service.submit_player_action(action)
-
-        # Trigger the rest of the round to process in the background.
-        # This makes the API return instantly, providing a better user experience.
-        background_tasks.add_task(service.advance_round)
-
-        return {
-            "message": "Action received. The round is now being processed by all delegates."
-        }
     except ValueError as e:
+        # If the action was already accepted but no round is being processed,
+        # a previous resolution attempt failed. Re-trigger it instead of
+        # dead-ending the player; the round lock makes this safe.
+        if (
+            action.character_id in service.submitted_actions
+            and not service.is_processing_round
+        ):
+            background_tasks.add_task(service.advance_round)
+            return {"message": "Action already received. Retrying round resolution."}
         raise HTTPException(status_code=400, detail=str(e))
+
+    # Trigger the rest of the round to process in the background.
+    # This makes the API return instantly, providing a better user experience.
+    background_tasks.add_task(service.advance_round)
+
+    return {
+        "message": "Action received. The round is now being processed by all delegates."
+    }
+
+
+@router.post("/reset")
+async def reset_game(service: GameLoopService = Depends(get_game_service)):
+    """
+    Resets the game to the initial scenario state and clears any persisted progress.
+    """
+    try:
+        service.reset()
+        return {"message": "Game has been reset to the initial scenario state."}
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.post("/end", response_model=ScoreboardResponse)

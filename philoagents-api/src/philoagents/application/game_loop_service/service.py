@@ -1,15 +1,19 @@
 import asyncio
 from typing import Dict, List, Optional
 
+from loguru import logger
 from opik.integrations.langchain import OpikTracer
 
 from philoagents.application.game_loop_service.workflow.graph import (
     create_action_graph,
     create_judge_graph,
 )
+from philoagents.config import settings
 from philoagents.domain import Action, Character, CharacterFactory
+from philoagents.domain.action import ActionType
 from philoagents.domain.game_state import GameState
 from philoagents.domain.resources import PrivateIntel, VictoryPointAward
+from philoagents.infrastructure.mongo import GameStateRepository
 
 
 class GameLoopService:
@@ -28,14 +32,56 @@ class GameLoopService:
         factory: CharacterFactory,
         undergame_plot_display: str,
         max_rounds: int = 4,  # TODO: increase after we're done testing. Needs higher model limits
+        state_repository: Optional[GameStateRepository] = None,
     ):
         self.game_state = initial_state
+        self._initial_state = initial_state.model_copy(deep=True)
         self.undergame_plot = undergame_plot
         self.undergame_plot_display = undergame_plot_display
         self.factory = factory
         self.submitted_actions: Dict[str, Action] = {}
         self.max_rounds = max_rounds
         self.is_game_over = False
+        self.state_repository = state_repository
+        self._round_lock = asyncio.Lock()
+        self.is_processing_round = False
+
+    def try_resume(self) -> bool:
+        """
+        Restores the last persisted game state, if any.
+
+        Returns:
+            True when a saved game was loaded, False when starting fresh.
+        """
+        if self.state_repository is None:
+            return False
+
+        saved_state = self.state_repository.load()
+        if saved_state is None:
+            return False
+
+        self.game_state = saved_state
+        self.is_game_over = saved_state.round_number > self.max_rounds
+        logger.info(
+            f"Resumed saved game at round {saved_state.round_number} "
+            f"(game over: {self.is_game_over})."
+        )
+        return True
+
+    def reset(self) -> GameState:
+        """
+        Resets the game to the initial scenario state and clears any persisted progress.
+        """
+        if self.is_processing_round:
+            raise RuntimeError("Cannot reset the game while a round is being resolved.")
+
+        self.game_state = self._initial_state.model_copy(deep=True)
+        self.submitted_actions = {}
+        self.is_game_over = False
+        if self.state_repository is not None:
+            self.state_repository.clear()
+        logger.info("Game state reset to the initial scenario state.")
+        return self.get_current_state()
 
     def get_current_state(self) -> GameState:
         """Returns a copy of the current game state."""
@@ -45,6 +91,12 @@ class GameLoopService:
         """
         Receives and stores an action from a player (typically the human player via an API).
         """
+        if self.is_game_over:
+            raise ValueError("The game is over; no more actions can be submitted.")
+        if self.is_processing_round:
+            raise ValueError(
+                "The current round is being resolved. Please wait for the next round."
+            )
         if action.character_id not in self.game_state.characters:
             raise ValueError(
                 f"Character with ID '{action.character_id}' does not exist."
@@ -52,7 +104,7 @@ class GameLoopService:
         if action.character_id in self.submitted_actions:
             raise ValueError("Character has already submitted an action this round.")
 
-        print(
+        logger.info(
             f"Action received from: {self.game_state.characters[action.character_id].name}"
         )
         self.submitted_actions[action.character_id] = action
@@ -64,7 +116,9 @@ class GameLoopService:
         if not private_reports:
             return
 
-        print(f"Delivering {len(private_reports)} private intelligence reports...")
+        logger.info(
+            f"Delivering {len(private_reports)} private intelligence reports..."
+        )
         for report in private_reports:
             recipient_id = report.recipient_id
             if recipient_id in self.game_state.characters:
@@ -72,8 +126,8 @@ class GameLoopService:
                     report.report
                 )
             else:
-                print(
-                    f"Warning: Could not deliver intel to non-existent character ID: {recipient_id}"
+                logger.warning(
+                    f"Could not deliver intel to non-existent character ID: {recipient_id}"
                 )
 
     def _apply_victory_points(self, vp_awards: Optional[List[VictoryPointAward]]):
@@ -84,9 +138,24 @@ class GameLoopService:
                 self.game_state.characters[
                     award.character_id
                 ].victory_points += award.points_awarded
-                print(
+                logger.info(
                     f"Awarded {award.points_awarded} VP to {award.character_id} for: {award.reason}"
                 )
+
+    def _fallback_action(self, character: Character) -> Action:
+        """
+        A safe default action used when an AI delegate fails to produce one in time,
+        so a single failing agent cannot stall the whole round.
+        """
+        return Action(
+            character_id=character.id,
+            reasoning="The delegate failed to issue orders in time.",
+            action_type=ActionType.DIPLOMACY,
+            action_details=(
+                f"{character.name} holds position and maintains their current posture this round."
+            ),
+            resource_cost={},
+        )
 
     async def _run_ai_delegate_turns(self) -> List[Action]:
         """
@@ -98,7 +167,7 @@ class GameLoopService:
             if char_id not in self.submitted_actions
         ]
 
-        async def get_single_action(character: Character):
+        async def get_single_action(character: Character) -> Action:
             graph_builder = create_action_graph()
             graph = graph_builder.compile()
             opik_tracer = OpikTracer(graph=graph.get_graph(xray=True))
@@ -124,7 +193,20 @@ class GameLoopService:
             result = await graph.ainvoke(input=initial_state, config=config)
             return result["action"]
 
-        tasks = [get_single_action(char) for char in ai_characters]
+        async def get_action_with_fallback(character: Character) -> Action:
+            try:
+                return await asyncio.wait_for(
+                    get_single_action(character),
+                    timeout=settings.AI_ACTION_TIMEOUT_SECONDS,
+                )
+            except Exception as e:
+                logger.error(
+                    f"AI delegate '{character.id}' failed to produce an action, "
+                    f"using fallback: {e}"
+                )
+                return self._fallback_action(character)
+
+        tasks = [get_action_with_fallback(char) for char in ai_characters]
         ai_actions = await asyncio.gather(*tasks)
         return ai_actions
 
@@ -151,7 +233,10 @@ class GameLoopService:
             "characters": self.game_state.characters,
             "undergame_plot": self.undergame_plot,
         }
-        result = await graph.ainvoke(input=initial_state, config=config)
+        result = await asyncio.wait_for(
+            graph.ainvoke(input=initial_state, config=config),
+            timeout=settings.JUDGE_TIMEOUT_SECONDS,
+        )
 
         return (
             result["crisis_update"],
@@ -163,8 +248,26 @@ class GameLoopService:
     async def advance_round(self) -> GameState:
         """
         Executes the full logic to advance the game to the next round.
+
+        Only one round can be processed at a time; concurrent calls are rejected.
         """
-        print(f"\n--- Processing Round {self.game_state.round_number} ---")
+        if self._round_lock.locked():
+            raise RuntimeError("A round is already being processed.")
+
+        async with self._round_lock:
+            self.is_processing_round = True
+            try:
+                return await self._advance_round()
+            except Exception:
+                logger.exception(
+                    f"Failed to resolve round {self.game_state.round_number}."
+                )
+                raise
+            finally:
+                self.is_processing_round = False
+
+    async def _advance_round(self) -> GameState:
+        logger.info(f"--- Processing Round {self.game_state.round_number} ---")
 
         # 1. Get actions from all AI delegates
         ai_actions = await self._run_ai_delegate_turns()
@@ -180,20 +283,23 @@ class GameLoopService:
             private_reports,
             victory_point_awards,
         ) = await self._run_judge_turn(all_actions_for_round)
-        self._deliver_private_intel(private_reports)
-        self._apply_victory_points(victory_point_awards)
 
-        # 3. Update the master game state for the new round
+        # 3. Update the master game state for the new round.
         self.game_state.round_number += 1
         self.game_state.crisis_update = new_crisis_update
         self.game_state.characters = updated_characters
         self.game_state.last_round_actions = all_actions_for_round
+        self._deliver_private_intel(private_reports)
+        self._apply_victory_points(victory_point_awards)
 
         # 4. Reset submitted actions for the next round
         self.submitted_actions = {}
 
-        print(f"\n--- Round {self.game_state.round_number} has begun! ---")
+        if self.state_repository is not None:
+            self.state_repository.save(self.game_state)
+
+        logger.info(f"--- Round {self.game_state.round_number} has begun! ---")
         if self.game_state.round_number > self.max_rounds:
             self.is_game_over = True
-            print("--- FINAL ROUND COMPLETE. GAME OVER. ---")
+            logger.info("--- FINAL ROUND COMPLETE. GAME OVER. ---")
         return self.get_current_state()

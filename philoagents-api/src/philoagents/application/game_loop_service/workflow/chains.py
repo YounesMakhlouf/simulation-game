@@ -8,7 +8,9 @@ from philoagents.domain.resources import JudgeOutput
 
 
 def get_chat_model(
-    temperature: float = 0.7, model_name: str = settings.GROQ_LLM_MODEL
+    temperature: float = 0.7,
+    model_name: str = settings.GROQ_LLM_MODEL,
+    max_tokens: int | None = None,
 ) -> ChatGroq:
     """
     A generic factory function to initialize and return a ChatGroq model instance.
@@ -17,6 +19,7 @@ def get_chat_model(
         api_key=settings.GROQ_API_KEY,
         model=model_name,
         temperature=temperature,
+        max_tokens=max_tokens,
     )
 
 
@@ -40,7 +43,7 @@ def get_character_action_chain():
         template_format="jinja2",
     )
 
-    return prompt | structured_llm
+    return (prompt | structured_llm).with_retry(stop_after_attempt=3)
 
 
 def get_judge_resolution_chain():
@@ -55,7 +58,14 @@ def get_judge_resolution_chain():
         A compiled LCEL chain ready for invocation.
     """
     # Use a higher temperature to encourage more creative and narrative-rich crisis updates.
-    model = get_chat_model(temperature=0.7, model_name=settings.GROQ_LLM_MODEL_JUDGE)
+    # The judge's structured output (narrative + full state for every character) is
+    # large; without an explicit max_tokens it gets truncated mid-JSON and Groq
+    # rejects the tool call.
+    model = get_chat_model(
+        temperature=0.7,
+        model_name=settings.GROQ_LLM_MODEL_JUDGE,
+        max_tokens=settings.GROQ_JUDGE_MAX_TOKENS,
+    )
 
     structured_llm = model.with_structured_output(JudgeOutput)
     prompt = ChatPromptTemplate.from_messages(
@@ -65,4 +75,4 @@ def get_judge_resolution_chain():
         template_format="jinja2",
     )
 
-    return prompt | structured_llm
+    return (prompt | structured_llm).with_retry(stop_after_attempt=3)

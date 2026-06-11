@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     GROQ_LLM_MODEL_CONTEXT_SUMMARY: str = "llama-3.1-8b-instant"
     GROQ_LLM_MODEL_SUMMARY: str = "llama-3.1-8b-instant"
     GROQ_LLM_MODEL_JUDGE: str = "openai/gpt-oss-120b"
+    GROQ_JUDGE_MAX_TOKENS: int = 8192
 
     # --- OpenAI Configuration (Required for evaluation) ---
     OPENAI_API_KEY: str | None = Field(
@@ -30,6 +31,7 @@ class Settings(BaseSettings):
     MONGO_STATE_CHECKPOINT_COLLECTION: str = "philosopher_state_checkpoints"
     MONGO_STATE_WRITES_COLLECTION: str = "philosopher_state_writes"
     MONGO_LONG_TERM_MEMORY_COLLECTION: str = "philosopher_long_term_memory"
+    MONGO_GAME_STATE_COLLECTION: str = "game_state"
 
     # --- Comet ML & Opik Configuration ---
     COMET_API_KEY: str | None = Field(
@@ -43,6 +45,10 @@ class Settings(BaseSettings):
     # --- Agents Configuration ---
     TOTAL_MESSAGES_SUMMARY_TRIGGER: int = 30
     TOTAL_MESSAGES_AFTER_SUMMARY: int = 5
+
+    # --- Game Loop Configuration ---
+    AI_ACTION_TIMEOUT_SECONDS: int = 120
+    JUDGE_TIMEOUT_SECONDS: int = 300
 
     # --- RAG Configuration ---
     RAG_TEXT_EMBEDDING_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
