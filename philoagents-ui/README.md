@@ -1,4 +1,4 @@
-# Clash of Titans — Game Client 🎮
+# Clash of Titans - Game Client 🎮
 
 ![Game Screenshot](public/assets/game_screenshot.png)
 

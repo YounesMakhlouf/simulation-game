@@ -8,8 +8,7 @@ This guide will help you set up and run the project.
 - [🎯 Getting Started](#-getting-started)
 - [📁 Project Structure](#-project-structure)
 - [🏗️ Set Up Your Local Infrastructure](#-set-up-your-local-infrastructure)
-- [⚡️ Running the Code for Each Module](#️-running-the-code-for-each-module)
-- [🔧 Utlity Commands](#-utility-commands)
+- [⚡️ Running the Code](#️-running-the-code)
 
 # 📋 Prerequisites
 
@@ -19,7 +18,7 @@ You'll need the following tools installed locally:
 
 | Tool | Version | Purpose | Installation Link |
 |------|---------|---------|------------------|
-| Python | 3.11 | Programming language runtime | [Download](https://www.python.org/downloads/) |
+| Python | 3.12 | Programming language runtime | [Download](https://www.python.org/downloads/) |
 | uv | ≥ 0.4.30 | Python package installer and virtual environment manager | [Download](https://github.com/astral-sh/uv) |
 | GNU Make | ≥ 3.81 | Build automation tool | [Download](https://www.gnu.org/software/make/) |
 | Git | ≥2.44.0 | Version control | [Download](https://git-scm.com/downloads) |
@@ -37,11 +36,11 @@ We will be using Unix commands, so if you are using Windows, you will need to **
 
 Also, the project requires access to these cloud services. The authentication to these services is done by adding the corresponding environment variables to the `.env` file:
 
-| Service | Purpose | Cost | Environment Variable | Setup Guide | Starting with Module |
-|---------|---------|------|---------------------|-------------| ---------------------|
-| [Groq](https://rebrand.ly/philoagents-groq) | LLM API that powers the agents | Free tier | `GROQ_API_KEY` | [Quick Start Guide](https://rebrand.ly/philoagents-groq-quickstart) | Module 1 |
-| [Opik](https://rebrand.ly/philoagents-opik) | LLMOps | Free tier (Hosted on Comet - same API Key) | `COMET_API_KEY` | [Quick Start Guide](https://rebrand.ly/philoagents-opik-quickstart) | Module 5 |
-| [OpenAI API](https://openai.com/index/openai-api/) | LLM API used for evaluation | Pay-per-use | `OPENAI_API_KEY` | [Quick Start Guide](https://platform.openai.com/docs/quickstart) | Module 5 |
+| Service | Purpose | Cost | Environment Variable | Setup Guide |
+|---------|---------|------|---------------------|-------------|
+| [Groq](https://rebrand.ly/philoagents-groq) | LLM API that powers the agents | Free tier | `GROQ_API_KEY` | [Quick Start Guide](https://rebrand.ly/philoagents-groq-quickstart) |
+| [Opik](https://rebrand.ly/philoagents-opik) | LLMOps (observability and evaluation) | Free tier (Hosted on Comet - same API Key) | `COMET_API_KEY` | [Quick Start Guide](https://rebrand.ly/philoagents-opik-quickstart) |
+| [OpenAI API](https://openai.com/index/openai-api/) | LLM API used for evaluation | Pay-per-use | `OPENAI_API_KEY` | [Quick Start Guide](https://platform.openai.com/docs/quickstart) |
 
 When working locally, the infrastructure is set up using Docker. Thus, you can use the default values found in the [config.py](philoagents-api/src/philoagents/config.py) file for all the infrastructure-related environment variables.
 
@@ -58,7 +57,7 @@ But, in case you want to deploy the code, you'll need to setup the following ser
 Start by cloning the repository and navigating to the `philoagents-api` project directory:
 ```
 git clone https://github.com/YounesMakhlouf/simulation-game.git
-cd philoagents-course/philoagents-api
+cd simulation-game/philoagents-api
 ```
 
 Next, we have to prepare your Python environment and its dependencies.
@@ -73,10 +72,10 @@ uv venv .venv
 uv pip install -e .
 ```
 
-Test that you have Python 3.11.9 installed in your new `uv` environment:
+Test that you have Python 3.12 installed in your new `uv` environment:
 ```bash
 uv run python --version
-# Output: Python 3.11.9
+# Output: Python 3.12.x
 ```
 
 This command will:
@@ -120,17 +119,17 @@ We use Docker to set up the local infrastructure (Game UI, Agent API, MongoDB).
 > [!WARNING]
 > Before running the command below, ensure you do not have any processes running on ports `27017` (MongoDB), `8000` (Agent API) and `8080` (Game UI).
 
-From the root `philoagents-course` directory, to start the Docker infrastructure, run:
+From the root `simulation-game` directory, to start the Docker infrastructure, run:
 ```bash
 make infrastructure-up
 ```
 
-From the root `philoagents-course` directory, to stop the Docker infrastructure, run:
+From the root `simulation-game` directory, to stop the Docker infrastructure, run:
 ```bash
 make infrastructure-stop
 ```
 
-From the root `philoagents-course` directory, to build the Docker images (without running them), run:
+From the root `simulation-game` directory, to build the Docker images (without running them), run:
 ```bash
 make infrastructure-build
 ```
@@ -139,7 +138,7 @@ make infrastructure-build
 
 After you have set up your environment (through the `.env` file) and local infrastructure (through Docker), you are ready to run and test out the game simulation.
 
-First, from the root `philoagents-course` directory, populate the long term memory within your MongoDB instance (required for agentic RAG) with the following command:
+First, from the root `simulation-game` directory, populate the long term memory within your MongoDB instance (required for agentic RAG) with the following command:
 ```bash
 make create-long-term-memory
 ```
@@ -153,13 +152,13 @@ http://localhost:8080
 ```
 Which will open the game UI, similar to the screenshot below:
 
-![Philosopher Town](static/game_starting_page.png)
+![Clash of Titans starting page](static/game_starting_page.png)
 
 To see the instructions for playing the game, you can click on the `Instructions` button. Click the `Let's Play!` button to start the game.
 
 Now you can start playing the game, wander around the town and talk to fellow delegates, as seen in the screenshot below:
 
-![Philosopher Town](static/game_socrates_example.png)
+![In-game conversation](static/game_socrates_example.png)
 
 You can also access the API documentation by typing in your browser:
 ```
@@ -180,7 +179,7 @@ To visualize the prompt traces, as seen in the screenshot below, visit [Opik](ht
 
 ![Opik](static/opik_monitoring_example.png)
 
-To evaluate the agents, from the root `philoagents-course` directory, you can run the following command:
+To evaluate the agents, from the root `simulation-game` directory, you can run the following command:
 ```bash
 make evaluate-agent
 ```
