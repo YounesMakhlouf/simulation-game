@@ -1,4 +1,4 @@
-import {Scene} from "phaser";
+import Phaser, {Scene} from "phaser";
 import {createUIButton} from "./ButtonFactory";
 
 export class BaseModal extends Scene {

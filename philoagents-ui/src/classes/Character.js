@@ -1,3 +1,5 @@
+import Phaser from "phaser";
+
 class Character {
   constructor(scene, config) {
     this.scene = scene;

@@ -1,4 +1,4 @@
-import {Scene} from "phaser";
+import Phaser, {Scene} from "phaser";
 import Character from "../classes/Character";
 import DialogueBox from "../classes/DialogueBox";
 import DialogueManager from "../classes/DialogueManager";

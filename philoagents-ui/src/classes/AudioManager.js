@@ -1,3 +1,5 @@
+import Phaser from "phaser";
+
 export class AudioManager {
     /**
      * A central manager for all game audio, including background music and sound effects.
