@@ -32,11 +32,11 @@ module.exports = {
             },
             {
                 test: [/\.vert$/, /\.frag$/],
-                use: "raw-loader"
+                type: "asset/source"
             },
             {
                 test: /\.(gif|png|jpe?g|svg|xml|glsl)$/i,
-                use: "file-loader"
+                type: "asset/resource"
             }
         ]
     },

@@ -22,6 +22,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "datasketch>=1.10.0",
     "sentence-transformers>=5.5.1",
+    "torch>=2.12.0",
 ]
 
 [dependency-groups]
@@ -31,8 +32,16 @@ dev = [
     "pre-commit>=4.6.0",
 ]
 
-[tool.pip]
-extra-index-url = "https://download.pytorch.org/whl/cpu/torch_stable.html"
+# Pull the CPU-only torch build instead of the default CUDA wheels (~3GB of
+# unused NVIDIA libs). The game runs embeddings on CPU. Restricted to Linux/Windows;
+# macOS uses the default PyPI wheels (already CPU/MPS).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
 
 [build-system]
 requires = ["hatchling"]
