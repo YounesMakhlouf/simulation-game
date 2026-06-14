@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import ApiService from "../services/ApiService";
 
 export class GameManager {

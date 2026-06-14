@@ -1,3 +1,5 @@
+import Phaser from "phaser";
+
 const BUTTON_PRESETS = {
     // Main menu style - white with blue hover
     menu: {
