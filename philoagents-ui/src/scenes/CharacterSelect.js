@@ -95,9 +95,19 @@ export class CharacterSelect extends Scene {
             if (portrait.filters) portrait.filters.internal.clear();
         });
 
-        // Highlight the selected one with a gold glow (v4 filter)
+        // Highlight the selected one with a crisp gold border + a soft gold glow (v4 filter)
         selectedPortrait.enableFilters();
         selectedPortrait.filters.internal.addGlow(0xffd700, 6, 0, 1);
+
+        if (!this.selectionBorder) this.selectionBorder = this.add.graphics();
+        this.selectionBorder.clear();
+        this.selectionBorder.lineStyle(6, 0xffd700, 1);
+        this.selectionBorder.strokeRect(
+            selectedPortrait.x - selectedPortrait.displayWidth / 2,
+            selectedPortrait.y - selectedPortrait.displayHeight / 2,
+            selectedPortrait.displayWidth,
+            selectedPortrait.displayHeight
+        );
 
         this.selectedCharacter = selectedPortrait.getData("character");
         this.updateInfoPanel();
