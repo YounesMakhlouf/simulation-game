@@ -1,4 +1,4 @@
-import {Scene} from "phaser";
+import {Scene, TintModes} from "phaser";
 import ApiService from "../services/ApiService";
 import {createPresetButton} from "../classes/ButtonFactory";
 
@@ -66,9 +66,16 @@ export class CharacterSelect extends Scene {
 
             portrait.setData("character", char);
             this.portraits.push(portrait);
-            // Visual feedback for selection
-            const border = this.add.graphics();
-            portrait.setData("border", border);
+
+            // Hover highlight: additive brighten (v4 tint mode), skipped while selected
+            portrait.on("pointerover", () => {
+                if (this.selectedCharacter !== char) {
+                    portrait.setTint(0x444444).setTintMode(TintModes.ADD);
+                }
+            });
+            portrait.on("pointerout", () => {
+                if (this.selectedCharacter !== char) portrait.clearTint();
+            });
 
             portrait.on("pointerdown", () => {
                 this.selectCharacter(portrait);
@@ -82,17 +89,15 @@ export class CharacterSelect extends Scene {
     }
 
     selectCharacter(selectedPortrait) {
-        // Reset all borders
+        // Clear hover tint and any existing glow from all portraits
         this.portraits.forEach((portrait) => {
-            portrait.getData("border").clear();
-            portrait.setTint(0xffffff); // Reset tint
+            portrait.clearTint();
+            if (portrait.filters) portrait.filters.internal.clear();
         });
 
-        // Highlight the selected one
-        const border = selectedPortrait.getData("border");
-        border.lineStyle(6, 0xffd700, 1); // Gold border
-        border.strokeRect(selectedPortrait.x - selectedPortrait.displayWidth / 2, selectedPortrait.y - selectedPortrait.displayHeight / 2, selectedPortrait.displayWidth, selectedPortrait.displayHeight);
-        selectedPortrait.setTint(0xffffcc); // Slight highlight tint
+        // Highlight the selected one with a gold glow (v4 filter)
+        selectedPortrait.enableFilters();
+        selectedPortrait.filters.internal.addGlow(0xffd700, 6, 0, 1);
 
         this.selectedCharacter = selectedPortrait.getData("character");
         this.updateInfoPanel();

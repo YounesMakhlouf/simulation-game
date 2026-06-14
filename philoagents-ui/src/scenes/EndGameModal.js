@@ -16,7 +16,8 @@ export class EndGameModal extends BaseModal {
             showCloseButton: false,
             closeOnEsc: false,
             resumeGameOnClose: false,
-            backgroundAlpha: 0.8
+            backgroundAlpha: 0.8,
+            backdropGrayscale: 1 // fully gray the world at game over
         });
     }
 

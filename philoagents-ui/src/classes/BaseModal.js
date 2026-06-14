@@ -6,9 +6,17 @@ export class BaseModal extends Scene {
         super(key);
 
         this.options = {
-            // Overlay
+            // Overlay (kept mainly as an input blocker; the backdrop blur now
+            // provides the visual separation, so this is only a light dim)
             overlayColor: 0x000000,
-            overlayAlpha: 0.7,
+            overlayAlpha: 0.35,
+
+            // Backdrop focus effect (WebGL): blur + desaturate the scenes behind.
+            // backdropGrayscale 0..1 (1 = full grayscale, used for pause/end-game
+            // to clearly signal a stopped game state).
+            backdropBlur: true,
+            backdropGrayscale: 0.6,
+            backdropBlurStrength: 1,
 
             // Panel
             panelColor: 0x111111,
@@ -61,22 +69,60 @@ export class BaseModal extends Scene {
         this.createContent(); // subclass implements
         if (this.options.closeButtonText) this.createCloseButton();
         this.setupKeyboardHandling();
+        this.applyBackdropFilters();
 
         // keep layout correct on resize
         this.scale.on("resize", this.updateLayout, this);
         this.events.once(Phaser.Scenes.Events.SLEEP, () => {
             this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
+            this.removeBackdropFilters();
         });
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
+            this.removeBackdropFilters();
         });
         this.events.once(Phaser.Scenes.Events.DESTROY, () => {
             this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
+            this.removeBackdropFilters();
         });
     }
 
     shutdown() {
         this.scale.off("resize", this.updateLayout, this);
+        this.removeBackdropFilters();
+    }
+
+    // Blur + desaturate the main camera of every active scene rendered behind
+    // this modal, so the modal panel becomes the visual focus. WebGL only.
+    applyBackdropFilters() {
+        this._backdropFilters = null;
+        if (!this.options.backdropBlur) return;
+        if (this.sys.game.renderer.type !== Phaser.WEBGL) return;
+
+        const manager = this.scene.manager;
+        const myIndex = manager.getIndex(this.scene.key);
+        this._backdropFilters = [];
+
+        manager.getScenes(true).forEach((scene) => {
+            if (scene.scene.key === this.scene.key) return;
+            // Only filter scenes that render behind this modal (lower index)
+            if (manager.getIndex(scene) > myIndex) return;
+            const camera = scene.cameras && scene.cameras.main;
+            if (!camera || !camera.filters) return;
+
+            const blur = camera.filters.internal.addBlur(0, 2, 2, this.options.backdropBlurStrength);
+            const desaturate = camera.filters.internal.addColorMatrix();
+            desaturate.colorMatrix.grayscale(this.options.backdropGrayscale);
+            this._backdropFilters.push({camera, controllers: [blur, desaturate]});
+        });
+    }
+
+    removeBackdropFilters() {
+        if (!this._backdropFilters) return;
+        this._backdropFilters.forEach(({camera, controllers}) => {
+            controllers.forEach((c) => camera.filters.internal.remove(c));
+        });
+        this._backdropFilters = null;
     }
 
     createOverlay() {
