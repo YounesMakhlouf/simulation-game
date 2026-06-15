@@ -17,7 +17,6 @@ export class PauseMenu extends BaseModal {
             closeButtonText: null,
             closeOnEsc: true,
             resumeGameOnClose: true,
-            backgroundAlpha: 0.7,
             backdropGrayscale: 1, // fully gray the frozen game while paused
         });
     }
