@@ -60,7 +60,9 @@ async def get_response(
             writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
         ) as checkpointer:
             graph = graph_builder.compile(checkpointer=checkpointer)
-            opik_tracer = OpikTracer(graph=graph.get_graph(xray=True))
+            opik_tracer = OpikTracer(
+                graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+            )
             thread_id = __get_conversation_thread_id(
                 sender_id, receiver_character.id, new_thread
             )
@@ -114,7 +116,9 @@ async def get_streaming_response(
             writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
         ) as checkpointer:
             graph = graph_builder.compile(checkpointer=checkpointer)
-            opik_tracer = OpikTracer(graph=graph.get_graph(xray=True))
+            opik_tracer = OpikTracer(
+                graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+            )
             thread_id = __get_conversation_thread_id(
                 sender_id, receiver_character.id, new_thread
             )
