@@ -170,7 +170,9 @@ class GameLoopService:
         async def get_single_action(character: Character) -> Action:
             graph_builder = create_action_graph()
             graph = graph_builder.compile()
-            opik_tracer = OpikTracer(graph=graph.get_graph(xray=True))
+            opik_tracer = OpikTracer(
+                graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+            )
             thread_id = f"{character.id}-action-round-{self.game_state.round_number}"
             config = {
                 "configurable": {"thread_id": thread_id},
@@ -223,7 +225,9 @@ class GameLoopService:
         """
         graph_builder = create_judge_graph()
         graph = graph_builder.compile()
-        opik_tracer = OpikTracer(graph=graph.get_graph(xray=True))
+        opik_tracer = OpikTracer(
+            graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+        )
         thread_id = f"judge-resolution-round-{self.game_state.round_number}"
         config = {"configurable": {"thread_id": thread_id}, "callbacks": [opik_tracer]}
         current_state_json_str = self.game_state.model_dump_json(indent=2)

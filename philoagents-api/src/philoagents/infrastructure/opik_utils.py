@@ -11,16 +11,15 @@ def configure() -> None:
         os.environ["OPIK_PROJECT_NAME"] = settings.COMET_PROJECT
 
         try:
-            # opik.configure resolves the API key's default workspace itself when
-            # none is passed; force=True implies automatic_approvals, so it stays
-            # non-interactive on a server. This avoids opik's private
-            # OpikConfigurator._get_default_workspace().
             opik.configure(
                 api_key=settings.COMET_API_KEY,
+                project_name=settings.COMET_PROJECT,
                 use_local=False,
                 force=True,
             )
-            logger.info("Opik configured successfully.")
+            logger.info(
+                f"Opik configured successfully (project '{settings.COMET_PROJECT}')."
+            )
         except Exception:
             logger.warning(
                 "Couldn't configure Opik. There is probably a problem with the COMET_API_KEY or COMET_PROJECT environment variables or with the Opik server."
