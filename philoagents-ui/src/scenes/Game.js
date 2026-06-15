@@ -208,6 +208,9 @@ export class Game extends Scene {
         const camera = this.cameras.main;
         camera.startFollow(this.player);
         camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+        // v4 filter: a soft vignette darkens the screen edges for a more
+        // cinematic, focused view of the town.
+        camera.filters.external.addVignette(0.5, 0.5, 0.6, 0.4);
         return camera;
     }
 

@@ -18,6 +18,32 @@ export class HUDScene extends Scene {
     }
 
     create() {
+        // v4 Gradient game object: a dark-to-transparent top bar improves the
+        // legibility of the HUD text over the busy tilemap and adds polish.
+        const screenWidth = this.cameras.main.width;
+        this.add
+            .gradient(
+                {
+                    shapeMode: 0, // LINEAR
+                    start: {x: 0, y: 0},
+                    shape: {x: 0, y: 1},
+                    bands: [
+                        {
+                            start: 0,
+                            end: 1,
+                            colorStart: [0, 0, 0, 0.6],
+                            colorEnd: [0, 0, 0, 0],
+                            interpolation: 0,
+                        },
+                    ],
+                },
+                screenWidth / 2,
+                60,
+                screenWidth,
+                120
+            )
+            .setDepth(-1);
+
         this.roundText = this.add.text(20, 20, "Round: 1", {
             fontSize: "24px", color: "#ffffff", stroke: "#000000", strokeThickness: 4,
         });
