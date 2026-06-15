@@ -1,5 +1,5 @@
-import Phaser, {Scene} from "phaser";
-import {createUIButton} from "./ButtonFactory";
+import Phaser, { Scene } from "phaser";
+import { createUIButton } from "./ButtonFactory";
 
 export class BaseModal extends Scene {
     constructor(key, options = {}) {
@@ -11,9 +11,7 @@ export class BaseModal extends Scene {
             overlayColor: 0x000000,
             overlayAlpha: 0.35,
 
-            // Backdrop focus effect (WebGL): blur + desaturate the scenes behind.
-            // backdropGrayscale 0..1 (1 = full grayscale, used for pause/end-game
-            // to clearly signal a stopped game state).
+            // Backdrop focus effect to clearly signal a stopped game state).
             backdropBlur: true,
             backdropGrayscale: 0.6,
             backdropBlurStrength: 1,
@@ -93,7 +91,7 @@ export class BaseModal extends Scene {
     }
 
     // Blur + desaturate the main camera of every active scene rendered behind
-    // this modal, so the modal panel becomes the visual focus. WebGL only.
+    // this modal, so the modal panel becomes the visual focus.
     applyBackdropFilters() {
         this._backdropFilters = null;
         if (!this.options.backdropBlur) return;
@@ -113,20 +111,20 @@ export class BaseModal extends Scene {
             const blur = camera.filters.internal.addBlur(0, 2, 2, this.options.backdropBlurStrength);
             const desaturate = camera.filters.internal.addColorMatrix();
             desaturate.colorMatrix.grayscale(this.options.backdropGrayscale);
-            this._backdropFilters.push({camera, controllers: [blur, desaturate]});
+            this._backdropFilters.push({ camera, controllers: [blur, desaturate] });
         });
     }
 
     removeBackdropFilters() {
         if (!this._backdropFilters) return;
-        this._backdropFilters.forEach(({camera, controllers}) => {
+        this._backdropFilters.forEach(({ camera, controllers }) => {
             controllers.forEach((c) => camera.filters.internal.remove(c));
         });
         this._backdropFilters = null;
     }
 
     createOverlay() {
-        const {width, height} = this.scale;
+        const { width, height } = this.scale;
         this.overlay = this.add.graphics();
         this.overlay.fillStyle(this.options.overlayColor, this.options.overlayAlpha);
         this.overlay.fillRect(0, 0, width, height);
@@ -136,7 +134,7 @@ export class BaseModal extends Scene {
     }
 
     createPanel() {
-        const {panelX, panelY, panelWidth, panelHeight} = this.computePanelRect();
+        const { panelX, panelY, panelWidth, panelHeight } = this.computePanelRect();
 
         this.panelX = panelX;
         this.panelY = panelY;
@@ -158,7 +156,7 @@ export class BaseModal extends Scene {
     }
 
     computePanelRect() {
-        const {width, height} = this.scale;
+        const { width, height } = this.scale;
         const margin = this.options.margin;
 
         const maxW = Math.min(this.options.maxPanelWidth, width - margin * 2);
@@ -170,7 +168,7 @@ export class BaseModal extends Scene {
         const panelX = this.options.autoCenter ? (width - panelWidth) / 2 : this.options.panelX ?? margin;
         const panelY = this.options.autoCenter ? (height - panelHeight) / 2 : this.options.panelY ?? margin;
 
-        return {panelX, panelY, panelWidth, panelHeight};
+        return { panelX, panelY, panelWidth, panelHeight };
     }
 
     createTitle() {
@@ -198,7 +196,7 @@ export class BaseModal extends Scene {
         const width = this.panelWidth - pad * 2;
         const height = this.panelY + this.panelHeight - pad - top;
 
-        return {x, y, width, height};
+        return { x, y, width, height };
     }
 
     createContent() {
@@ -213,7 +211,7 @@ export class BaseModal extends Scene {
                 fontSize: this.options.closeButtonFontSize, color: this.options.closeButtonColor, fontStyle: "bold",
             })
             .setOrigin(0.5, 1)
-            .setInteractive({useHandCursor: true});
+            .setInteractive({ useHandCursor: true });
 
         this.closeButton.on("pointerover", () => this.closeButton.setColor(this.options.closeButtonHoverColor));
         this.closeButton.on("pointerout", () => this.closeButton.setColor(this.options.closeButtonColor));
@@ -236,7 +234,7 @@ export class BaseModal extends Scene {
         if (!this.sys || !this.sys.isActive) return;
 
         // Overlay
-        const {width, height} = this.scale;
+        const { width, height } = this.scale;
         this.overlay.clear();
         this.overlay.fillStyle(this.options.overlayColor, this.options.overlayAlpha);
         this.overlay.fillRect(0, 0, width, height);
@@ -277,8 +275,8 @@ export class BaseModal extends Scene {
     }
 
     createButton(x, y, text, onClick, opts = {}) {
-        const defaults = {width: 280, height: 50, radius: 12};
-        const {container} = createUIButton(this, x, y, text, onClick, {
+        const defaults = { width: 280, height: 50, radius: 12 };
+        const { container } = createUIButton(this, x, y, text, onClick, {
             ...defaults, ...opts,
         });
         return container;
