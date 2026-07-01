@@ -31,7 +31,3 @@ export function getWebSocketBaseUrl() {
 // --- Networking timings (milliseconds) ---
 export const REQUEST_TIMEOUT_MS = 15000;
 export const POLL_INTERVAL_MS = 5000;
-// Stop polling for a new round after this many attempts (~5 min at 5s each).
-export const POLL_MAX_ATTEMPTS = 60;
-// Give up if this many consecutive polls fail to reach the server.
-export const POLL_MAX_CONSECUTIVE_FAILURES = 3;

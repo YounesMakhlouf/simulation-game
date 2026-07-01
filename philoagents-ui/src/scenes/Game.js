@@ -61,8 +61,6 @@ export class Game extends Scene {
         this.gameManager.events.on("showActionModal", this.showActionModal, this);
         this.gameManager.events.on("error", this.showError, this);
         this.gameManager.events.on("showEndGameModal", this.showEndGameModal, this);
-        this.gameManager.events.on("waitingForRound", this.showWaitingIndicator, this);
-        this.gameManager.events.on("connectionLost", this.showConnectionLost, this);
 
         // Tear down timers and listeners when the scene stops.
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.gameManager.destroy());
@@ -73,8 +71,6 @@ export class Game extends Scene {
 
     showEndGameModal() {
         console.log("Game Scene: Game Over. Launching EndGameModal.");
-        this.hideWaitingIndicator();
-        this.clearConnectionLost();
         this.scene.pause("Game");
         this.scene.pause("HUDScene");
         this.scene.launch("EndGameModal", {gameManager: this.gameManager});
@@ -338,8 +334,6 @@ export class Game extends Scene {
     
     showCrisisModal(crisisText, roundNumber) {
         console.log(`Game Scene: Launching CrisisModal for round ${roundNumber}.`);
-        this.hideWaitingIndicator();
-        this.clearConnectionLost();
         this.scene.pause("Game"); // Pause the game world
         this.scene.launch("CrisisModal", {text: crisisText, round: roundNumber});
     }
@@ -379,84 +373,5 @@ export class Game extends Scene {
         this.tweens.add({
             targets: text, alpha: 0, duration: 1500, delay: 1500, onComplete: () => text.destroy(),
         });
-    }
-
-    /**
-     * Shows (or updates) a persistent, non-blocking banner while the round is
-     * being resolved by the server.
-     * @param {{attempts: number, processing: boolean}} status
-     */
-    showWaitingIndicator(status = {}) {
-        const message = status.processing
-            ? "The Judge is resolving the round..."
-            : "Awaiting the outcome of the round...";
-
-        if (!this.waitingIndicator) {
-            this.waitingIndicator = this.add
-                .text(this.cameras.main.centerX, 60, message, {
-                    fontSize: "18px",
-                    fontFamily: "Arial",
-                    color: "#ffffff",
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    padding: {x: 12, y: 8},
-                    stroke: "#000000",
-                    strokeThickness: 2,
-                })
-                .setOrigin(0.5)
-                .setScrollFactor(0)
-                .setDepth(1000);
-        } else {
-            this.waitingIndicator.setText(message);
-        }
-    }
-
-    hideWaitingIndicator() {
-        if (this.waitingIndicator) {
-            this.waitingIndicator.destroy();
-            this.waitingIndicator = null;
-        }
-    }
-
-    /**
-     * Shows a persistent banner with a Retry action when polling gives up.
-     * @param {{message: string, retry: function}} payload
-     */
-    showConnectionLost({message, retry} = {}) {
-        this.hideWaitingIndicator();
-        this.clearConnectionLost();
-
-        const x = this.cameras.main.centerX;
-        const banner = this.add
-            .text(x, 60, `${message}\nClick here to retry.`, {
-                fontSize: "18px",
-                fontFamily: "Arial",
-                color: "#ffffff",
-                backgroundColor: "rgba(139,0,0,0.85)",
-                padding: {x: 14, y: 10},
-                align: "center",
-                stroke: "#000000",
-                strokeThickness: 2,
-            })
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setDepth(1001)
-            .setInteractive({useHandCursor: true});
-
-        banner.on("pointerdown", () => {
-            this.clearConnectionLost();
-            if (typeof retry === "function") {
-                this.showWaitingIndicator({processing: false});
-                retry();
-            }
-        });
-
-        this.connectionLostBanner = banner;
-    }
-
-    clearConnectionLost() {
-        if (this.connectionLostBanner) {
-            this.connectionLostBanner.destroy();
-            this.connectionLostBanner = null;
-        }
     }
 }
