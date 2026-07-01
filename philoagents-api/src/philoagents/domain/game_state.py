@@ -21,3 +21,9 @@ class GameState(BaseModel):
         description="A dictionary mapping character_id to their full Character object."
     )
     last_round_actions: Optional[List[Action]] = Field(default=None, description="...")
+    player_undergame_guess: Optional[str] = Field(
+        default=None,
+        description=(
+            "The human player's locked-in Undergame guess. Set once at game end."
+        ),
+    )

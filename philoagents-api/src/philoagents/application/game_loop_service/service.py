@@ -8,6 +8,7 @@ from philoagents.application.game_loop_service.workflow.graph import (
     create_action_graph,
     create_judge_graph,
 )
+from philoagents.application.scoring_service import ScoringService
 from philoagents.config import settings
 from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.domain.action import ActionType
@@ -86,6 +87,51 @@ class GameLoopService:
     def get_current_state(self) -> GameState:
         """Returns a copy of the current game state."""
         return self.game_state.model_copy(deep=True)
+
+    def finalize_scores(
+        self, player_character_id: str, undergame_guess: str
+    ) -> tuple[dict, str]:
+        """
+        Computes the final scoreboard for a finished game.
+
+        The player's Undergame guess is locked in on the first call (and
+        persisted), so replaying this endpoint with a different guess cannot be
+        used to fish for a better score. Subsequent calls recompute from the
+        locked guess and return the same result.
+
+        Returns:
+            A tuple of (raw scores keyed by character id, the displayable
+            Undergame plot).
+
+        Raises:
+            ValueError: If the game is not over or the character is unknown.
+        """
+        if not self.is_game_over:
+            raise ValueError("The game is not over yet; scores cannot be finalized.")
+        if player_character_id not in self.game_state.characters:
+            raise ValueError(f"Character '{player_character_id}' not found.")
+
+        # Lock the guess on first submission; ignore later attempts to change it.
+        if self.game_state.player_undergame_guess is None:
+            self.game_state.player_undergame_guess = undergame_guess
+            if self.state_repository is not None:
+                self.state_repository.save(self.game_state)
+        locked_guess = self.game_state.player_undergame_guess
+
+        undergame_guesses = {player_character_id: locked_guess}
+        for char_id, char in self.game_state.characters.items():
+            if char_id != player_character_id:
+                # TODO: Replace with a real per-character undergame-guess agent.
+                undergame_guesses[char.id] = (
+                    "The events were simply the result of political maneuvering."
+                )
+
+        raw_scores = ScoringService().calculate_final_scores(
+            characters=list(self.game_state.characters.values()),
+            undergame_guesses=undergame_guesses,
+            actual_undergame=self.undergame_plot,
+        )
+        return raw_scores, self.undergame_plot_display
 
     def submit_player_action(self, action: Action):
         """

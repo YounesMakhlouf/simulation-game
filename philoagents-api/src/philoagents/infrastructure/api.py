@@ -1,3 +1,4 @@
+import json
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -13,6 +14,7 @@ from philoagents.application.conversation_service.reset_conversation import (
     reset_conversation_state,
 )
 from philoagents.application.game_loop_service.api import router as game_loop_router
+from philoagents.config import settings
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure.dependencies import get_character_factory
 
@@ -35,7 +37,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,16 +83,56 @@ async def websocket_chat(websocket: WebSocket):
 
     try:
         while True:
-            data = await websocket.receive_json()
+            try:
+                raw = await websocket.receive_text()
+            except WebSocketDisconnect:
+                raise
+            except Exception:
+                # A non-text frame (e.g. binary) makes receive_text() raise.
+                # Reject it but keep the connection usable.
+                await websocket.send_json(
+                    {"error": "Only text (JSON) messages are supported."}
+                )
+                continue
 
-            if (
-                "message" not in data
-                or "sender_id" not in data
-                or "receiver_id" not in data
+            if len(raw.encode("utf-8")) > settings.MAX_WS_MESSAGE_BYTES:
+                await websocket.send_json(
+                    {
+                        "error": (
+                            "Message too large. Limit is "
+                            f"{settings.MAX_WS_MESSAGE_BYTES} bytes."
+                        )
+                    }
+                )
+                continue
+
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                await websocket.send_json({"error": "Message must be valid JSON."})
+                continue
+
+            if not isinstance(data, dict) or not all(
+                isinstance(data.get(field), str)
+                for field in ("message", "sender_id", "receiver_id")
             ):
                 await websocket.send_json(
                     {
-                        "error": "Invalid message format. Required fields: 'message' and 'philosopher_id'"
+                        "error": (
+                            "Invalid message format. Required string fields: "
+                            "'message', 'sender_id', 'receiver_id'."
+                        )
+                    }
+                )
+                continue
+
+            if len(data["message"]) > settings.MAX_CHAT_MESSAGE_CHARS:
+                await websocket.send_json(
+                    {
+                        "error": (
+                            "Chat message too long. Limit is "
+                            f"{settings.MAX_CHAT_MESSAGE_CHARS} characters."
+                        )
                     }
                 )
                 continue
