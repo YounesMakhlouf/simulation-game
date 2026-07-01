@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from pydantic import Field, field_validator
@@ -54,10 +53,7 @@ class Settings(BaseSettings):
     # --- API Security Configuration ---
     CORS_ALLOW_ORIGINS: list[str] = Field(
         default=["http://localhost:8080"],
-        description=(
-            "Origins permitted to call the API. Accepts a JSON list or a "
-            "comma-separated string in the environment."
-        ),
+        description="Origins permitted to call the API (JSON list in the environment).",
     )
     MAX_WS_MESSAGE_BYTES: int = Field(
         default=16_384,
@@ -68,15 +64,17 @@ class Settings(BaseSettings):
         description="Maximum length of a chat message's text content.",
     )
 
-    @field_validator("CORS_ALLOW_ORIGINS", mode="before")
+    @field_validator("CORS_ALLOW_ORIGINS")
     @classmethod
-    def _parse_origins(cls, value: object) -> object:
-        """Accept CORS_ALLOW_ORIGINS as a JSON list or a comma-separated string."""
-        if isinstance(value, str):
-            stripped = value.strip()
-            if stripped.startswith("["):
-                return json.loads(stripped)
-            return [origin.strip() for origin in stripped.split(",") if origin.strip()]
+    def _reject_wildcard_origin(cls, value: list[str]) -> list[str]:
+        # A wildcard origin is unsafe together with allow_credentials=True and
+        # defeats the point of the allowlist. Reject it so an env misconfiguration
+        # can't silently reintroduce the insecure configuration.
+        if "*" in value:
+            raise ValueError(
+                'CORS_ALLOW_ORIGINS must not contain "*"; a wildcard origin is '
+                "unsafe with credentialed requests. List explicit origins instead."
+            )
         return value
 
     # --- RAG Configuration ---

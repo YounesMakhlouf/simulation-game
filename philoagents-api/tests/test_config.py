@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from philoagents.config import Settings
 
 
@@ -9,22 +12,11 @@ def test_cors_origins_default_is_local_ui():
     assert _settings().CORS_ALLOW_ORIGINS == ["http://localhost:8080"]
 
 
-def test_cors_origins_parses_comma_separated_string():
-    settings = _settings(
-        CORS_ALLOW_ORIGINS="https://a.example, https://b.example ,https://c.example"
-    )
-    assert settings.CORS_ALLOW_ORIGINS == [
-        "https://a.example",
-        "https://b.example",
-        "https://c.example",
-    ]
+def test_cors_origins_accepts_explicit_list():
+    settings = _settings(CORS_ALLOW_ORIGINS=["https://a.example", "https://b.example"])
+    assert settings.CORS_ALLOW_ORIGINS == ["https://a.example", "https://b.example"]
 
 
-def test_cors_origins_accepts_json_list():
-    settings = _settings(CORS_ALLOW_ORIGINS='["https://a.example"]')
-    assert settings.CORS_ALLOW_ORIGINS == ["https://a.example"]
-
-
-def test_cors_origins_accepts_python_list():
-    settings = _settings(CORS_ALLOW_ORIGINS=["https://a.example"])
-    assert settings.CORS_ALLOW_ORIGINS == ["https://a.example"]
+def test_cors_origins_rejects_wildcard():
+    with pytest.raises(ValidationError, match='must not contain "\\*"'):
+        _settings(CORS_ALLOW_ORIGINS=["https://a.example", "*"])
