@@ -38,6 +38,18 @@ npm run dev
 The local development server runs on http://localhost:8080 by default.
 Note: The backend API must be running for the game to be fully functional.
 
+## Configuring the API URL
+
+By default the client talks to `http://localhost:8000` (and derives the API
+host automatically under HTTPS, e.g. GitHub Codespaces). To point a build at a
+deployed backend, set the `API_BASE_URL` environment variable at build time:
+
+```bash
+API_BASE_URL=https://api.your-domain.example npm run build
+# or with Docker:
+docker build --build-arg API_BASE_URL=https://api.your-domain.example -t philoagents-ui .
+```
+
 
 
 # Features

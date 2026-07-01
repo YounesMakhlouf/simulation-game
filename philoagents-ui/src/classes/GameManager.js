@@ -1,5 +1,10 @@
 import Phaser from "phaser";
 import ApiService from "../services/ApiService";
+import {
+  POLL_INTERVAL_MS,
+  POLL_MAX_ATTEMPTS,
+  POLL_MAX_CONSECUTIVE_FAILURES,
+} from "../config";
 
 export class GameManager {
   /**
@@ -15,6 +20,7 @@ export class GameManager {
 
     this.gameState = {}; // Will hold the full state from the backend
     this.gamePhase = "INITIALIZING"; // e.g., 'INITIALIZING', 'DIPLOMACY', 'ACTION', 'WAITING_FOR_JUDGE'
+    this._pollTimer = null; // Handle for the round-polling timer.
 
     // Using Phaser's event emitter to communicate with the UI
     this.events = new Phaser.Events.EventEmitter();
@@ -99,29 +105,40 @@ export class GameManager {
   }
 
   /**
-   * Periodically checks the server for a new game state (i.e., a new round).
+   * Polls the server for a new game state (i.e., a new round), with a bounded
+   * number of attempts, backoff on nothing-yet, and distinct handling for a
+   * server that is still resolving the round vs. one we can no longer reach.
+   *
+   * Uses a self-scheduling timer (not setInterval) so a slow response can never
+   * cause overlapping requests to stack up.
    */
   pollForNextRound() {
     const initialRound = this.gameState.round_number;
-    const interval = setInterval(async () => {
-      console.log("GameManager: Polling for new round...");
+    let attempts = 0;
+    let consecutiveFailures = 0;
+
+    this.stopPolling(); // Ensure only one poll loop is ever running.
+
+    const poll = async () => {
+      attempts += 1;
+      console.log(`GameManager: Polling for new round (attempt ${attempts})...`);
+
       try {
         const newState = await this.api.getGameState(this.playerCharacterId);
+        consecutiveFailures = 0;
 
-        // Check if the game is over
         if (newState.is_game_over) {
           console.log("GameManager: Game is over!");
-          clearInterval(interval);
+          this.stopPolling();
           this.gameState = newState;
           this.events.emit("stateUpdated", this.gameState);
           this.events.emit("showEndGameModal");
           return;
         }
 
-        // Check if we have a new round
         if (newState.round_number > initialRound) {
-          clearInterval(interval);
-          // We have a new round! Process it.
+          console.log("GameManager: New round received.");
+          this.stopPolling();
           this.gameState = newState;
           this.events.emit("stateUpdated", this.gameState);
           this.events.emit(
@@ -130,11 +147,54 @@ export class GameManager {
             this.gameState.round_number
           );
           this.startDiplomacyPhase();
+          return;
         }
+
+        // Same round still: the server is reachable but the Judge is not done.
+        this.events.emit("waitingForRound", {
+          attempts,
+          processing: !!newState.is_processing_round,
+        });
       } catch (error) {
-        console.error("GameManager: Error polling for new round:", error);
+        consecutiveFailures += 1;
+        console.error(
+          `GameManager: Poll failed (${consecutiveFailures} in a row):`,
+          error
+        );
+
+        if (consecutiveFailures >= POLL_MAX_CONSECUTIVE_FAILURES) {
+          this.stopPolling();
+          this.events.emit("connectionLost", {
+            message: "Lost connection to the server while resolving the round.",
+            retry: () => this.pollForNextRound(),
+          });
+          return;
+        }
       }
-    }, 5000); // Check every 5 seconds
+
+      if (attempts >= POLL_MAX_ATTEMPTS) {
+        this.stopPolling();
+        this.events.emit("connectionLost", {
+          message: "The round is taking longer than expected.",
+          retry: () => this.pollForNextRound(),
+        });
+        return;
+      }
+
+      this._pollTimer = setTimeout(poll, POLL_INTERVAL_MS);
+    };
+
+    this._pollTimer = setTimeout(poll, POLL_INTERVAL_MS);
+  }
+
+  /**
+   * Stops the round-polling loop, if one is running.
+   */
+  stopPolling() {
+    if (this._pollTimer) {
+      clearTimeout(this._pollTimer);
+      this._pollTimer = null;
+    }
   }
 
   /**
@@ -145,5 +205,14 @@ export class GameManager {
     this.gamePhase = newPhase;
     this.events.emit("phaseChanged", newPhase);
     console.log(`GameManager: Phase changed to ${newPhase}`);
+  }
+
+  /**
+   * Releases all resources: stops polling and removes event listeners. Call
+   * this when the Game scene shuts down so timers don't fire on a dead scene.
+   */
+  destroy() {
+    this.stopPolling();
+    this.events.removeAllListeners();
   }
 }

@@ -11,6 +11,11 @@ RUN npm install
 # Copy project files
 COPY . .
 
+# Optional API base URL baked into the bundle at build time.
+# Pass with: docker build --build-arg API_BASE_URL=https://api.example.com
+ARG API_BASE_URL=""
+ENV API_BASE_URL=$API_BASE_URL
+
 # Build the application
 RUN npm run build
 

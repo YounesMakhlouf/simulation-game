@@ -1,25 +1,28 @@
+import { getApiBaseUrl, REQUEST_TIMEOUT_MS } from '../config';
+
 class ApiService {
     constructor() {
-        const isHttps = window.location.protocol === 'https:';
-
-        if (isHttps) {
-            console.log('Using GitHub Codespaces');
-            const currentHostname = window.location.hostname;
-            this.apiUrl = `https://${currentHostname.replace('8080', '8000')}`;
-        } else {
-            this.apiUrl = 'http://localhost:8000';
-        }
+        this.apiUrl = getApiBaseUrl();
     }
 
-    async request(endpoint, method, data) {
+    async request(endpoint, method, data, timeout = REQUEST_TIMEOUT_MS) {
         const url = `${this.apiUrl}${endpoint}`;
         const options = {
             method, headers: {
                 'Content-Type': 'application/json',
             }, body: data ? JSON.stringify(data) : undefined,
+            signal: AbortSignal.timeout(timeout),
         };
 
-        const response = await fetch(url, options);
+        let response;
+        try {
+            response = await fetch(url, options);
+        } catch (error) {
+            if (error.name === 'TimeoutError') {
+                throw new Error(`Request to ${endpoint} timed out after ${timeout}ms`);
+            }
+            throw error;
+        }
 
         if (!response.ok) {
             throw new Error(`API error: ${response.status} ${response.statusText}`);
@@ -47,17 +50,7 @@ class ApiService {
 
     async resetMemory() {
         try {
-            const response = await fetch(`${this.apiUrl}/reset-memory`, {
-                method: 'POST', headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to reset memory');
-            }
-
-            return await response.json();
+            return await this.request('/reset-memory', 'POST');
         } catch (error) {
             console.error('Error resetting memory:', error);
             throw error;
