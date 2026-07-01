@@ -1,5 +1,5 @@
-import Phaser, {Scene} from "phaser";
-import {createPresetButton} from "../classes/ButtonFactory";
+import Phaser, { Scene } from "phaser";
+import { createPresetButton } from "../classes/ButtonFactory";
 
 export class HUDScene extends Scene {
     constructor() {
@@ -18,31 +18,39 @@ export class HUDScene extends Scene {
     }
 
     create() {
-        // v4 Gradient game object: a dark-to-transparent top bar improves the
-        // legibility of the HUD text over the busy tilemap and adds polish.
+        // Dark top bar behind the HUD text for legibility over the busy tilemap.
         const screenWidth = this.cameras.main.width;
-        this.add
-            .gradient(
-                {
-                    shapeMode: 0, // LINEAR
-                    start: {x: 0, y: 0},
-                    shape: {x: 0, y: 1},
-                    bands: [
-                        {
-                            start: 0,
-                            end: 1,
-                            colorStart: [0, 0, 0, 0.6],
-                            colorEnd: [0, 0, 0, 0],
-                            interpolation: 0,
-                        },
-                    ],
-                },
-                screenWidth / 2,
-                60,
-                screenWidth,
-                120
-            )
-            .setDepth(-1);
+        const barHeight = 120;
+        if (this.sys.game.renderer.type === Phaser.WEBGL) {
+            this.add
+                .gradient(
+                    {
+                        shapeMode: 0, // LINEAR
+                        start: { x: 0, y: 0 },
+                        shape: { x: 0, y: 1 },
+                        bands: [
+                            {
+                                start: 0,
+                                end: 1,
+                                colorStart: [0, 0, 0, 0.6],
+                                colorEnd: [0, 0, 0, 0],
+                                interpolation: 0,
+                            },
+                        ],
+                    },
+                    screenWidth / 2,
+                    60,
+                    screenWidth,
+                    barHeight
+                )
+                .setDepth(-1);
+        } else {
+            this.add
+                .graphics()
+                .fillStyle(0x000000, 0.5)
+                .fillRect(0, 0, screenWidth, barHeight)
+                .setDepth(-1);
+        }
 
         this.roundText = this.add.text(20, 20, "Round: 1", {
             fontSize: "24px", color: "#ffffff", stroke: "#000000", strokeThickness: 4,
@@ -77,12 +85,12 @@ export class HUDScene extends Scene {
         const buttonX = this.cameras.main.width - 90;
         const buttonY = 80;
 
-        const {container, label} = createPresetButton(this, "info", buttonX, buttonY, "View Intel (0)", () => {
+        const { container, label } = createPresetButton(this, "info", buttonX, buttonY, "View Intel (0)", () => {
             if (this.gameManager.gameState.your_character?.known_intel?.length > 0) {
                 const intelReports = this.gameManager.gameState.your_character.known_intel;
                 this.scene.get("Game").showIntelModal(intelReports);
             }
-        }, {alpha: 0.8});
+        }, { alpha: 0.8 });
 
         this.intelButton = container;
         this.intelButton.setData("label", label);
@@ -92,7 +100,7 @@ export class HUDScene extends Scene {
         const buttonX = this.cameras.main.width / 2;
         const buttonY = this.cameras.main.height - 40;
 
-        const {container} = createPresetButton(this, "danger", buttonX, buttonY, "Proceed to Action Phase", () => {
+        const { container } = createPresetButton(this, "danger", buttonX, buttonY, "Proceed to Action Phase", () => {
             this.tweens.add({
                 targets: this.endDiplomacyButton,
                 scaleX: 0.95,
@@ -103,7 +111,7 @@ export class HUDScene extends Scene {
                     this.gameManager.startActionPhase();
                 },
             });
-        }, {alpha: 0.8});
+        }, { alpha: 0.8 });
 
         this.endDiplomacyButton = container;
         this.endDiplomacyButton.setVisible(false);
@@ -139,7 +147,7 @@ export class HUDScene extends Scene {
             if (intelCount === 0) {
                 this.intelButton.setAlpha(0.5).disableInteractive();
             } else {
-                this.intelButton.setAlpha(1).setInteractive({useHandCursor: true});
+                this.intelButton.setAlpha(1).setInteractive({ useHandCursor: true });
             }
         }
     }
