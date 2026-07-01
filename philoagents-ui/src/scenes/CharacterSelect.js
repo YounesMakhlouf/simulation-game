@@ -1,4 +1,4 @@
-import {Scene, TintModes} from "phaser";
+import Phaser, {Scene, TintModes} from "phaser";
 import ApiService from "../services/ApiService";
 import {createPresetButton} from "../classes/ButtonFactory";
 
@@ -95,9 +95,13 @@ export class CharacterSelect extends Scene {
             if (portrait.filters) portrait.filters.internal.clear();
         });
 
-        // Highlight the selected one with a crisp gold border + a soft gold glow (v4 filter)
-        selectedPortrait.enableFilters();
-        selectedPortrait.filters.internal.addGlow(0xffd700, 6, 0, 1);
+        // Highlight the selected one. The gold border always renders; the soft
+        // gold glow is a v4 filter (WebGL-only), so it is skipped on the Canvas
+        // fallback renderer where filters are unavailable.
+        if (this.sys.game.renderer.type === Phaser.WEBGL) {
+            selectedPortrait.enableFilters();
+            selectedPortrait.filters.internal.addGlow(0xffd700, 6, 0, 1);
+        }
 
         if (!this.selectionBorder) this.selectionBorder = this.add.graphics();
         this.selectionBorder.clear();
