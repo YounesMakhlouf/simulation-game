@@ -83,7 +83,17 @@ async def websocket_chat(websocket: WebSocket):
 
     try:
         while True:
-            raw = await websocket.receive_text()
+            try:
+                raw = await websocket.receive_text()
+            except WebSocketDisconnect:
+                raise
+            except Exception:
+                # A non-text frame (e.g. binary) makes receive_text() raise.
+                # Reject it but keep the connection usable.
+                await websocket.send_json(
+                    {"error": "Only text (JSON) messages are supported."}
+                )
+                continue
 
             if len(raw.encode("utf-8")) > settings.MAX_WS_MESSAGE_BYTES:
                 await websocket.send_json(
