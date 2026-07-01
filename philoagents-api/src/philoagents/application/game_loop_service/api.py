@@ -4,7 +4,6 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
 
 from philoagents.application.game_loop_service.service import GameLoopService
-from philoagents.application.scoring_service import ScoringService
 from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.infrastructure.dependencies import (
     get_character_factory,
@@ -179,51 +178,22 @@ async def end_game(
     """
     Receives the player's final Undergame guess, triggers the final scoring for
     all players, and returns the complete scoreboard.
+
+    The guess is locked in on the first call, so this endpoint cannot be
+    replayed with different guesses to fish for a higher score.
     """
-    if not service.is_game_over:
-        raise HTTPException(
-            status_code=400,
-            detail="The game is not over yet. This endpoint cannot be called.",
+    try:
+        raw_scores, actual_undergame = service.finalize_scores(
+            player_character_id=request.player_character_id,
+            undergame_guess=request.undergame_guess,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # --- 1. Gather Guesses ---
-    # The human player's guess comes from the request.
-    # For this simulation, we'll generate simple placeholder guesses for the AI.
-    # TODO: In a more advanced version, have a final "guess_undergame" agent or have the AIs guess the undergame at each step (internally).
-    undergame_guesses = {request.player_character_id: request.undergame_guess}
-    ai_characters = [
-        char
-        for char_id, char in service.game_state.characters.items()
-        if char_id != request.player_character_id
-    ]
-    for ai_char in ai_characters:
-        # Simple placeholder for AI guesses
-        undergame_guesses[ai_char.id] = (
-            "The events were simply the result of political maneuvering."
-        )
-
-    # --- 2. Get Final Game State ---
-    all_characters_final_state = list(service.game_state.characters.values())
-
-    # --- 3. Calculate Scores ---
-    scoring_service = ScoringService()
-    raw_scores = scoring_service.calculate_final_scores(
-        characters=all_characters_final_state,
-        undergame_guesses=undergame_guesses,
-        actual_undergame=service.undergame_plot,
-    )
-
-    # Convert raw scores to ScoreDetails format
-    formatted_scores = {}
-    for char_id, score_data in raw_scores.items():
-        formatted_scores[char_id] = ScoreDetails(
-            name=score_data["name"],
-            faction_score=score_data["faction_score"],
-            undergame_score=score_data["undergame_score"],
-            total_score=score_data["total_score"],
-        )
-
-    # --- 4. Return the complete scoreboard ---
+    formatted_scores = {
+        char_id: ScoreDetails(**score_data)
+        for char_id, score_data in raw_scores.items()
+    }
     return ScoreboardResponse(
-        scores=formatted_scores, actual_undergame=service.undergame_plot_display
+        scores=formatted_scores, actual_undergame=actual_undergame
     )

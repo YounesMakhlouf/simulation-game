@@ -357,3 +357,47 @@ def test_reset_rejected_while_round_is_processing():
     service.is_processing_round = True
     with pytest.raises(RuntimeError, match="Cannot reset"):
         service.reset()
+
+
+# --- finalize_scores single-shot behavior ---
+
+
+def test_finalize_scores_rejected_before_game_over():
+    service = make_service()
+    with pytest.raises(ValueError, match="not over"):
+        service.finalize_scores("hannibal", "my guess")
+
+
+def test_finalize_scores_rejects_unknown_character():
+    service = make_service()
+    service.is_game_over = True
+    with pytest.raises(ValueError, match="not found"):
+        service.finalize_scores("caesar", "my guess")
+
+
+def test_finalize_scores_locks_guess_and_persists():
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    service.is_game_over = True
+
+    scores, actual = service.finalize_scores("hannibal", "the monolith curse")
+
+    assert service.game_state.player_undergame_guess == "the monolith curse"
+    assert repository.save_calls == 1
+    assert actual == "The displayed undergame plot."
+    assert set(scores.keys()) == {"hannibal", "scipio"}
+
+
+def test_finalize_scores_is_single_shot_ignoring_later_guesses():
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    service.is_game_over = True
+
+    first, _ = service.finalize_scores("hannibal", "first guess")
+    # A second call with a different guess must not change the locked-in guess
+    # nor re-persist it.
+    second, _ = service.finalize_scores("hannibal", "a much better second guess")
+
+    assert service.game_state.player_undergame_guess == "first guess"
+    assert repository.save_calls == 1
+    assert first == second

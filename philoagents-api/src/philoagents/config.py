@@ -1,6 +1,7 @@
+import json
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,6 +50,34 @@ class Settings(BaseSettings):
     # --- Game Loop Configuration ---
     AI_ACTION_TIMEOUT_SECONDS: int = 120
     JUDGE_TIMEOUT_SECONDS: int = 300
+
+    # --- API Security Configuration ---
+    CORS_ALLOW_ORIGINS: list[str] = Field(
+        default=["http://localhost:8080"],
+        description=(
+            "Origins permitted to call the API. Accepts a JSON list or a "
+            "comma-separated string in the environment."
+        ),
+    )
+    MAX_WS_MESSAGE_BYTES: int = Field(
+        default=16_384,
+        description="Maximum size of a single inbound WebSocket message, in bytes.",
+    )
+    MAX_CHAT_MESSAGE_CHARS: int = Field(
+        default=4_000,
+        description="Maximum length of a chat message's text content.",
+    )
+
+    @field_validator("CORS_ALLOW_ORIGINS", mode="before")
+    @classmethod
+    def _parse_origins(cls, value: object) -> object:
+        """Accept CORS_ALLOW_ORIGINS as a JSON list or a comma-separated string."""
+        if isinstance(value, str):
+            stripped = value.strip()
+            if stripped.startswith("["):
+                return json.loads(stripped)
+            return [origin.strip() for origin in stripped.split(",") if origin.strip()]
+        return value
 
     # --- RAG Configuration ---
     RAG_TEXT_EMBEDDING_MODEL_ID: str = "sentence-transformers/all-MiniLM-L6-v2"
