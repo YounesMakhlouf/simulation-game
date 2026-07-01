@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import ApiService from "../services/ApiService";
+import { POLL_INTERVAL_MS } from "../config";
 
 export class GameManager {
   /**
@@ -15,6 +16,8 @@ export class GameManager {
 
     this.gameState = {}; // Will hold the full state from the backend
     this.gamePhase = "INITIALIZING"; // e.g., 'INITIALIZING', 'DIPLOMACY', 'ACTION', 'WAITING_FOR_JUDGE'
+    this._pollTimer = null; // Handle for the round-polling timer.
+    this._pollRunId = 0; // Bumped on stopPolling() so in-flight polls know they're stale.
 
     // Using Phaser's event emitter to communicate with the UI
     this.events = new Phaser.Events.EventEmitter();
@@ -100,28 +103,38 @@ export class GameManager {
 
   /**
    * Periodically checks the server for a new game state (i.e., a new round).
+   * Individual requests time out via ApiService, so a hung backend just skips
+   * a tick; polling stops once the round advances or the game ends.
    */
   pollForNextRound() {
     const initialRound = this.gameState.round_number;
-    const interval = setInterval(async () => {
+
+    this.stopPolling(); // Ensure only one poll loop is ever running.
+    const runId = this._pollRunId;
+
+    this._pollTimer = setInterval(async () => {
       console.log("GameManager: Polling for new round...");
       try {
         const newState = await this.api.getGameState(this.playerCharacterId);
 
-        // Check if the game is over
+        // Polling may have been stopped (scene shutdown, restart) while this
+        // request was in flight; a stale callback must not touch state.
+        if (runId !== this._pollRunId) {
+          return;
+        }
+
         if (newState.is_game_over) {
           console.log("GameManager: Game is over!");
-          clearInterval(interval);
+          this.stopPolling();
           this.gameState = newState;
           this.events.emit("stateUpdated", this.gameState);
           this.events.emit("showEndGameModal");
           return;
         }
 
-        // Check if we have a new round
         if (newState.round_number > initialRound) {
-          clearInterval(interval);
-          // We have a new round! Process it.
+          console.log("GameManager: New round received.");
+          this.stopPolling();
           this.gameState = newState;
           this.events.emit("stateUpdated", this.gameState);
           this.events.emit(
@@ -134,7 +147,19 @@ export class GameManager {
       } catch (error) {
         console.error("GameManager: Error polling for new round:", error);
       }
-    }, 5000); // Check every 5 seconds
+    }, POLL_INTERVAL_MS);
+  }
+
+  /**
+   * Stops the round-polling loop, if one is running. Also invalidates any
+   * poll callback whose request is still in flight.
+   */
+  stopPolling() {
+    this._pollRunId += 1;
+    if (this._pollTimer) {
+      clearInterval(this._pollTimer);
+      this._pollTimer = null;
+    }
   }
 
   /**
@@ -145,5 +170,14 @@ export class GameManager {
     this.gamePhase = newPhase;
     this.events.emit("phaseChanged", newPhase);
     console.log(`GameManager: Phase changed to ${newPhase}`);
+  }
+
+  /**
+   * Releases all resources: stops polling and removes event listeners. Call
+   * this when the Game scene shuts down so timers don't fire on a dead scene.
+   */
+  destroy() {
+    this.stopPolling();
+    this.events.removeAllListeners();
   }
 }

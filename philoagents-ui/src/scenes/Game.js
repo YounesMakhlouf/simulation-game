@@ -62,6 +62,10 @@ export class Game extends Scene {
         this.gameManager.events.on("error", this.showError, this);
         this.gameManager.events.on("showEndGameModal", this.showEndGameModal, this);
 
+        // Tear down timers and listeners when the scene stops.
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.gameManager.destroy());
+        this.events.once(Phaser.Scenes.Events.DESTROY, () => this.gameManager.destroy());
+
         this.gameManager.startGame();
     }
 

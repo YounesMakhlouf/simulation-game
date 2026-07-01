@@ -42,7 +42,8 @@ module.exports = {
             "typeof PLUGIN_3D": JSON.stringify(false),
             "typeof PLUGIN_CAMERA3D": JSON.stringify(false),
             "typeof PLUGIN_FBINSTANT": JSON.stringify(false),
-            "typeof FEATURE_SOUND": JSON.stringify(true)
+            "typeof FEATURE_SOUND": JSON.stringify(true),
+            "API_BASE_URL": JSON.stringify(process.env.API_BASE_URL || "")
         }),
         new HtmlWebpackPlugin({
             template: "./index.html"
