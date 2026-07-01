@@ -17,6 +17,7 @@ export class GameManager {
     this.gameState = {}; // Will hold the full state from the backend
     this.gamePhase = "INITIALIZING"; // e.g., 'INITIALIZING', 'DIPLOMACY', 'ACTION', 'WAITING_FOR_JUDGE'
     this._pollTimer = null; // Handle for the round-polling timer.
+    this._pollRunId = 0; // Bumped on stopPolling() so in-flight polls know they're stale.
 
     // Using Phaser's event emitter to communicate with the UI
     this.events = new Phaser.Events.EventEmitter();
@@ -109,11 +110,18 @@ export class GameManager {
     const initialRound = this.gameState.round_number;
 
     this.stopPolling(); // Ensure only one poll loop is ever running.
+    const runId = this._pollRunId;
 
     this._pollTimer = setInterval(async () => {
       console.log("GameManager: Polling for new round...");
       try {
         const newState = await this.api.getGameState(this.playerCharacterId);
+
+        // Polling may have been stopped (scene shutdown, restart) while this
+        // request was in flight; a stale callback must not touch state.
+        if (runId !== this._pollRunId) {
+          return;
+        }
 
         if (newState.is_game_over) {
           console.log("GameManager: Game is over!");
@@ -143,9 +151,11 @@ export class GameManager {
   }
 
   /**
-   * Stops the round-polling loop, if one is running.
+   * Stops the round-polling loop, if one is running. Also invalidates any
+   * poll callback whose request is still in flight.
    */
   stopPolling() {
+    this._pollRunId += 1;
     if (this._pollTimer) {
       clearInterval(this._pollTimer);
       this._pollTimer = null;
