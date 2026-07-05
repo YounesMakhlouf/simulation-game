@@ -1,5 +1,6 @@
+from test_game_loop_service import make_character
+
 from philoagents.application.scoring_service import ScoringService, _cosine
-from tests.test_game_loop_service import make_character
 
 # Fake embedder: maps known texts to fixed vectors so similarity is exact.
 VECTORS = {
