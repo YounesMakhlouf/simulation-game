@@ -31,3 +31,6 @@ export function getWebSocketBaseUrl() {
 // --- Networking timings (milliseconds) ---
 export const REQUEST_TIMEOUT_MS = 15000;
 export const POLL_INTERVAL_MS = 5000;
+// How long a dialogue stream may go without any server activity before the
+// client gives up (and falls back to the REST endpoint if nothing arrived).
+export const STREAM_IDLE_TIMEOUT_MS = 30000;

@@ -1,6 +1,8 @@
 import json
 from typing import Dict, List
 
+from loguru import logger
+
 from philoagents.application.game_loop_service.workflow.chains import (
     get_character_action_chain,
     get_judge_resolution_chain,
@@ -23,7 +25,7 @@ async def action_decision_node(state: ActionState) -> Dict:
     action for the current round based on the game state.
     """
     character = state["character"]
-    print(f"--- Agent '{character.name}' is deliberating their official action... ---")
+    logger.info(f"Agent '{character.name}' is deliberating their official action...")
 
     action_chain = get_character_action_chain()
 
@@ -39,13 +41,15 @@ async def action_decision_node(state: ActionState) -> Dict:
         }
     )
     if action_response.character_id.lower() != character.id.lower():
-        print(
-            f"WARNING: Agent hallucinated character ID! Expected '{character.id}', got '{action_response.character_id}'. Overwriting for consistency."
+        logger.warning(
+            f"Agent hallucinated character ID! Expected '{character.id}', got "
+            f"'{action_response.character_id}'. Overwriting for consistency."
         )
         action_response.character_id = character.id
 
-    print(
-        f"Action Decided by {character.name}: {action_response.action_type} - {action_response.action_details}"
+    logger.info(
+        f"Action decided by {character.name}: {action_response.action_type} - "
+        f"{action_response.action_details}"
     )
 
     return {"action": action_response}
@@ -59,12 +63,52 @@ def _apply_resource_updates(
     updated_character_state: List[UpdatedCharacterState],
 ) -> Dict[str, Character]:
     """
-    A helper function to safely update character resources based on the Judge's output.
+    Applies the Judge's proposed character states while enforcing server-side
+    invariants, since the LLM's arithmetic cannot be trusted:
+
+    - Updates for unknown character IDs are ignored.
+    - Proposed resource values are clamped to be non-negative.
+    - Resources the Judge omitted keep their previous value (the Judge cannot
+      silently delete an asset), and characters it omitted entirely keep
+      their previous state.
     """
+    updated_ids = set()
     for update in updated_character_state:
-        if update.character_id in characters:
-            characters[update.character_id].resources = update.resources
-            characters[update.character_id].statuses = update.statuses
+        character = characters.get(update.character_id)
+        if character is None:
+            logger.warning(
+                f"Judge referenced unknown character '{update.character_id}'; "
+                f"ignoring the update."
+            )
+            continue
+        updated_ids.add(update.character_id)
+
+        new_resources = dict(character.resources)
+        for resource, value in update.resources.items():
+            if value < 0:
+                logger.warning(
+                    f"Judge set '{resource}' to {value} for "
+                    f"'{update.character_id}'; clamping to 0."
+                )
+                value = 0
+            new_resources[resource] = value
+
+        omitted = set(character.resources) - set(update.resources)
+        if omitted:
+            logger.warning(
+                f"Judge omitted resources {sorted(omitted)} for "
+                f"'{update.character_id}'; keeping their previous values."
+            )
+
+        character.resources = new_resources
+        character.statuses = update.statuses
+
+    missing = set(characters) - updated_ids
+    if missing:
+        logger.warning(
+            f"Judge omitted state updates for {sorted(missing)}; "
+            f"keeping their previous state."
+        )
     return characters
 
 
@@ -76,7 +120,7 @@ async def resolution_node(state: ResolutionState) -> Dict:
     to process them according to the secret Undergame, and produces the new
     world state.
     """
-    print("--- AI Judge is resolving the round... ---")
+    logger.info("AI Judge is resolving the round...")
 
     resolution_chain = get_judge_resolution_chain()
 
@@ -92,7 +136,7 @@ async def resolution_node(state: ResolutionState) -> Dict:
         }
     )
 
-    print("Judge has made a decision. Crafting new crisis update...")
+    logger.info("Judge has made a decision. Crafting new crisis update...")
 
     original_characters = state["characters"]
     updated_characters = _apply_resource_updates(

@@ -1,4 +1,4 @@
-import { getWebSocketBaseUrl } from '../config';
+import { getWebSocketBaseUrl, REQUEST_TIMEOUT_MS } from '../config';
 
 class WebSocketApiService {
     constructor() {
@@ -14,7 +14,7 @@ class WebSocketApiService {
         this.messageCallbacks = new Map();
         this.connected = false;
         this.connectionPromise = null;
-        this.connectionTimeout = 10000;
+        this.connectionTimeout = REQUEST_TIMEOUT_MS;
     }
 
     connect() {
@@ -53,6 +53,9 @@ class WebSocketApiService {
                 console.log('WebSocket connection closed');
                 this.connected = false;
                 this.connectionPromise = null;
+                // A close during an active exchange means no terminating frame
+                // will ever arrive; let the consumer unblock instead of hanging.
+                this.notifyError(new Error('WebSocket connection closed'));
             };
         });
 
@@ -60,10 +63,17 @@ class WebSocketApiService {
     }
 
     handleMessage(event) {
-        const data = JSON.parse(event.data);
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (error) {
+            this.notifyError(new Error('Received a malformed WebSocket frame'));
+            return;
+        }
 
         if (data.error) {
             console.error('WebSocket error:', data.error);
+            this.notifyError(new Error(data.error));
             return;
         }
 
@@ -96,21 +106,20 @@ class WebSocketApiService {
         }
     }
 
+    notifyError(error) {
+        this.triggerCallback('error', error);
+    }
+
     async sendMessage(senderId, receiverId, message, callbacks = {}) {
-        try {
-            if (!this.connected) {
-                await this.connect();
-            }
-
-            this.registerCallbacks(callbacks);
-
-            this.socket.send(JSON.stringify({
-                sender_id: senderId, receiver_id: receiverId, message: message,
-            }));
-        } catch (error) {
-            console.error('Error sending message via WebSocket:', error);
-            return this.getFallbackResponse();
+        if (!this.connected) {
+            await this.connect();
         }
+
+        this.registerCallbacks(callbacks);
+
+        this.socket.send(JSON.stringify({
+            sender_id: senderId, receiver_id: receiverId, message: message,
+        }));
     }
 
     registerCallbacks(callbacks) {
@@ -131,18 +140,20 @@ class WebSocketApiService {
         if (callbacks.onChunk) {
             this.messageCallbacks.set('chunk', callbacks.onChunk);
         }
-    }
 
-    getFallbackResponse() {
-        return "I'm so tired right now, I can't talk. I'm going to sleep now.";
+        if (callbacks.onError) {
+            this.messageCallbacks.set('error', callbacks.onError);
+        }
     }
 
     disconnect() {
         if (this.socket) {
+            // Clear the callbacks first so the deliberate close below does not
+            // fire the error callback via onclose.
+            this.messageCallbacks.clear();
             this.socket.close();
             this.connected = false;
             this.connectionPromise = null;
-            this.messageCallbacks.clear();
         }
     }
 }
