@@ -49,6 +49,13 @@ class Settings(BaseSettings):
     # --- Game Loop Configuration ---
     AI_ACTION_TIMEOUT_SECONDS: int = 120
     JUDGE_TIMEOUT_SECONDS: int = 300
+    MAX_VP_AWARD_PER_ROUND: int = Field(
+        default=20,
+        description=(
+            "Upper bound on the victory points the Judge can award a single "
+            "character in one round; larger awards are clamped."
+        ),
+    )
 
     # --- API Security Configuration ---
     CORS_ALLOW_ORIGINS: list[str] = Field(

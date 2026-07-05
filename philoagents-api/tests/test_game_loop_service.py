@@ -67,12 +67,13 @@ def make_service(
     )
 
 
-def make_action(character_id: str) -> Action:
+def make_action(character_id: str, resource_cost: Optional[dict] = None) -> Action:
     return Action(
         character_id=character_id,
         reasoning="Test reasoning",
         action_type=ActionType.MILITARY,
         action_details="March on the enemy camp.",
+        resource_cost=resource_cost or {},
     )
 
 
@@ -112,6 +113,30 @@ def test_submit_action_rejected_when_game_over():
         service.submit_player_action(make_action("hannibal"))
 
 
+def test_submit_action_rejects_negative_resource_cost():
+    service = make_service()
+    with pytest.raises(ValueError, match="cannot be negative"):
+        service.submit_player_action(make_action("hannibal", {"Gold": -5}))
+
+
+def test_submit_action_rejects_unknown_resource():
+    service = make_service()
+    with pytest.raises(ValueError, match="no resource named 'Elephants'"):
+        service.submit_player_action(make_action("hannibal", {"Elephants": 2}))
+
+
+def test_submit_action_rejects_unaffordable_cost():
+    service = make_service()  # characters start with Gold: 10
+    with pytest.raises(ValueError, match="Insufficient 'Gold'"):
+        service.submit_player_action(make_action("hannibal", {"Gold": 11}))
+
+
+def test_submit_action_accepts_affordable_cost():
+    service = make_service()
+    service.submit_player_action(make_action("hannibal", {"Gold": 10}))
+    assert "hannibal" in service.submitted_actions
+
+
 # --- advance_round orchestration ---
 
 
@@ -125,7 +150,7 @@ def stub_round(service: GameLoopService, judge_result=None, judge_error=None):
             if char_id not in service.submitted_actions
         ]
 
-    async def fake_judge_turn(all_actions):
+    async def fake_judge_turn(all_actions, characters):
         if judge_error is not None:
             raise judge_error
         return judge_result
@@ -196,7 +221,7 @@ def test_advance_round_rejects_concurrent_runs():
             await release.wait()
             return []
 
-        async def fake_judge_turn(all_actions):
+        async def fake_judge_turn(all_actions, characters):
             return ("New crisis.", service.game_state.characters, None, None)
 
         service._run_ai_delegate_turns = blocking_ai_turns
@@ -249,6 +274,86 @@ def test_advance_round_succeeds_when_retried_after_failure():
     assert new_state.round_number == 2
     assert new_state.crisis_update == "Recovered crisis."
     assert repository.save_calls == 1
+
+
+# --- deterministic cost settlement ---
+
+
+def stub_echo_judge(service: GameLoopService):
+    """Stubs the judge to return exactly the settled characters it was given."""
+
+    async def fake_ai_turns():
+        return []
+
+    async def fake_judge_turn(all_actions, characters):
+        return ("A new crisis unfolds.", characters, None, None)
+
+    service._run_ai_delegate_turns = fake_ai_turns
+    service._run_judge_turn = fake_judge_turn
+
+
+def test_advance_round_deducts_declared_costs_deterministically():
+    service = make_service()
+    stub_echo_judge(service)
+
+    service.submit_player_action(make_action("hannibal", {"Gold": 4}))
+    new_state = asyncio.run(service.advance_round())
+
+    assert new_state.characters["hannibal"].resources["Gold"] == 6
+    assert new_state.characters["scipio"].resources["Gold"] == 10
+
+
+def test_advance_round_clamps_hallucinated_ai_costs():
+    # AI actions bypass submit_player_action, so their costs are sanitized
+    # (unknown resources dropped, overspends clamped) rather than rejected.
+    service = make_service()
+    stub_echo_judge(service)
+    service.submitted_actions["hannibal"] = make_action(
+        "hannibal", {"Gold": 99, "Elephants": 3}
+    )
+    service.submitted_actions["scipio"] = make_action("scipio", {"Gold": -2})
+
+    new_state = asyncio.run(service.advance_round())
+
+    assert new_state.characters["hannibal"].resources["Gold"] == 0
+    assert "Elephants" not in new_state.characters["hannibal"].resources
+    assert new_state.characters["scipio"].resources["Gold"] == 10
+
+
+def test_failed_round_does_not_charge_costs():
+    service = make_service()
+    stub_round(service, judge_error=RuntimeError("judge LLM unavailable"))
+    service.submit_player_action(make_action("hannibal", {"Gold": 4}))
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(service.advance_round())
+
+    # The live state was never charged, so the retry will not double-deduct.
+    assert service.game_state.characters["hannibal"].resources["Gold"] == 10
+
+
+# --- victory point clamping ---
+
+
+def test_vp_awards_are_clamped_to_the_per_round_cap():
+    service = make_service()
+    cap = service_module.settings.MAX_VP_AWARD_PER_ROUND
+    service._apply_victory_points(
+        [
+            VictoryPointAward(
+                character_id="hannibal", points_awarded=999, reason="Judge went wild"
+            ),
+            VictoryPointAward(
+                character_id="scipio", points_awarded=-10, reason="Negative award"
+            ),
+            VictoryPointAward(
+                character_id="caesar", points_awarded=5, reason="Unknown character"
+            ),
+        ]
+    )
+
+    assert service.game_state.characters["hannibal"].victory_points == cap
+    assert service.game_state.characters["scipio"].victory_points == 0
 
 
 # --- AI delegate timeout and fallback ---

@@ -1,5 +1,6 @@
 import ApiService from '../services/ApiService';
 import WebSocketApiService from '../services/WebSocketApiService';
+import { STREAM_IDLE_TIMEOUT_MS } from '../config';
 
 class DialogueManager {
     constructor(scene) {
@@ -112,23 +113,48 @@ class DialogueManager {
     async processWebSocketMessage(message) {
         await WebSocketApiService.connect();
 
+        let streamError = null;
+        let lastActivity = Date.now();
         const callbacks = {
             onMessage: () => {
                 this.finishStreaming();
             }, onChunk: (chunk) => {
+                lastActivity = Date.now();
                 this.streamingText += chunk;
                 this.dialogueBox.show(this.streamingText, true);
             }, onStreamingStart: () => {
+                lastActivity = Date.now();
                 this.isStreaming = true;
             }, onStreamingEnd: () => {
                 this.finishStreaming();
+            }, onError: (error) => {
+                streamError = error;
+                this.isStreaming = false;
             }
         };
 
         await WebSocketApiService.sendMessage(this.playerCharacterId, this.activeDelegate.id, message, callbacks);
 
+        // Wait for the stream to finish, but never forever: a dropped
+        // connection or a silent server must not freeze the dialogue.
         while (this.isStreaming) {
+            if (Date.now() - lastActivity > STREAM_IDLE_TIMEOUT_MS) {
+                streamError = new Error('The response stream timed out.');
+                this.isStreaming = false;
+                break;
+            }
             await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        if (streamError && !this.streamingText) {
+            // Nothing arrived; let the caller fall back to the REST API.
+            WebSocketApiService.disconnect();
+            throw streamError;
+        }
+        if (streamError) {
+            // Keep the partial reply rather than re-sending the message.
+            console.warn('Stream interrupted, keeping partial response:', streamError);
+            this.dialogueBox.show(this.streamingText, true);
         }
 
         this.currentMessage = '';

@@ -149,11 +149,68 @@ class GameLoopService:
             )
         if action.character_id in self.submitted_actions:
             raise ValueError("Character has already submitted an action this round.")
+        self._validate_resource_cost(action)
 
         logger.info(
             f"Action received from: {self.game_state.characters[action.character_id].name}"
         )
         self.submitted_actions[action.character_id] = action
+
+    def _validate_resource_cost(self, action: Action):
+        """
+        Rejects a submitted action whose declared cost is negative, names an
+        unknown resource, or exceeds what the character currently has.
+        """
+        character = self.game_state.characters[action.character_id]
+        for resource, amount in action.resource_cost.items():
+            if amount < 0:
+                raise ValueError(f"Resource cost for '{resource}' cannot be negative.")
+            available = character.resources.get(resource)
+            if available is None:
+                raise ValueError(
+                    f"Character '{action.character_id}' has no resource named "
+                    f"'{resource}'."
+                )
+            if amount > available:
+                raise ValueError(
+                    f"Insufficient '{resource}': the action costs {amount} but "
+                    f"only {available} is available."
+                )
+
+    def _charge_action_costs(self, actions: List[Action]) -> Dict[str, Character]:
+        """
+        Deducts each action's declared resource cost on a deep copy of the
+        characters, so the game economy does not depend on the Judge LLM doing
+        arithmetic and a failed round leaves the live state untouched.
+
+        AI delegates can hallucinate costs, so unknown resources and negative
+        amounts are dropped and overspends are clamped to zero instead of
+        failing the round.
+        """
+        characters = {
+            char_id: char.model_copy(deep=True)
+            for char_id, char in self.game_state.characters.items()
+        }
+        for action in actions:
+            character = characters.get(action.character_id)
+            if character is None:
+                continue
+            for resource, amount in action.resource_cost.items():
+                if resource not in character.resources or amount < 0:
+                    logger.warning(
+                        f"Ignoring invalid cost '{resource}: {amount}' declared "
+                        f"by '{action.character_id}'."
+                    )
+                    continue
+                remaining = character.resources[resource] - amount
+                if remaining < 0:
+                    logger.warning(
+                        f"'{action.character_id}' cannot afford {amount} "
+                        f"'{resource}'; clamping the balance to 0."
+                    )
+                    remaining = 0
+                character.resources[resource] = remaining
+        return characters
 
     def _deliver_private_intel(self, private_reports: Optional[List[PrivateIntel]]):
         """
@@ -180,13 +237,21 @@ class GameLoopService:
         if not vp_awards:
             return
         for award in vp_awards:
-            if award.character_id in self.game_state.characters:
-                self.game_state.characters[
-                    award.character_id
-                ].victory_points += award.points_awarded
-                logger.info(
-                    f"Awarded {award.points_awarded} VP to {award.character_id} for: {award.reason}"
+            if award.character_id not in self.game_state.characters:
+                logger.warning(
+                    f"Ignoring VP award for unknown character '{award.character_id}'."
                 )
+                continue
+            points = max(0, min(award.points_awarded, settings.MAX_VP_AWARD_PER_ROUND))
+            if points != award.points_awarded:
+                logger.warning(
+                    f"Judge awarded {award.points_awarded} VP to "
+                    f"'{award.character_id}'; clamped to {points}."
+                )
+            self.game_state.characters[award.character_id].victory_points += points
+            logger.info(
+                f"Awarded {points} VP to {award.character_id} for: {award.reason}"
+            )
 
     def _fallback_action(self, character: Character) -> Action:
         """
@@ -259,7 +324,7 @@ class GameLoopService:
         return ai_actions
 
     async def _run_judge_turn(
-        self, all_actions: List[Action]
+        self, all_actions: List[Action], characters: Dict[str, Character]
     ) -> tuple[
         str,
         Dict[str, Character],
@@ -268,6 +333,10 @@ class GameLoopService:
     ]:
         """
         Invokes the judge agent to resolve the round.
+
+        `characters` is the settled (post-payment) character map: action costs
+        have already been deducted deterministically, and the judge sees that
+        state as the authoritative one.
         """
         graph_builder = create_judge_graph()
         graph = graph_builder.compile()
@@ -276,11 +345,13 @@ class GameLoopService:
         )
         thread_id = f"judge-resolution-round-{self.game_state.round_number}"
         config = {"configurable": {"thread_id": thread_id}, "callbacks": [opik_tracer]}
-        current_state_json_str = self.game_state.model_dump_json(indent=2)
+        state_for_judge = self.game_state.model_copy(deep=True)
+        state_for_judge.characters = characters
+        current_state_json_str = state_for_judge.model_dump_json(indent=2)
         initial_state = {
             "current_game_state_json": current_state_json_str,
             "actions": all_actions,
-            "characters": self.game_state.characters,
+            "characters": characters,
             "undergame_plot": self.undergame_plot,
         }
         result = await asyncio.wait_for(
@@ -326,13 +397,15 @@ class GameLoopService:
 
         all_actions_for_round = list(self.submitted_actions.values())
 
-        # 2. Resolve the round with the AI Judge
+        # 2. Pay declared action costs deterministically (on a copy, so a
+        # failed round stays retriable), then resolve with the AI Judge.
+        settled_characters = self._charge_action_costs(all_actions_for_round)
         (
             new_crisis_update,
             updated_characters,
             private_reports,
             victory_point_awards,
-        ) = await self._run_judge_turn(all_actions_for_round)
+        ) = await self._run_judge_turn(all_actions_for_round, settled_characters)
 
         # 3. Update the master game state for the new round.
         self.game_state.round_number += 1
