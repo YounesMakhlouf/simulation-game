@@ -182,7 +182,7 @@ async def end_game(
     replayed with different guesses to fish for a higher score.
     """
     try:
-        raw_scores, actual_undergame = service.finalize_scores(
+        raw_scores, actual_undergame = await service.finalize_scores(
             player_character_id=request.player_character_id,
             undergame_guess=request.undergame_guess,
         )

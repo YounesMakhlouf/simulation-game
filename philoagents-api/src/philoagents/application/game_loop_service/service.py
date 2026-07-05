@@ -4,6 +4,9 @@ from typing import Dict, List, Optional
 from loguru import logger
 from opik.integrations.langchain import OpikTracer
 
+from philoagents.application.game_loop_service.workflow.chains import (
+    get_undergame_guess_chain,
+)
 from philoagents.application.game_loop_service.workflow.graph import (
     create_action_graph,
     create_judge_graph,
@@ -88,16 +91,15 @@ class GameLoopService:
         """Returns a copy of the current game state."""
         return self.game_state.model_copy(deep=True)
 
-    def finalize_scores(
+    async def finalize_scores(
         self, player_character_id: str, undergame_guess: str
     ) -> tuple[dict, str]:
         """
         Computes the final scoreboard for a finished game.
 
-        The player's Undergame guess is locked in on the first call (and
-        persisted), so replaying this endpoint with a different guess cannot be
-        used to fish for a better score. Subsequent calls recompute from the
-        locked guess and return the same result.
+        All Undergame guesses (the player's, and one generated per AI
+        character) are locked in and persisted on the first call, so replaying
+        this endpoint cannot change the scores.
 
         Returns:
             A tuple of (raw scores keyed by character id, the displayable
@@ -111,20 +113,19 @@ class GameLoopService:
         if player_character_id not in self.game_state.characters:
             raise ValueError(f"Character '{player_character_id}' not found.")
 
-        # Lock the guess on first submission; ignore later attempts to change it.
+        # Lock all guesses on first call; ignore later attempts to change them.
         if self.game_state.player_undergame_guess is None:
             self.game_state.player_undergame_guess = undergame_guess
+            self.game_state.ai_undergame_guesses = await self._generate_ai_guesses(
+                player_character_id
+            )
             if self.state_repository is not None:
                 self.state_repository.save(self.game_state)
-        locked_guess = self.game_state.player_undergame_guess
 
-        undergame_guesses = {player_character_id: locked_guess}
-        for char_id, char in self.game_state.characters.items():
-            if char_id != player_character_id:
-                # TODO: Replace with a real per-character undergame-guess agent.
-                undergame_guesses[char.id] = (
-                    "The events were simply the result of political maneuvering."
-                )
+        undergame_guesses = {
+            player_character_id: self.game_state.player_undergame_guess,
+            **(self.game_state.ai_undergame_guesses or {}),
+        }
 
         raw_scores = ScoringService().calculate_final_scores(
             characters=list(self.game_state.characters.values()),
@@ -132,6 +133,37 @@ class GameLoopService:
             actual_undergame=self.undergame_plot,
         )
         return raw_scores, self.undergame_plot_display
+
+    async def _generate_ai_guesses(self, player_character_id: str) -> Dict[str, str]:
+        """
+        Asks each AI character for its theory of the Undergame, concurrently.
+        A character that fails or times out falls back to a neutral guess.
+        """
+        ai_characters = [
+            char
+            for char_id, char in self.game_state.characters.items()
+            if char_id != player_character_id
+        ]
+
+        async def guess_for(character: Character) -> str:
+            try:
+                return await asyncio.wait_for(
+                    get_undergame_guess_chain().ainvoke(
+                        {
+                            "character_name": character.name,
+                            "character_perspective": character.perspective,
+                            "known_intel": "\n".join(character.known_intel) or "None.",
+                            "crisis_update": self.game_state.crisis_update,
+                        }
+                    ),
+                    timeout=settings.AI_ACTION_TIMEOUT_SECONDS,
+                )
+            except Exception as e:
+                logger.error(f"Undergame guess failed for '{character.id}': {e}")
+                return "The events were simply the result of political maneuvering."
+
+        guesses = await asyncio.gather(*(guess_for(char) for char in ai_characters))
+        return {char.id: guess for char, guess in zip(ai_characters, guesses)}
 
     def submit_player_action(self, action: Action):
         """

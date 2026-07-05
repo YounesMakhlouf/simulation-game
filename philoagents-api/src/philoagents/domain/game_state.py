@@ -27,3 +27,10 @@ class GameState(BaseModel):
             "The human player's locked-in Undergame guess. Set once at game end."
         ),
     )
+    ai_undergame_guesses: Optional[Dict[str, str]] = Field(
+        default=None,
+        description=(
+            "The AI characters' locked-in Undergame guesses, keyed by character "
+            "id. Generated once at game end so repeated scoring is stable."
+        ),
+    )
