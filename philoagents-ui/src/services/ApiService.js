@@ -19,7 +19,7 @@ class ApiService {
             response = await fetch(url, options);
         } catch (error) {
             if (error.name === 'TimeoutError') {
-                throw new Error(`Request to ${endpoint} timed out after ${timeout}ms`);
+                throw new Error(`Request to ${endpoint} timed out after ${REQUEST_TIMEOUT_MS}ms`);
             }
             throw error;
         }
