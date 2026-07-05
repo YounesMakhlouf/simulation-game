@@ -144,11 +144,12 @@ class GameLoopService:
             for char_id, char in self.game_state.characters.items()
             if char_id != player_character_id
         ]
+        guess_chain = get_undergame_guess_chain()
 
         async def guess_for(character: Character) -> str:
             try:
                 return await asyncio.wait_for(
-                    get_undergame_guess_chain().ainvoke(
+                    guess_chain.ainvoke(
                         {
                             "character_name": character.name,
                             "character_perspective": character.perspective,

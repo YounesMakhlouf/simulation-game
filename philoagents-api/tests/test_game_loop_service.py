@@ -480,7 +480,7 @@ def _stub_scoring(service, monkeypatch, ai_guess="a theory"):
     service._generate_ai_guesses = fake_guesses
     monkeypatch.setattr(
         "philoagents.application.scoring_service._default_embed_fn",
-        lambda: (lambda text: [1.0, 0.0]),
+        lambda: lambda text: [1.0, 0.0],
     )
 
 
