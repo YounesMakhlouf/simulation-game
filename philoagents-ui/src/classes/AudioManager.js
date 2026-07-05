@@ -1,5 +1,3 @@
-import Phaser from "phaser";
-
 export class AudioManager {
     /**
      * A central manager for all game audio, including background music and sound effects.
@@ -9,7 +7,6 @@ export class AudioManager {
         this.game = game;
         this.currentMusic = null;
         this.musicVolume = 0.5; // Default volume (0 to 1)
-        this.sfxVolume = 1.0;
     }
 
     /**
@@ -28,26 +25,5 @@ export class AudioManager {
             loop: loop, volume: this.musicVolume
         });
         this.currentMusic.play();
-    }
-
-    /**
-     * Stops the currently playing background music.
-     */
-    stopMusic() {
-        if (this.currentMusic) {
-            this.currentMusic.stop();
-            this.currentMusic = null;
-        }
-    }
-
-    /**
-     * Sets the global volume for background music.
-     * @param {number} volume - A value between 0 (silent) and 1 (full).
-     */
-    setMusicVolume(volume) {
-        this.musicVolume = Phaser.Math.Clamp(volume, 0, 1);
-        if (this.currentMusic) {
-            this.currentMusic.setVolume(this.musicVolume);
-        }
     }
 }

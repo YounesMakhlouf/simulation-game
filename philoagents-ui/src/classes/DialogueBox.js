@@ -1,7 +1,6 @@
 class DialogueBox {
     constructor(scene, config = {}) {
         this.scene = scene;
-        this.awaitingInput = false;
 
         // Set default configuration values
         const {
@@ -22,7 +21,6 @@ class DialogueBox {
             enableScrolling = true,
         } = config;
 
-        this.config = config;
         this.x = x;
         this.y = y;
         this.width = width;
@@ -49,9 +47,7 @@ class DialogueBox {
         this.hide();
     }
 
-    show(message, awaitInput = false) {
-        this.awaitingInput = awaitInput;
-
+    show(message) {
         if (this.enableScrolling && this.shouldUseScrolling(message)) {
             this.showWithScrolling(message);
         } else {
@@ -119,7 +115,6 @@ class DialogueBox {
 
     hide() {
         this.container.setVisible(false);
-        this.awaitingInput = false;
 
         // Clean up DOM element
         if (this.domElement) {
@@ -136,10 +131,6 @@ class DialogueBox {
 
     isVisible() {
         return this.container.visible;
-    }
-
-    isAwaitingInput() {
-        return this.awaitingInput;
     }
 }
 

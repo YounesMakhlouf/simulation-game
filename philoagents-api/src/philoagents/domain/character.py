@@ -1,29 +1,6 @@
-import json
-from pathlib import Path
 from typing import Dict, List, Union
 
 from pydantic import BaseModel, Field
-
-
-class CharacterExtract(BaseModel):
-    """
-    A class representing raw character data for the RAG ingestion pipeline.
-    This points to the sources needed to build the character's knowledge base.
-    """
-
-    id: str = Field(
-        description="A unique, machine-readable identifier for the character (e.g., 'hanno_the_great')."
-    )
-    urls: List[str] = Field(
-        description="List of source URLs (e.g., Wikipedia) with information about this historical figure."
-    )
-
-    @classmethod
-    def from_json(cls, metadata_file: Path) -> list["CharacterExtract"]:
-        """Loads a list of character data from a JSON file."""
-        with open(metadata_file, "r") as f:
-            character_data = json.load(f)
-        return [cls(**character) for character in character_data]
 
 
 class Character(BaseModel):

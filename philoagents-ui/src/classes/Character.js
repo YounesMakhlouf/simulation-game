@@ -16,9 +16,7 @@ class Character {
     this.currentDirection = null;
     this.moveDuration = 0;
     this.pauseDuration = 0;
-    this.roamRadius = config.roamRadius || 200; 
-    this.pauseChance = config.pauseChance || 0.2; 
-    this.directionChangeChance = config.directionChangeChance || 0.3;
+    this.roamRadius = config.roamRadius || 200;
 
     this.sprite = this.scene.physics.add
       .sprite(this.spawnPoint.x, this.spawnPoint.y, this.atlas, this.defaultFrame)
@@ -242,17 +240,6 @@ class Character {
     }
 
     this.updateNameLabelPosition();
-  }
-
-  get position() {
-    return {
-      x: this.sprite.x,
-      y: this.sprite.y
-    };
-  }
-  
-  get body() {
-    return this.sprite;
   }
 
   createNameLabel() {

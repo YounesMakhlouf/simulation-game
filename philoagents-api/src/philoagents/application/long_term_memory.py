@@ -83,9 +83,7 @@ class LongTermMemoryCreator:
                 retriever=self.retriever,
                 mongodb_client=client,
             )
-            index.create(
-                is_hybrid=True, embedding_dim=settings.RAG_TEXT_EMBEDDING_MODEL_DIM
-            )
+            index.create(embedding_dim=settings.RAG_TEXT_EMBEDDING_MODEL_DIM)
 
 
 class LongTermMemoryRetriever:

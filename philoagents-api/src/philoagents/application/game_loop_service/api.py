@@ -77,10 +77,9 @@ async def get_game_status(
 
     player_char = current_state.characters[character_id]
     other_chars = [
-        name
+        char.name
         for cid, char in current_state.characters.items()
         if cid != character_id
-        for name in [char.name]
     ]
 
     return GameStatusResponse(
