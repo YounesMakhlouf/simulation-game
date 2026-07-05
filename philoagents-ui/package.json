@@ -17,6 +17,7 @@
         "url": "https://github.com/phaserjs/template-webpack/issues"
     },
     "homepage": "https://github.com/phaserjs/template-webpack#readme",
+    "engines": { "node": ">=22.15.0" },
     "devDependencies": {
         "@babel/core": "^8.0.1",
         "@babel/preset-env": "^8.0.2",
