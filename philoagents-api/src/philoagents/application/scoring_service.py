@@ -59,9 +59,10 @@ class ScoringService:
             return 0.0
         embed = self._embed_fn or _default_embed_fn()
         cos = _cosine(embed(text1), embed(text2))
-        # ponytail: linear rescale of the cosine; unrelated sentence pairs sit
-        # around 0.2 and near-paraphrases above 0.8 for MiniLM. Calibrate with
-        # a graded rubric if scores feel unfair in play.
+        # Calibration: MiniLM cosine sits around 0.2 for unrelated sentence
+        # pairs and above 0.8 for near-paraphrases, so rescale that band to
+        # [0, 1]. Deliberately simple; replace with a graded rubric if scores
+        # feel unfair in play.
         return max(0.0, min(1.0, (cos - 0.2) / 0.6))
 
 
