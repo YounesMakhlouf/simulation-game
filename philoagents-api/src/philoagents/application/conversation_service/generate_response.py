@@ -1,5 +1,6 @@
 import uuid
-from typing import Any, AsyncGenerator, List, Union
+from contextlib import contextmanager
+from typing import Any, AsyncGenerator, Iterator, List, Union
 
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 from langgraph.checkpoint.mongodb.saver import MongoDBSaver
@@ -30,6 +31,47 @@ def __get_conversation_thread_id(
     return base_thread_id
 
 
+@contextmanager
+def __compiled_graph(
+    messages: Union[str, List[dict]],
+    sender_id: str,
+    receiver_character: Character,
+    new_thread: bool,
+) -> Iterator[tuple[Any, dict, dict]]:
+    """
+    Shared setup for a conversation turn: opens the MongoDB checkpointer and
+    yields the compiled graph, run config, and initial state. The graph is only
+    valid inside the `with` block (the checkpointer connection closes on exit).
+    """
+    graph_builder = create_workflow_graph()
+
+    with MongoDBSaver.from_conn_string(
+        conn_string=settings.MONGO_URI,
+        db_name=settings.MONGO_DB_NAME,
+        checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
+        writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
+    ) as checkpointer:
+        graph = graph_builder.compile(checkpointer=checkpointer)
+        opik_tracer = OpikTracer(
+            graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+        )
+        thread_id = __get_conversation_thread_id(
+            sender_id, receiver_character.id, new_thread
+        )
+        config = {
+            "configurable": {"thread_id": thread_id},
+            "callbacks": [opik_tracer],
+        }
+        initial_state = {
+            "messages": __format_messages(messages),
+            "character_id": receiver_character.id,
+            "character_name": receiver_character.name,
+            "character_perspective": receiver_character.perspective,
+            "character_style": receiver_character.style,
+        }
+        yield graph, config, initial_state
+
+
 async def get_response(
     messages: Union[str, List[dict]],
     sender_id: str,
@@ -50,34 +92,12 @@ async def get_response(
         A tuple containing the string content of the final response and the
         final state of the conversation.
     """
-    graph_builder = create_workflow_graph()
-
     try:
-        with MongoDBSaver.from_conn_string(
-            conn_string=settings.MONGO_URI,
-            db_name=settings.MONGO_DB_NAME,
-            checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
-            writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
-        ) as checkpointer:
-            graph = graph_builder.compile(checkpointer=checkpointer)
-            opik_tracer = OpikTracer(
-                graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
-            )
-            thread_id = __get_conversation_thread_id(
-                sender_id, receiver_character.id, new_thread
-            )
-            config = {
-                "configurable": {"thread_id": thread_id},
-                "callbacks": [opik_tracer],
-            }
-            initial_state = {
-                "messages": __format_messages(messages),
-                "character_id": receiver_character.id,
-                "character_name": receiver_character.name,
-                "character_perspective": receiver_character.perspective,
-                "character_style": receiver_character.style,
-            }
-
+        with __compiled_graph(messages, sender_id, receiver_character, new_thread) as (
+            graph,
+            config,
+            initial_state,
+        ):
             output_state = await graph.ainvoke(
                 input=initial_state,
                 config=config,
@@ -106,33 +126,12 @@ async def get_streaming_response(
     Yields:
         Chunks of the response content as they become available.
     """
-    graph_builder = create_workflow_graph()
-
     try:
-        with MongoDBSaver.from_conn_string(
-            conn_string=settings.MONGO_URI,
-            db_name=settings.MONGO_DB_NAME,
-            checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
-            writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
-        ) as checkpointer:
-            graph = graph_builder.compile(checkpointer=checkpointer)
-            opik_tracer = OpikTracer(
-                graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
-            )
-            thread_id = __get_conversation_thread_id(
-                sender_id, receiver_character.id, new_thread
-            )
-            config = {
-                "configurable": {"thread_id": thread_id},
-                "callbacks": [opik_tracer],
-            }
-            initial_state = {
-                "messages": __format_messages(messages),
-                "character_id": receiver_character.id,
-                "character_name": receiver_character.name,
-                "character_perspective": receiver_character.perspective,
-                "character_style": receiver_character.style,
-            }
+        with __compiled_graph(messages, sender_id, receiver_character, new_thread) as (
+            graph,
+            config,
+            initial_state,
+        ):
             async for chunk in graph.astream(
                 input=initial_state,
                 config=config,

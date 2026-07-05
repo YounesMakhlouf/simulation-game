@@ -1,6 +1,5 @@
 from typing import Generic, Type, TypeVar
 
-from bson import ObjectId
 from loguru import logger
 from pydantic import BaseModel
 from pymongo import MongoClient, errors
@@ -11,10 +10,10 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class MongoClientWrapper(Generic[T]):
-    """Service class for MongoDB operations, supporting ingestion, querying, and validation.
+    """Thin wrapper around a MongoDB collection connection.
 
-    This class provides methods to interact with MongoDB collections, including document
-    ingestion, querying, and validation operations.
+    Manages the client lifecycle (context manager support) and provides
+    collection maintenance helpers.
 
     Args:
         model (Type[T]): The Pydantic model class to use for document serialization.
@@ -108,98 +107,6 @@ class MongoClientWrapper(Generic[T]):
             )
         except errors.PyMongoError as e:
             logger.error(f"Error clearing the collection: {e}")
-            raise
-
-    def ingest_documents(self, documents: list[T]) -> None:
-        """Insert multiple documents into the MongoDB collection.
-
-        Args:
-            documents: List of Pydantic model instances to insert.
-
-        Raises:
-            ValueError: If documents is empty or contains non-Pydantic model items.
-            errors.PyMongoError: If the insertion operation fails.
-        """
-
-        try:
-            if not documents or not all(
-                isinstance(doc, BaseModel) for doc in documents
-            ):
-                raise ValueError("Documents must be a list of Pycantic models.")
-
-            dict_documents = [doc.model_dump() for doc in documents]
-
-            # Remove '_id' fields to avoid duplicate key errors
-            for doc in dict_documents:
-                doc.pop("_id", None)
-
-            self.collection.insert_many(dict_documents)
-            logger.debug(f"Inserted {len(documents)} documents into MongoDB.")
-        except errors.PyMongoError as e:
-            logger.error(f"Error inserting documents: {e}")
-            raise
-
-    def fetch_documents(self, limit: int, query: dict) -> list[T]:
-        """Retrieve documents from the MongoDB collection based on a query.
-
-        Args:
-            limit (int): Maximum number of documents to retrieve.
-            query (dict): MongoDB query filter to apply.
-
-        Returns:
-            list[T]: List of Pydantic model instances matching the query criteria.
-
-        Raises:
-            Exception: If the query operation fails.
-        """
-        try:
-            documents = list(self.collection.find(query).limit(limit))
-            logger.debug(f"Fetched {len(documents)} documents with query: {query}")
-            return self.__parse_documents(documents)
-        except Exception as e:
-            logger.error(f"Error fetching documents: {e}")
-            raise
-
-    def __parse_documents(self, documents: list[dict]) -> list[T]:
-        """Convert MongoDB documents to Pydantic model instances.
-
-        Converts MongoDB ObjectId fields to strings and transforms the document structure
-        to match the Pydantic model schema.
-
-        Args:
-            documents (list[dict]): List of MongoDB documents to parse.
-
-        Returns:
-            list[T]: List of validated Pydantic model instances.
-        """
-        parsed_documents = []
-        for doc in documents:
-            for key, value in doc.items():
-                if isinstance(value, ObjectId):
-                    doc[key] = str(value)
-
-            _id = doc.pop("_id", None)
-            doc["id"] = _id
-
-            parsed_doc = self.model.model_validate(doc)
-            parsed_documents.append(parsed_doc)
-
-        return parsed_documents
-
-    def get_collection_count(self) -> int:
-        """Count the total number of documents in the collection.
-
-        Returns:
-            Total number of documents in the collection.
-
-        Raises:
-            errors.PyMongoError: If the count operation fails.
-        """
-
-        try:
-            return self.collection.count_documents({})
-        except errors.PyMongoError as e:
-            logger.error(f"Error counting documents in MongoDB: {e}")
             raise
 
     def close(self) -> None:

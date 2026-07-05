@@ -17,16 +17,13 @@ export class Game extends Scene {
         // Game State
         this.playerCharacterId = null;
         this.playerConfig = null;
-        this.currentRound = 1;
         this.gameState = {}; // Will hold crisis updates, resources, etc.
-        this.isPlayerTurn = true; // Controls when the player can act
 
         // Characters & Interaction
         this.delegates = []; // Array to hold all character/NPC objects
         this.activeDelegate = null; // The NPC the player is currently near
 
         this.dialogueManager = null;
-        this.labelsVisible = true;
         this.gameManager = null;
     }
 
@@ -101,9 +98,6 @@ export class Game extends Scene {
                     defaultMessage: config.defaultMessage,
                     roamRadius: config.roamRadius,
                     moveSpeed: config.moveSpeed || 40,
-                    pauseChance: config.pauseChance || 0.2,
-                    directionChangeChance: config.directionChangeChance || 0.3,
-                    handleCollisions: true,
                 });
 
                 this.delegates.push(this[config.id]);
@@ -231,8 +225,6 @@ export class Game extends Scene {
             down: this.cursors.down,
             speed: 0.5,
         });
-
-        this.labelsVisible = true;
 
         // Add ESC key for pause menu
         this.input.keyboard.on("keydown-ESC", () => {

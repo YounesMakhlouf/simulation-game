@@ -5,13 +5,13 @@ class ApiService {
         this.apiUrl = getApiBaseUrl();
     }
 
-    async request(endpoint, method, data, timeout = REQUEST_TIMEOUT_MS) {
+    async request(endpoint, method, data) {
         const url = `${this.apiUrl}${endpoint}`;
         const options = {
             method, headers: {
                 'Content-Type': 'application/json',
             }, body: data ? JSON.stringify(data) : undefined,
-            signal: AbortSignal.timeout(timeout),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         };
 
         let response;
@@ -19,7 +19,7 @@ class ApiService {
             response = await fetch(url, options);
         } catch (error) {
             if (error.name === 'TimeoutError') {
-                throw new Error(`Request to ${endpoint} timed out after ${timeout}ms`);
+                throw new Error(`Request to ${endpoint} timed out after ${REQUEST_TIMEOUT_MS}ms`);
             }
             throw error;
         }

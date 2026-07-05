@@ -190,6 +190,3 @@ export function createPresetButton(scene, preset, x, y, text, onClick, overrides
     const presetOpts = BUTTON_PRESETS[preset] || BUTTON_PRESETS.menu;
     return createUIButton(scene, x, y, text, onClick, {...presetOpts, ...overrides});
 }
-
-// Export presets for reference
-export {BUTTON_PRESETS};

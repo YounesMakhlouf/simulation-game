@@ -5,7 +5,6 @@ from langchain_community.document_loaders import WebBaseLoader, WikipediaLoader
 from langchain_core.documents import Document
 from tqdm import tqdm
 
-from philoagents.config import settings
 from philoagents.domain.character import Character
 from philoagents.domain.character_factory import CharacterFactory
 
@@ -127,35 +126,3 @@ class RagExtractor:
                 metadata["title"] = title.get_text().strip(" \n")
             documents.append(Document(page_content=text, metadata=metadata))
         return documents
-
-
-# --- Standalone Test Block ---
-if __name__ == "__main__":
-    import json
-
-    # 1. Define the scenario to test
-    SCENARIO_PATH = settings.SCENARIO_PATH
-
-    # 2. Load the scenario data just like the main application would
-    print("--- Loading Scenario Data ---")
-    with open(SCENARIO_PATH / "characters.json", "r") as f:
-        character_data = json.load(f)
-    with open(SCENARIO_PATH / "rag_sources.json", "r") as f:
-        rag_sources_data = json.load(f)
-
-    # 3. Initialize the factory and extractor with the loaded data
-    char_factory = CharacterFactory(character_data=character_data)
-    extractor = RagExtractor(character_factory=char_factory)
-
-    # 4. Run the extraction generator and print results
-    print("\n--- Starting RAG Extraction ---")
-    extraction_generator = extractor.get_extraction_generator(
-        rag_sources=rag_sources_data
-    )
-
-    for character, docs in extraction_generator:
-        print(f"\n--- Results for: {character.name} ---")
-        print(f"Total documents found: {len(docs)}")
-        for i, doc in enumerate(docs):
-            source = doc.metadata.get("source", "Wikipedia")
-            print(f"  - Doc {i + 1} from '{source}' ({len(doc.page_content)} chars)")
