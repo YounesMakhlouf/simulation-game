@@ -127,7 +127,10 @@ class GameLoopService:
             **(self.game_state.ai_undergame_guesses or {}),
         }
 
-        raw_scores = ScoringService().calculate_final_scores(
+        # Embedding inference (and the first-call model load) is synchronous;
+        # run it off the event loop so other requests aren't stalled.
+        raw_scores = await asyncio.to_thread(
+            ScoringService().calculate_final_scores,
             characters=list(self.game_state.characters.values()),
             undergame_guesses=undergame_guesses,
             actual_undergame=self.undergame_plot,
