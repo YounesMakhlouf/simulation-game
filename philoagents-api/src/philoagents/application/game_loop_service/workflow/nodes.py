@@ -12,7 +12,7 @@ from philoagents.application.game_loop_service.workflow.state import (
     ResolutionState,
 )
 from philoagents.domain import Character
-from philoagents.domain.resources import UpdatedCharacterState
+from philoagents.domain.resources import CharacterStatusUpdate, ResourceChange
 
 # --- Delegate Action Agent Node ---
 
@@ -58,57 +58,67 @@ async def action_decision_node(state: ActionState) -> Dict:
 # --- Judge Resolution Agent Node ---
 
 
-def _apply_resource_updates(
+def _apply_judge_output(
     characters: Dict[str, Character],
-    updated_character_state: List[UpdatedCharacterState],
+    resource_changes: List[ResourceChange],
+    status_updates: List[CharacterStatusUpdate],
 ) -> Dict[str, Character]:
     """
-    Applies the Judge's proposed character states while enforcing server-side
-    invariants, since the LLM's arithmetic cannot be trusted:
+    Applies the Judge's outcome deltas to the settled character states.
 
-    - Updates for unknown character IDs are ignored.
-    - Proposed resource values are clamped to be non-negative.
-    - Resources the Judge omitted keep their previous value (the Judge cannot
-      silently delete an asset), and characters it omitted entirely keep
-      their previous state.
+    The Judge only ever proposes changes (gains/losses with reasons); all
+    arithmetic happens here, so LLM math can never corrupt the economy:
+
+    - Changes for unknown character IDs are ignored.
+    - A loss is clamped so a balance never goes below zero.
+    - A gain of a resource the character doesn't have yet creates it (the
+      Judge may legitimately grant new assets); a loss of an unknown
+      resource is ignored.
+    - Statuses are narrative, not arithmetic: each listed character's status
+      dictionary is replaced wholesale; unlisted characters keep theirs.
     """
-    updated_ids = set()
-    for update in updated_character_state:
+    for change in resource_changes:
+        character = characters.get(change.character_id)
+        if character is None:
+            logger.warning(
+                f"Judge referenced unknown character '{change.character_id}'; "
+                f"ignoring the change."
+            )
+            continue
+
+        current = character.resources.get(change.resource)
+        if current is None:
+            if change.change <= 0:
+                logger.warning(
+                    f"Judge deducted unknown resource '{change.resource}' from "
+                    f"'{change.character_id}'; ignoring."
+                )
+                continue
+            current = 0
+
+        new_value = max(0, current + change.change)
+        if current + change.change < 0:
+            logger.warning(
+                f"Judge deducted {-change.change} '{change.resource}' from "
+                f"'{change.character_id}' with only {current} available; "
+                f"clamping to 0."
+            )
+        character.resources[change.resource] = new_value
+        logger.info(
+            f"{change.character_id}: {change.resource} "
+            f"{change.change:+d} -> {new_value} ({change.reason})"
+        )
+
+    for update in status_updates:
         character = characters.get(update.character_id)
         if character is None:
             logger.warning(
                 f"Judge referenced unknown character '{update.character_id}'; "
-                f"ignoring the update."
+                f"ignoring the status update."
             )
             continue
-        updated_ids.add(update.character_id)
-
-        new_resources = dict(character.resources)
-        for resource, value in update.resources.items():
-            if value < 0:
-                logger.warning(
-                    f"Judge set '{resource}' to {value} for "
-                    f"'{update.character_id}'; clamping to 0."
-                )
-                value = 0
-            new_resources[resource] = value
-
-        omitted = set(character.resources) - set(update.resources)
-        if omitted:
-            logger.warning(
-                f"Judge omitted resources {sorted(omitted)} for "
-                f"'{update.character_id}'; keeping their previous values."
-            )
-
-        character.resources = new_resources
         character.statuses = update.statuses
 
-    missing = set(characters) - updated_ids
-    if missing:
-        logger.warning(
-            f"Judge omitted state updates for {sorted(missing)}; "
-            f"keeping their previous state."
-        )
     return characters
 
 
@@ -139,8 +149,10 @@ async def resolution_node(state: ResolutionState) -> Dict:
     logger.info("Judge has made a decision. Crafting new crisis update...")
 
     original_characters = state["characters"]
-    updated_characters = _apply_resource_updates(
-        original_characters, judge_output.updated_character_states
+    updated_characters = _apply_judge_output(
+        original_characters,
+        judge_output.resource_changes,
+        judge_output.status_updates,
     )
     return {
         "crisis_update": judge_output.crisis_update,
