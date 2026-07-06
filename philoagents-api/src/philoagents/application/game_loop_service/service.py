@@ -383,7 +383,16 @@ class GameLoopService:
         config = {"configurable": {"thread_id": thread_id}, "callbacks": [opik_tracer]}
         state_for_judge = self.game_state.model_copy(deep=True)
         state_for_judge.characters = characters
-        current_state_json_str = state_for_judge.model_dump_json(indent=2)
+        # Keep the judge's input lean: last_round_actions duplicates what the
+        # judge already saw, and the prompt grows each round — a bloated state
+        # JSON blows the per-minute token limit on free-tier Groq.
+        current_state_json_str = state_for_judge.model_dump_json(
+            exclude={
+                "last_round_actions",
+                "player_undergame_guess",
+                "ai_undergame_guesses",
+            }
+        )
         initial_state = {
             "current_game_state_json": current_state_json_str,
             "actions": all_actions,
