@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -29,7 +29,7 @@ class CharacterStatusUpdate(BaseModel):
     character_id: str = Field(
         description="The ID of the character whose statuses are being updated."
     )
-    statuses: Dict[str, Union[str, int, bool]] = Field(
+    statuses: Dict[str, str] = Field(
         description="The character's new, complete dictionary of descriptive statuses."
     )
 
