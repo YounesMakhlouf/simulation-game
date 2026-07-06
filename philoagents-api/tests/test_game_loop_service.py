@@ -467,41 +467,64 @@ def test_reset_rejected_while_round_is_processing():
 # --- finalize_scores single-shot behavior ---
 
 
+def _stub_scoring(service, monkeypatch, ai_guess="a theory"):
+    """No LLM (AI guesses) and no embedding model (similarity) in unit tests."""
+
+    async def fake_guesses(player_character_id):
+        return {
+            char_id: ai_guess
+            for char_id in service.game_state.characters
+            if char_id != player_character_id
+        }
+
+    service._generate_ai_guesses = fake_guesses
+    monkeypatch.setattr(
+        "philoagents.application.scoring_service._default_embed_fn",
+        lambda: lambda text: [1.0, 0.0],
+    )
+
+
 def test_finalize_scores_rejected_before_game_over():
     service = make_service()
     with pytest.raises(ValueError, match="not over"):
-        service.finalize_scores("hannibal", "my guess")
+        asyncio.run(service.finalize_scores("hannibal", "my guess"))
 
 
 def test_finalize_scores_rejects_unknown_character():
     service = make_service()
     service.is_game_over = True
     with pytest.raises(ValueError, match="not found"):
-        service.finalize_scores("caesar", "my guess")
+        asyncio.run(service.finalize_scores("caesar", "my guess"))
 
 
-def test_finalize_scores_locks_guess_and_persists():
+def test_finalize_scores_locks_guesses_and_persists(monkeypatch):
     repository = FakeStateRepository()
     service = make_service(repository)
     service.is_game_over = True
+    _stub_scoring(service, monkeypatch)
 
-    scores, actual = service.finalize_scores("hannibal", "the monolith curse")
+    scores, actual = asyncio.run(service.finalize_scores("hannibal", "my theory"))
 
-    assert service.game_state.player_undergame_guess == "the monolith curse"
+    assert service.game_state.player_undergame_guess == "my theory"
+    assert service.game_state.ai_undergame_guesses == {"scipio": "a theory"}
     assert repository.save_calls == 1
     assert actual == "The displayed undergame plot."
     assert set(scores.keys()) == {"hannibal", "scipio"}
 
 
-def test_finalize_scores_is_single_shot_ignoring_later_guesses():
+def test_finalize_scores_is_single_shot_ignoring_later_guesses(monkeypatch):
     repository = FakeStateRepository()
     service = make_service(repository)
     service.is_game_over = True
+    _stub_scoring(service, monkeypatch)
 
-    first, _ = service.finalize_scores("hannibal", "first guess")
-    # A second call with a different guess must not change the locked-in guess
-    # nor re-persist it.
-    second, _ = service.finalize_scores("hannibal", "a much better second guess")
+    first, _ = asyncio.run(service.finalize_scores("hannibal", "first guess"))
+    # A second call must not change the locked-in guesses, re-generate the AI
+    # guesses, nor re-persist.
+    service._generate_ai_guesses = None  # would crash if called again
+    second, _ = asyncio.run(
+        service.finalize_scores("hannibal", "a much better second guess")
+    )
 
     assert service.game_state.player_undergame_guess == "first guess"
     assert repository.save_calls == 1

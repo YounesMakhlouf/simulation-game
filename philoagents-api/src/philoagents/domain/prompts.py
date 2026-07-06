@@ -281,6 +281,31 @@ JUDGE_RESOLUTION_PROMPT = Prompt(
     prompt=__JUDGE_RESOLUTION_PROMPT,
 )
 
+# --- Undergame Guess ---
+
+__UNDERGAME_GUESS_PROMPT = """
+You are {{character_name}}. {{character_perspective}}
+
+The game is over. Looking back on everything that happened, you must now state
+your theory about the hidden force or agenda (the "Undergame") that was secretly
+shaping events all along.
+
+Intelligence you gathered during the game:
+{{known_intel}}
+
+The final situation:
+{{crisis_update}}
+
+In 2-4 sentences, state your single best theory of what was really going on
+behind the scenes. Be specific about who or what was pulling the strings and to
+what end. Respond with the theory only.
+"""
+
+UNDERGAME_GUESS_PROMPT = Prompt(
+    name="undergame_guess_prompt",
+    prompt=__UNDERGAME_GUESS_PROMPT,
+)
+
 __DELEGATE_CONVERSATIONAL_PROMPT = """
 Let's roleplay. You are {{character_name}}, a historical figure engaged in a private conversation.
 Respond concisely and in character, according to your defined personality and goals.

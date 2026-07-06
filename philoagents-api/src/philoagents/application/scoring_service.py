@@ -1,7 +1,29 @@
+import math
+from functools import lru_cache
+from typing import Callable, Optional
+
+from philoagents.config import settings
 from philoagents.domain import Character
+
+EmbedFn = Callable[[str], list[float]]
+
+
+@lru_cache(maxsize=1)
+def _default_embed_fn() -> EmbedFn:
+    # Reuse the RAG embedding model; loaded lazily so importing this module
+    # (and unit-testing it with a fake embedder) never touches the model.
+    from philoagents.application.rag.embeddings import get_embedding_model
+
+    model = get_embedding_model(
+        settings.RAG_TEXT_EMBEDDING_MODEL_ID, settings.RAG_DEVICE
+    )
+    return model.embed_query
 
 
 class ScoringService:
+    def __init__(self, embed_fn: Optional[EmbedFn] = None):
+        self._embed_fn = embed_fn
+
     def calculate_final_scores(
         self,
         characters: list[Character],
@@ -19,7 +41,6 @@ class ScoringService:
             faction_score = (char.victory_points / max_vp) * 80
 
             # 2. Undergame Deduction Score (20%)
-            # TODO: Use a real text similarity metric in production.
             guess = undergame_guesses.get(char.id, "")
             similarity = self._calculate_similarity(guess, actual_undergame)
             undergame_score = similarity * 20
@@ -33,9 +54,19 @@ class ScoringService:
         return final_scores
 
     def _calculate_similarity(self, text1: str, text2: str) -> float:
-        # Placeholder for a real text similarity library (e.g., Sentence Transformers)
-        # Simple keyword matching for now
-        # todo: change this
-        keywords = ["monolith", "audacity", "willpower", "sanity", "stability", "curse"]
-        score = sum(1 for keyword in keywords if keyword in text1.lower())
-        return min(score / 3.0, 1.0)  # Normalize to 0-1 range
+        """Semantic similarity of the guess to the actual plot, in [0, 1]."""
+        if not text1.strip() or not text2.strip():
+            return 0.0
+        embed = self._embed_fn or _default_embed_fn()
+        cos = _cosine(embed(text1), embed(text2))
+        # Calibration: MiniLM cosine sits around 0.2 for unrelated sentence
+        # pairs and above 0.8 for near-paraphrases, so rescale that band to
+        # [0, 1]. Deliberately simple; replace with a graded rubric if scores
+        # feel unfair in play.
+        return max(0.0, min(1.0, (cos - 0.2) / 0.6))
+
+
+def _cosine(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(x * x for x in b))
+    return dot / norm if norm else 0.0

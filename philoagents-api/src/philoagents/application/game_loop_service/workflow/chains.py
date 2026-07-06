@@ -1,9 +1,14 @@
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
 from philoagents.config import settings
 from philoagents.domain import Action
-from philoagents.domain.prompts import DELEGATE_ACTION_PROMPT, JUDGE_RESOLUTION_PROMPT
+from philoagents.domain.prompts import (
+    DELEGATE_ACTION_PROMPT,
+    JUDGE_RESOLUTION_PROMPT,
+    UNDERGAME_GUESS_PROMPT,
+)
 from philoagents.domain.resources import JudgeOutput
 
 
@@ -76,3 +81,19 @@ def get_judge_resolution_chain():
     )
 
     return (prompt | structured_llm).with_retry(stop_after_attempt=3)
+
+
+def get_undergame_guess_chain():
+    """
+    Creates the LCEL chain that has an AI character state its end-of-game
+    theory about the hidden Undergame. Returns plain text.
+    """
+    model = get_chat_model(temperature=0.5)
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", UNDERGAME_GUESS_PROMPT.prompt),
+        ],
+        template_format="jinja2",
+    )
+
+    return (prompt | model | StrOutputParser()).with_retry(stop_after_attempt=2)
