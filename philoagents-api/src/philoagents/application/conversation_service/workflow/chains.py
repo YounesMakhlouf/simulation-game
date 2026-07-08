@@ -14,10 +14,16 @@ from philoagents.domain.prompts import (
 def get_chat_model(
     temperature: float = 0.7, model_name: str = settings.GROQ_LLM_MODEL
 ) -> ChatGroq:
+    kwargs = {}
+    if model_name.startswith("qwen/"):
+        # Qwen3 emits <think> blocks that would leak into the dialogue stream;
+        # disable reasoning entirely (it also burns the token budget).
+        kwargs["reasoning_effort"] = "none"
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
         model=model_name,
         temperature=temperature,
+        **kwargs,
     )
 
 

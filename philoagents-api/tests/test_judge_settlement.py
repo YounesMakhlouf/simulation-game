@@ -81,13 +81,13 @@ def test_status_update_replaces_only_listed_characters():
         "scipio": make_character("scipio"),
     }
     result = _apply_judge_output(
-        characters, [], [statuses("hannibal", {"Morale": "Low", "Besieged": True})]
+        characters, [], [statuses("hannibal", {"Morale": "Low", "Besieged": "Active"})]
     )
-    assert result["hannibal"].statuses == {"Morale": "Low", "Besieged": True}
+    assert result["hannibal"].statuses == {"Morale": "Low", "Besieged": "Active"}
     assert result["scipio"].statuses == {"Morale": "High"}
 
 
 def test_status_update_for_unknown_character_is_ignored():
     characters = {"hannibal": make_character("hannibal")}
-    result = _apply_judge_output(characters, [], [statuses("caesar", {"X": 1})])
+    result = _apply_judge_output(characters, [], [statuses("caesar", {"X": "1"})])
     assert result["hannibal"].statuses == {"Morale": "High"}
