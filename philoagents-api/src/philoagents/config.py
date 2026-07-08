@@ -11,14 +11,14 @@ class Settings(BaseSettings):
 
     # --- GROQ Configuration ---
     # Free-tier rate limits are per model ID, so each role below is assigned
-    # its own pool: dialogue (the token-heaviest workload) on qwen3-32b
-    # (60 RPM / 500K TPD), delegate actions and summaries on gpt-oss-20b,
-    # and the judge alone on gpt-oss-120b. Both gpt-oss models support
-    # Groq's strict structured outputs (constrained decoding).
-    # NOTE: llama-3.3-70b-versatile and llama-3.1-8b-instant shut down on
-    # 2026-08-16; do not switch back to them.
+    # its own pool: dialogue (the token-heaviest workload) on qwen3.6-27b,
+    # delegate actions and summaries on gpt-oss-20b, and the judge alone on
+    # gpt-oss-120b. Both gpt-oss models support Groq's strict structured
+    # outputs (constrained decoding).
+    # NOTE: qwen3-32b shut down 2026-07-17; llama-3.3-70b-versatile and
+    # llama-3.1-8b-instant shut down 2026-08-16. Do not switch back to them.
     GROQ_API_KEY: str
-    GROQ_LLM_MODEL: str = "qwen/qwen3-32b"
+    GROQ_LLM_MODEL: str = "qwen/qwen3.6-27b"
     GROQ_LLM_MODEL_CONTEXT_SUMMARY: str = "openai/gpt-oss-20b"
     GROQ_LLM_MODEL_SUMMARY: str = "openai/gpt-oss-20b"
     GROQ_LLM_MODEL_ACTION: str = "openai/gpt-oss-20b"
