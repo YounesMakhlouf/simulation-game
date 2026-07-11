@@ -8,7 +8,6 @@ import {GameManager} from "../classes/GameManager";
 export class Game extends Scene {
     constructor() {
         super("Game");
-        this.controls = null;
         this.player = null;
         this.cursors = null;
         this.dialogueBox = null;
@@ -46,9 +45,9 @@ export class Game extends Scene {
         this.createDelegates(map, layers);
 
         this.setupPlayer(map, layers.worldLayer);
-        const camera = this.setupCamera(map);
+        this.setupCamera(map);
 
-        this.setupControls(camera);
+        this.setupControls();
 
         this.setupDialogueSystem();
 
@@ -88,7 +87,7 @@ export class Game extends Scene {
                     return; // Skip creating this character to prevent a crash.
                 }
 
-                this[config.id] = new Character(this, {
+                this.delegates.push(new Character(this, {
                     id: config.id,
                     name: config.name,
                     spawnPoint: spawnPoint,
@@ -98,9 +97,7 @@ export class Game extends Scene {
                     defaultMessage: config.defaultMessage,
                     roamRadius: config.roamRadius,
                     moveSpeed: config.moveSpeed || 40,
-                });
-
-                this.delegates.push(this[config.id]);
+                }));
             }
         });
 
@@ -212,19 +209,10 @@ export class Game extends Scene {
         if (this.sys.game.renderer.type === Phaser.WEBGL) {
             camera.filters.external.addVignette(0.5, 0.5, 0.6, 0.4);
         }
-        return camera;
     }
 
-    setupControls(camera) {
+    setupControls() {
         this.cursors = this.input.keyboard.createCursorKeys();
-        this.controls = new Phaser.Cameras.Controls.FixedKeyControl({
-            camera: camera,
-            left: this.cursors.left,
-            right: this.cursors.right,
-            up: this.cursors.up,
-            down: this.cursors.down,
-            speed: 0.5,
-        });
 
         // Add ESC key for pause menu
         this.input.keyboard.on("keydown-ESC", () => {
@@ -244,7 +232,7 @@ export class Game extends Scene {
         this.dialogueManager.initialize(this.dialogueBox);
     }
 
-    update(time, delta) {
+    update() {
         const isInDialogue = this.dialogueBox.isVisible();
 
         if (!isInDialogue) {
@@ -256,10 +244,6 @@ export class Game extends Scene {
         this.delegates.forEach((delegate) => {
             delegate.update(this.player, isInDialogue);
         });
-
-        if (this.controls) {
-            this.controls.update(delta);
-        }
     }
 
     updatePlayerMovement() {

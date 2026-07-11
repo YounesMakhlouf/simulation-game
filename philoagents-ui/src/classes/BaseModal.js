@@ -49,11 +49,6 @@ export class BaseModal extends Scene {
         };
 
         this.modalData = null;
-
-        // store objects for layout updates
-        this._layout = {
-            panel: null, overlay: null, title: null,
-        };
     }
 
     init(data) {
@@ -69,25 +64,10 @@ export class BaseModal extends Scene {
         this.setupKeyboardHandling();
         this.applyBackdropFilters();
 
-        // keep layout correct on resize
-        this.scale.on("resize", this.updateLayout, this);
-        this.events.once(Phaser.Scenes.Events.SLEEP, () => {
-            this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
-            this.removeBackdropFilters();
-        });
-        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-            this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
-            this.removeBackdropFilters();
-        });
-        this.events.once(Phaser.Scenes.Events.DESTROY, () => {
-            this.scale.off(Phaser.Scale.Events.RESIZE, this.updateLayout, this);
-            this.removeBackdropFilters();
-        });
-    }
-
-    shutdown() {
-        this.scale.off("resize", this.updateLayout, this);
-        this.removeBackdropFilters();
+        const cleanup = () => this.removeBackdropFilters();
+        this.events.once(Phaser.Scenes.Events.SLEEP, cleanup);
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+        this.events.once(Phaser.Scenes.Events.DESTROY, cleanup);
     }
 
     // Blur + desaturate the main camera of every active scene rendered behind
@@ -125,12 +105,11 @@ export class BaseModal extends Scene {
 
     createOverlay() {
         const { width, height } = this.scale;
-        this.overlay = this.add.graphics();
-        this.overlay.fillStyle(this.options.overlayColor, this.options.overlayAlpha);
-        this.overlay.fillRect(0, 0, width, height);
-        // Block clicks to the game behind the modal
-        this.overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
-        this._layout.overlay = this.overlay;
+        // Rectangle blocks clicks to the game behind the modal
+        this.overlay = this.add
+            .rectangle(0, 0, width, height, this.options.overlayColor, this.options.overlayAlpha)
+            .setOrigin(0)
+            .setInteractive();
     }
 
     createPanel() {
@@ -142,17 +121,10 @@ export class BaseModal extends Scene {
         this.panelHeight = panelHeight;
 
         this.panel = this.add.graphics();
-        this.redrawPanel();
-        this._layout.panel = this.panel;
-    }
-
-    redrawPanel() {
-        const g = this.panel;
-        g.clear();
-        g.fillStyle(this.options.panelColor, this.options.panelAlpha);
-        g.lineStyle(this.options.panelBorderWidth, this.options.panelBorderColor, 1);
-        g.fillRoundedRect(this.panelX, this.panelY, this.panelWidth, this.panelHeight, this.options.panelRadius);
-        g.strokeRoundedRect(this.panelX, this.panelY, this.panelWidth, this.panelHeight, this.options.panelRadius);
+        this.panel.fillStyle(this.options.panelColor, this.options.panelAlpha);
+        this.panel.lineStyle(this.options.panelBorderWidth, this.options.panelBorderColor, 1);
+        this.panel.fillRoundedRect(panelX, panelY, panelWidth, panelHeight, this.options.panelRadius);
+        this.panel.strokeRoundedRect(panelX, panelY, panelWidth, panelHeight, this.options.panelRadius);
     }
 
     computePanelRect() {
@@ -182,8 +154,6 @@ export class BaseModal extends Scene {
                 fontSize: this.options.titleFontSize, color: this.options.titleColor,
             })
             .setOrigin(0.5, 0);
-
-        this._layout.title = this.title;
     }
 
     // Safe content rect: inside panel, below title, above bottom padding
@@ -228,33 +198,6 @@ export class BaseModal extends Scene {
         this.scene.stop(this.scene.key);
         if (this.options.resumeGameOnClose) this.scene.resume("Game");
         if (typeof this.options.onClose === "function") this.options.onClose();
-    }
-
-    updateLayout() {
-        if (!this.sys || !this.sys.isActive) return;
-
-        // Overlay
-        const { width, height } = this.scale;
-        this.overlay.clear();
-        this.overlay.fillStyle(this.options.overlayColor, this.options.overlayAlpha);
-        this.overlay.fillRect(0, 0, width, height);
-        this.overlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
-
-        // Panel
-        const r = this.computePanelRect();
-        this.panelX = r.panelX;
-        this.panelY = r.panelY;
-        this.panelWidth = r.panelWidth;
-        this.panelHeight = r.panelHeight;
-        this.redrawPanel();
-
-        // Title
-        if (this.title) {
-            this.title.setPosition(this.panelX + this.panelWidth / 2, this.panelY + this.options.padding + 6);
-        }
-
-        // Subclasses that use getContentBounds() can reflow if needed in their own resize handlers
-        this.events.emit("modal-resize", this.getContentBounds());
     }
 
     // Optional helper to place a scrollable DOM container inside the content bounds

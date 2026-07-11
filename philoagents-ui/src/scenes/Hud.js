@@ -9,7 +9,7 @@ export class HUDScene extends Scene {
         this.intelButton = null;
         this.roundText = null;
         this.phaseText = null;
-        this.resourceTexts = [];
+        this.resourceTexts = {};
         this.endDiplomacyButton = null;
     }
 
@@ -18,6 +18,8 @@ export class HUDScene extends Scene {
     }
 
     create() {
+        this.resourceTexts = {};
+
         // Dark top bar behind the HUD text for legibility over the busy tilemap.
         const screenWidth = this.cameras.main.width;
         const barHeight = 120;
@@ -123,18 +125,17 @@ export class HUDScene extends Scene {
         // Update Round Number
         this.roundText.setText(`Round: ${gameState.round_number}`);
 
-        // Clear previous resource texts
-        this.resourceTexts.forEach((text) => text.destroy());
-        this.resourceTexts = [];
-
-        // Dynamically display resources
+        // Dynamically display resources; Text objects are expensive, so create
+        // one per resource and just setText on subsequent updates.
         const resources = gameState.your_character.resources;
         let yPos = 60;
         for (const [key, value] of Object.entries(resources)) {
-            const resourceText = this.add.text(20, yPos, `${key}: ${value}`, {
-                fontSize: "18px", color: "#ffffff",
-            });
-            this.resourceTexts.push(resourceText);
+            if (!this.resourceTexts[key]) {
+                this.resourceTexts[key] = this.add.text(20, yPos, "", {
+                    fontSize: "18px", color: "#ffffff",
+                });
+            }
+            this.resourceTexts[key].setText(`${key}: ${value}`);
             yPos += 25;
         }
 
