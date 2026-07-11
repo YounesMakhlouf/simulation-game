@@ -225,7 +225,8 @@ export class Game extends Scene {
 
     setupCamera(map) {
         const camera = this.cameras.main;
-        camera.startFollow(this.player);
+        // Lerped follow: the camera eases toward the player instead of locking rigidly
+        camera.startFollow(this.player, true, 0.1, 0.1);
         camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         // v4 filter: a soft vignette darkens the screen edges for a more
         // cinematic, focused view of the town. Filters are WebGL-only, so skip
@@ -251,6 +252,11 @@ export class Game extends Scene {
             if (this.dialogueBox.isVisible()) return;
             const muted = this.game.audioManager.toggleMute();
             this.showToast(muted ? "Sound off (M)" : "Sound on (M)");
+        });
+
+        // F toggles fullscreen (ignored while typing in a dialogue)
+        this.input.keyboard.on("keydown-F", () => {
+            if (!this.dialogueBox.isVisible()) this.scale.toggleFullscreen();
         });
     }
 

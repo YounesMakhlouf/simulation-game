@@ -1,13 +1,10 @@
 import { BaseModal } from "../classes/BaseModal";
+import { FONTS } from "../configs/Theme";
 
 export class CrisisModal extends BaseModal {
   constructor() {
-    super("CrisisModal", {
-      titleText: "Situation Report",
-      closeButtonText: "[ Continue ]",
-      closeButtonColor: "#ffd700",
-      closeButtonHoverColor: "#ffffff",
-    });
+    // Close button text/colors are the BaseModal defaults
+    super("CrisisModal", { titleText: "Situation Report" });
   }
 
   init(data) {
@@ -33,7 +30,7 @@ export class CrisisModal extends BaseModal {
             line-height: 1.4;
             word-wrap: break-word;
             white-space: normal;
-            font-family: Arial, sans-serif;
+            font-family: ${FONTS.body}, sans-serif;
             text-align: left;
             padding: 10px;
             margin-block-end: 1rem;

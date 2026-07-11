@@ -30,5 +30,6 @@ export class MainMenu extends Scene {
         });
 
         this.input.keyboard.on("keydown-M", () => this.game.audioManager.toggleMute());
+        this.input.keyboard.on("keydown-F", () => this.scale.toggleFullscreen());
     }
 }
