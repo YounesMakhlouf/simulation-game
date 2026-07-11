@@ -1,4 +1,4 @@
-import { FONTS } from "../configs/Theme";
+import { COLORS, FONTS } from "../configs/Theme";
 
 class DialogueBox {
     constructor(scene, config = {}) {
@@ -43,7 +43,18 @@ class DialogueBox {
         this.domElement = null;
 
         // Group elements
-        this.container = scene.add.container(0, 0, [graphics, this.text]);
+        // Speaker name tab sitting on the box's top border
+        this.nameTab = scene.add
+            .text(x + 16, y, "", {
+                font: `bold 18px ${FONTS.body}`,
+                fill: COLORS.goldCss,
+                backgroundColor: "#000000",
+                padding: { x: 8, y: 4 },
+            })
+            .setOrigin(0, 1)
+            .setVisible(false);
+
+        this.container = scene.add.container(0, 0, [graphics, this.text, this.nameTab]);
         this.container.setDepth(depth);
         this.container.setScrollFactor(0);
         this.hide();
@@ -113,6 +124,10 @@ class DialogueBox {
 
         // Add to container if possible
         this.container.add(this.domElement);
+    }
+
+    setSpeaker(name) {
+        this.nameTab.setText(name || "").setVisible(!!name);
     }
 
     hide() {

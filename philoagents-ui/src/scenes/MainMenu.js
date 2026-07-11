@@ -28,5 +28,7 @@ export class MainMenu extends Scene {
         this.input.once("pointerdown", () => {
             this.game.audioManager.playMusic("gameplay-music");
         });
+
+        this.input.keyboard.on("keydown-M", () => this.game.audioManager.toggleMute());
     }
 }

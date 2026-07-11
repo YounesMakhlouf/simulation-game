@@ -71,6 +71,7 @@ class DialogueManager {
 
     async handleEnterKey() {
         if (this.currentMessage.trim() !== '') {
+            this.dialogueBox.setSpeaker(this.activeDelegate.name);
             this.dialogueBox.show('...', true);
             this.stopCursorBlink();
 
@@ -180,6 +181,7 @@ class DialogueManager {
 
     restartTypingPrompt() {
         this.currentMessage = '';
+        this.dialogueBox.setSpeaker(this.playerName());
         this.dialogueBox.show('|', true);
 
         this.stopCursorBlink();
@@ -211,6 +213,10 @@ class DialogueManager {
 
     // === Dialogue Flow Control ===
 
+    playerName() {
+        return this.scene.playerConfig?.name || 'You';
+    }
+
     startDialogue(playerCharacterId, delegate) {
         this.cancelDisconnectTimeout();
         this.playerCharacterId = playerCharacterId;
@@ -218,6 +224,7 @@ class DialogueManager {
         this.isTyping = true;
         this.currentMessage = '';
 
+        this.dialogueBox.setSpeaker(this.playerName());
         this.dialogueBox.show('|', true);
         this.stopCursorBlink();
 

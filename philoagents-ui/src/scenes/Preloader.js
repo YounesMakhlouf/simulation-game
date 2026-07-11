@@ -39,6 +39,7 @@ export class Preloader extends Scene {
         this.load.atlas("scipio_africanus", "characters/scipio_africanus/atlas.png", "characters/scipio_africanus/atlas.json");
         this.load.atlas("hannibal_barca", "characters/hannibal_barca/atlas.png", "characters/hannibal_barca/atlas.json");
         this.load.audio("gameplay-music", "audio/epic-theme.ogg");
+        this.load.audio("ui-click", "audio/click.wav");
     }
 
     create() {
