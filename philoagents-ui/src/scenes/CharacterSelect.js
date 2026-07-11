@@ -1,6 +1,7 @@
 import Phaser, { Scene, TintModes } from "phaser";
 import ApiService from "../services/ApiService";
 import { createPresetButton } from "../classes/ButtonFactory";
+import { COLORS, FONTS } from "../configs/Theme";
 
 export class CharacterSelect extends Scene {
     constructor() {
@@ -19,20 +20,21 @@ export class CharacterSelect extends Scene {
         this.infoPanel = {};
         this.selectionBorder = null;
 
-        const { width, height } = this.sys.game.config;
+        const { width, height } = this.scale;
+        const centerX = width / 2;
         this.add
             .image(0, 0, "character_selection_background")
             .setOrigin(0, 0)
             .setDisplaySize(width, height)
             .setAlpha(0.7);
         this.add
-            .text(512, 80, "Choose Your Delegate", {
-                fontSize: "54px", fontFamily: "Georgia, serif", color: "#FFFFFF", stroke: "#000000", strokeThickness: 6,
+            .text(centerX, 80, "Choose Your Delegate", {
+                fontSize: "54px", fontFamily: FONTS.heading, color: "#FFFFFF", stroke: "#000000", strokeThickness: 6,
             })
             .setOrigin(0.5);
 
         const loadingText = this.add
-            .text(512, 384, "Loading delegates...", {
+            .text(centerX, height / 2, "Loading delegates...", {
                 fontSize: "24px", color: "#ffffff", align: "center",
             })
             .setOrigin(0.5);
@@ -106,12 +108,12 @@ export class CharacterSelect extends Scene {
         // fallback renderer where filters are unavailable.
         if (this.sys.game.renderer.type === Phaser.WEBGL) {
             selectedPortrait.enableFilters();
-            selectedPortrait.filters.internal.addGlow(0xffd700, 6, 0, 1);
+            selectedPortrait.filters.internal.addGlow(COLORS.gold, 6, 0, 1);
         }
 
         if (!this.selectionBorder) this.selectionBorder = this.add.graphics();
         this.selectionBorder.clear();
-        this.selectionBorder.lineStyle(6, 0xffd700, 1);
+        this.selectionBorder.lineStyle(6, COLORS.gold, 1);
         this.selectionBorder.strokeRect(
             selectedPortrait.x - selectedPortrait.displayWidth / 2,
             selectedPortrait.y - selectedPortrait.displayHeight / 2,
@@ -124,7 +126,7 @@ export class CharacterSelect extends Scene {
     }
 
     createInfoPanel() {
-        const panelX = 512;
+        const panelX = this.scale.width / 2;
         const panelY = 550;
         const panelWidth = 800;
         const panelHeight = 250;
@@ -137,20 +139,20 @@ export class CharacterSelect extends Scene {
 
         this.infoPanel.name = this.add
             .text(panelX, panelY - 90, "", {
-                fontSize: "36px", fontFamily: "Georgia, serif", color: "#ffffff",
+                fontSize: "36px", fontFamily: FONTS.heading, color: "#ffffff",
             })
             .setOrigin(0.5);
 
         this.infoPanel.title = this.add
             .text(panelX, panelY - 50, "", {
-                fontSize: "24px", fontFamily: "Georgia, serif", color: "#dddddd", fontStyle: "italic",
+                fontSize: "24px", fontFamily: FONTS.heading, color: "#dddddd", fontStyle: "italic",
             })
             .setOrigin(0.5);
 
         this.infoPanel.description = this.add
             .text(panelX, panelY + 25, "", {
                 fontSize: "20px",
-                fontFamily: "Arial",
+                fontFamily: FONTS.body,
                 color: "#ffffff",
                 wordWrap: { width: panelWidth - 40 },
                 align: "center",
@@ -167,7 +169,7 @@ export class CharacterSelect extends Scene {
     }
 
     createSelectButton() {
-        createPresetButton(this, "confirm", 512, 720, "Confirm Delegate", () => {
+        createPresetButton(this, "confirm", this.scale.width / 2, this.scale.height - 48, "Confirm Delegate", () => {
             if (this.selectedCharacter) {
                 this.scene.start("Game", { characterId: this.selectedCharacter.id });
             }

@@ -1,3 +1,5 @@
+import { FONTS } from "../configs/Theme";
+
 const BUTTON_PRESETS = {
     // Main menu style - white with blue hover
     menu: {
@@ -9,7 +11,7 @@ const BUTTON_PRESETS = {
         hoverBgColor: 0x87ceeb,
         shadowColor: 0x666666,
         textColor: "#000000",
-        fontFamily: "Arial",
+        fontFamily: FONTS.body,
         fontStyle: "bold",
         liftOnHover: true,
     },
@@ -24,7 +26,7 @@ const BUTTON_PRESETS = {
         hoverBgColor: 0x008000,
         shadowColor: 0x003300,
         textColor: "#ffffff",
-        fontFamily: "Georgia, serif",
+        fontFamily: FONTS.heading,
         fontStyle: "bold",
         liftOnHover: false,
     },
@@ -39,7 +41,7 @@ const BUTTON_PRESETS = {
         hoverBgColor: 0xb22222,
         shadowColor: 0x4a0000,
         textColor: "#ffffff",
-        fontFamily: "Georgia, serif",
+        fontFamily: FONTS.heading,
         fontStyle: "bold",
         liftOnHover: false,
         hasBorder: true,
@@ -57,7 +59,7 @@ const BUTTON_PRESETS = {
         hoverBgColor: 0x004488,
         shadowColor: 0x001a33,
         textColor: "#ffffff",
-        fontFamily: "Georgia, serif",
+        fontFamily: FONTS.heading,
         fontStyle: "normal",
         liftOnHover: false,
     },
@@ -72,7 +74,7 @@ const BUTTON_PRESETS = {
         hoverBgColor: 0x87ceeb,
         shadowColor: 0x666666,
         textColor: "#000000",
-        fontFamily: "Arial",
+        fontFamily: FONTS.body,
         fontStyle: "bold",
         liftOnHover: true,
     },
@@ -100,7 +102,7 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
         hoverBgColor = 0x87ceeb,
         shadowColor = 0x666666,
         textColor = "#000000",
-        fontFamily = "Arial",
+        fontFamily = FONTS.body,
         fontStyle = "bold",
         liftOnHover = true,
         hasBorder = false,
@@ -158,8 +160,12 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
         if (liftOnHover) label.y += 2;
     });
 
+    container.on("pointerdown", () => {
+        scene.tweens.add({ targets: container, scale: 0.95, duration: 60, yoyo: true });
+    });
+
     if (typeof onClick === "function") {
-        container.on("pointerdown", onClick);
+        container.on("pointerup", onClick);
     }
 
     // Store label reference for easy text updates

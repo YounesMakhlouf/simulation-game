@@ -1,4 +1,5 @@
 import {Scene} from "phaser";
+import {COLORS} from "../configs/Theme";
 
 export class Preloader extends Scene {
     constructor() {
@@ -6,6 +7,13 @@ export class Preloader extends Scene {
     }
 
     preload() {
+        const {width, height} = this.scale;
+        this.add.rectangle(width / 2, height / 2, 304, 28).setStrokeStyle(2, 0xffffff);
+        const bar = this.add.rectangle(width / 2 - 150, height / 2, 4, 20, COLORS.gold).setOrigin(0, 0.5);
+        this.load.on("progress", (value) => {
+            bar.width = 300 * value;
+        });
+
         this.load.setPath("assets");
 
         // General assets

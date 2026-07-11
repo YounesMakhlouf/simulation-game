@@ -6,17 +6,11 @@ export class PauseMenu extends BaseModal {
         super("PauseMenu", {
             titleText: "GAME PAUSED",
             titleColor: "#000000",
-            titleSize: "28px",
-            titleY: 180,
             panelColor: 0xffffff,
             panelBorderColor: 0x000000,
-            panelWidth: 400,
-            panelHeight: 300,
-            panelX: 312, // Centered: (1024 - 400) / 2
-            panelY: 234, // Centered: (768 - 300) / 2
+            maxPanelWidth: 400,
+            maxPanelHeight: 300,
             closeButtonText: null,
-            closeOnEsc: true,
-            resumeGameOnClose: true,
             backdropGrayscale: 1, // fully gray the frozen game while paused
         });
     }

@@ -1,5 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import { createUIButton } from "./ButtonFactory";
+import { COLORS } from "../configs/Theme";
 
 export class BaseModal extends Scene {
     constructor(key, options = {}) {
@@ -38,7 +39,7 @@ export class BaseModal extends Scene {
             // Close button
             closeButtonText: "[ Continue ]",
             closeButtonFontSize: "24px",
-            closeButtonColor: "#ffd700",
+            closeButtonColor: COLORS.goldCss,
             closeButtonHoverColor: "#ffffff",
 
             // Keyboard
