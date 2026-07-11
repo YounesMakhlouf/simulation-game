@@ -1,19 +1,18 @@
-import {BaseModal} from '../classes/BaseModal';
+import { BaseModal } from '../classes/BaseModal';
+import { COLORS } from '../configs/Theme';
 
 export class EndGameModal extends BaseModal {
     constructor() {
         super('EndGameModal', {
             titleText: 'The Final Reckoning',
             titleColor: '#ffffff',
-            titleSize: '48px',
-            titleY: 150,
             panelColor: 0x111111,
-            panelBorderColor: 0xffd700, // Gold border
-            panelWidth: 824,
-            panelHeight: 568,
-            panelX: 100,
-            panelY: 100,
-            showCloseButton: false,
+            panelBorderColor: COLORS.gold,
+            maxPanelWidth: 824,
+            maxPanelHeight: 568,
+            // No close button: the only way out of the end screen is the guess
+            // form. A close button here would leave the game paused forever.
+            closeButtonText: '',
             closeOnEsc: false,
             resumeGameOnClose: false,
             backdropGrayscale: 1, // fully gray the world at game over
@@ -29,7 +28,7 @@ export class EndGameModal extends BaseModal {
         this.input.keyboard.disableGlobalCapture();
         // Instruction text
         this.add.text(512, 220, 'The simulation has concluded. Now, you must answer the final question:\nWhat was the secret force guiding the events of this world?', {
-            fontSize: '20px', color: '#dddddd', align: 'center', wordWrap: {width: 780}
+            fontSize: '20px', color: '#dddddd', align: 'center', wordWrap: { width: 780 }
         }).setOrigin(0.5).setDepth(2);
 
         // --- 2. CREATE THE HTML FORM ---
@@ -78,7 +77,7 @@ export class EndGameModal extends BaseModal {
 
                 // Stop this scene and launch the final scoreboard
                 this.closeModal();
-                this.scene.start('ScoreboardScene', {scores: finalScores});
+                this.scene.start('ScoreboardScene', { scores: finalScores });
 
             } catch (apiError) {
                 console.error("API Error during score calculation:", apiError);
