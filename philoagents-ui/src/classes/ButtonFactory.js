@@ -161,6 +161,7 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
     });
 
     container.on("pointerdown", () => {
+        scene.sound.play("ui-click", { volume: 0.4 });
         scene.tweens.add({ targets: container, scale: 0.95, duration: 60, yoyo: true });
     });
 

@@ -26,4 +26,13 @@ export class AudioManager {
         });
         this.currentMusic.play();
     }
+
+    /**
+     * Toggles global mute for all game audio.
+     * @returns {boolean} The new mute state.
+     */
+    toggleMute() {
+        this.game.sound.mute = !this.game.sound.mute;
+        return this.game.sound.mute;
+    }
 }

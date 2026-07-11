@@ -4,6 +4,7 @@ import DialogueBox from "../classes/DialogueBox";
 import DialogueManager from "../classes/DialogueManager";
 import {CHARACTER_CONFIG} from "../configs/CharacterConfig";
 import {GameManager} from "../classes/GameManager";
+import {COLORS, FONTS} from "../configs/Theme";
 
 export class Game extends Scene {
     constructor() {
@@ -50,6 +51,19 @@ export class Game extends Scene {
         this.setupControls();
 
         this.setupDialogueSystem();
+
+        // Interaction hint shown over a delegate the player is close to
+        this.talkPrompt = this.add
+            .text(0, 0, "Press SPACE to talk", {
+                fontSize: "14px",
+                fontFamily: FONTS.body,
+                color: COLORS.goldCss,
+                backgroundColor: "rgba(0,0,0,0.7)",
+                padding: {x: 6, y: 3},
+            })
+            .setOrigin(0.5, 1)
+            .setDepth(21)
+            .setVisible(false);
 
         this.scene.run("HUDScene", {gameManager: this.gameManager});
 
@@ -123,6 +137,13 @@ export class Game extends Scene {
         }
 
         if (nearbyDelegate) {
+            const inDialogue = this.dialogueBox.isVisible();
+            this.talkPrompt.setVisible(!inDialogue);
+            if (!inDialogue) {
+                const label = nearbyDelegate.nameLabel;
+                this.talkPrompt.setPosition(label.x, label.y - label.height - 4);
+            }
+
             if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
                 if (!this.dialogueBox.isVisible()) {
                     this.dialogueManager.startDialogue(this.playerCharacterId, nearbyDelegate);
@@ -134,8 +155,11 @@ export class Game extends Scene {
             if (this.dialogueBox.isVisible()) {
                 nearbyDelegate.facePlayer(this.player);
             }
-        } else if (this.dialogueBox.isVisible()) {
-            this.dialogueManager.closeDialogue();
+        } else {
+            this.talkPrompt.setVisible(false);
+            if (this.dialogueBox.isVisible()) {
+                this.dialogueManager.closeDialogue();
+            }
         }
     }
 
@@ -201,7 +225,8 @@ export class Game extends Scene {
 
     setupCamera(map) {
         const camera = this.cameras.main;
-        camera.startFollow(this.player);
+        // Lerped follow: the camera eases toward the player instead of locking rigidly
+        camera.startFollow(this.player, true, 0.1, 0.1);
         camera.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
         // v4 filter: a soft vignette darkens the screen edges for a more
         // cinematic, focused view of the town. Filters are WebGL-only, so skip
@@ -220,6 +245,18 @@ export class Game extends Scene {
                 this.scene.pause();
                 this.scene.launch("PauseMenu");
             }
+        });
+
+        // M toggles mute (ignored while typing in a dialogue)
+        this.input.keyboard.on("keydown-M", () => {
+            if (this.dialogueBox.isVisible()) return;
+            const muted = this.game.audioManager.toggleMute();
+            this.showToast(muted ? "Sound off (M)" : "Sound on (M)");
+        });
+
+        // F toggles fullscreen (ignored while typing in a dialogue)
+        this.input.keyboard.on("keydown-F", () => {
+            if (!this.dialogueBox.isVisible()) this.scale.toggleFullscreen();
         });
     }
 
@@ -329,15 +366,17 @@ export class Game extends Scene {
 
     showError(errorMessage) {
         console.error(`Game Scene: Displaying error: ${errorMessage}`);
-        // Minimal in-game notification (non-blocking)
-        const x = this.cameras.main.centerX;
-        const y = 100;
+        this.showToast(errorMessage, "rgba(139,0,0,0.8)");
+    }
+
+    // Minimal in-game notification (non-blocking)
+    showToast(message, backgroundColor = "rgba(0,0,0,0.8)") {
         const text = this.add
-            .text(x, y, errorMessage, {
+            .text(this.cameras.main.centerX, 100, message, {
                 fontSize: "20px",
-                fontFamily: "Arial",
+                fontFamily: FONTS.body,
                 color: "#ffffff",
-                backgroundColor: "rgba(139,0,0,0.8)",
+                backgroundColor,
                 padding: {x: 12, y: 8},
                 stroke: "#000000",
                 strokeThickness: 3,
