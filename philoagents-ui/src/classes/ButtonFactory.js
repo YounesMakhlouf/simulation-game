@@ -1,5 +1,3 @@
-import Phaser from "phaser";
-
 const BUTTON_PRESETS = {
     // Main menu style - white with blue hover
     menu: {
@@ -134,25 +132,20 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
     const bg = scene.add.graphics();
     drawBg(bg, bgColor);
 
-    // Label with dynamic font fitting
-    let fontSize = maxFontSize;
-    let label;
-    do {
-        if (label) label.destroy();
-        label = scene.add
-            .text(0, 0, text, {
-                fontSize: `${fontSize}px`, fontFamily, color: textColor, fontStyle,
-            })
-            .setOrigin(0.5);
-        fontSize -= 1;
-    } while (label.width > width - padding && fontSize >= minFontSize);
+    // Label with dynamic font fitting; setFontSize re-measures in place
+    const label = scene.add
+        .text(0, 0, text, {
+            fontSize: `${maxFontSize}px`, fontFamily, color: textColor, fontStyle,
+        })
+        .setOrigin(0.5);
+    for (let fontSize = maxFontSize - 1; label.width > width - padding && fontSize >= minFontSize; fontSize--) {
+        label.setFontSize(fontSize);
+    }
 
     container.add([shadow, bg, label]);
+    // setSize gives the container a centered hit area for setInteractive
     container.setSize(width, height);
-    container.setInteractive(
-        new Phaser.Geom.Rectangle(0, 0, width, height),
-        Phaser.Geom.Rectangle.Contains
-    );
+    container.setInteractive();
 
     // Interactions
     container.on("pointerover", () => {
@@ -172,7 +165,7 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
     // Store label reference for easy text updates
     container.setData("label", label);
 
-    return {container, shadow, bg, label};
+    return { container, shadow, bg, label };
 }
 
 /**
@@ -188,5 +181,5 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
  */
 export function createPresetButton(scene, preset, x, y, text, onClick, overrides = {}) {
     const presetOpts = BUTTON_PRESETS[preset] || BUTTON_PRESETS.menu;
-    return createUIButton(scene, x, y, text, onClick, {...presetOpts, ...overrides});
+    return createUIButton(scene, x, y, text, onClick, { ...presetOpts, ...overrides });
 }

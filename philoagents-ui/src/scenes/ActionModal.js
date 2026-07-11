@@ -18,8 +18,6 @@ export class ActionModal extends BaseModal {
         const playerResources = this.gameManager.gameState.your_character.resources || {};
         this.input.keyboard.disableGlobalCapture();
 
-        const content = this.getContentBounds();
-
         const formElement = this.addScrollableDom(`
             <div class="action-modal-form" style="box-sizing:border-box; padding:12px 16px 16px;"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
               <label for="action-details">Action Details:</label>
@@ -75,13 +73,6 @@ export class ActionModal extends BaseModal {
         inputs.forEach((el) => {
             el.addEventListener('focus', () => this.input.keyboard.disableGlobalCapture());
             el.addEventListener('blur', () => this.input.keyboard.enableGlobalCapture());
-        });
-
-        // Keep DOM aligned if window/game resizes
-        this.events.on('modal-resize', (bounds) => {
-            formElement.setPosition(bounds.x, bounds.y);
-            formElement.node.style.width = `${bounds.width}px`;
-            formElement.node.style.maxHeight = `${bounds.height}px`;
         });
 
         // Re-enable capture when shutting down

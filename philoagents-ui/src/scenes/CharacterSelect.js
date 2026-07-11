@@ -1,6 +1,6 @@
-import Phaser, {Scene, TintModes} from "phaser";
+import Phaser, { Scene, TintModes } from "phaser";
 import ApiService from "../services/ApiService";
-import {createPresetButton} from "../classes/ButtonFactory";
+import { createPresetButton } from "../classes/ButtonFactory";
 
 export class CharacterSelect extends Scene {
     constructor() {
@@ -11,14 +11,15 @@ export class CharacterSelect extends Scene {
         this.infoPanel = {};
     }
 
-    async create() {
+    create() {
         // Reset scene state in case this Scene instance is reused
         this.characters = [];
         this.selectedCharacter = null;
         this.portraits = [];
         this.infoPanel = {};
+        this.selectionBorder = null;
 
-        const {width, height} = this.sys.game.config;
+        const { width, height } = this.sys.game.config;
         this.add
             .image(0, 0, "character_selection_background")
             .setOrigin(0, 0)
@@ -30,23 +31,28 @@ export class CharacterSelect extends Scene {
             })
             .setOrigin(0.5);
 
-        try {
-            const data = await ApiService.request("/game/characters", "GET");
-            this.characters = data.characters;
+        const loadingText = this.add
+            .text(512, 384, "Loading delegates...", {
+                fontSize: "24px", color: "#ffffff", align: "center",
+            })
+            .setOrigin(0.5);
 
-            // Now that we have the data, create the rest of the scene
-            this.createInfoPanel();
-            this.createCharacterPortraits();
-            this.createSelectButton();
-        } catch (error) {
-            console.error("Failed to fetch character data:", error);
-            // Display an error message to the player
-            this.add
-                .text(512, 384, "Error: Could not connect to the server.\nPlease ensure the backend is running.", {
-                    fontSize: "24px", color: "#ff0000", align: "center",
-                })
-                .setOrigin(0.5);
-        }
+        ApiService.request("/game/characters", "GET")
+            .then((data) => {
+                if (!this.scene.isActive()) return;
+                loadingText.destroy();
+                this.characters = data.characters;
+                this.createInfoPanel();
+                this.createCharacterPortraits();
+                this.createSelectButton();
+            })
+            .catch((error) => {
+                console.error("Failed to fetch character data:", error);
+                if (!this.scene.isActive()) return;
+                loadingText
+                    .setText("Error: Could not connect to the server.\nPlease ensure the backend is running.")
+                    .setColor("#ff0000");
+            });
     }
 
     createCharacterPortraits() {
@@ -146,7 +152,7 @@ export class CharacterSelect extends Scene {
                 fontSize: "20px",
                 fontFamily: "Arial",
                 color: "#ffffff",
-                wordWrap: {width: panelWidth - 40},
+                wordWrap: { width: panelWidth - 40 },
                 align: "center",
             })
             .setOrigin(0.5);
@@ -163,7 +169,7 @@ export class CharacterSelect extends Scene {
     createSelectButton() {
         createPresetButton(this, "confirm", 512, 720, "Confirm Delegate", () => {
             if (this.selectedCharacter) {
-                this.scene.start("Game", {characterId: this.selectedCharacter.id});
+                this.scene.start("Game", { characterId: this.selectedCharacter.id });
             }
         });
     }
