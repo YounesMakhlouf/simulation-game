@@ -1,3 +1,5 @@
+import { FONTS } from "../configs/Theme";
+
 class DialogueBox {
     constructor(scene, config = {}) {
         this.scene = scene;
@@ -13,7 +15,7 @@ class DialogueBox {
             borderColor = 0xffffff,
             borderWidth = 2,
             textConfig = {
-                font: '24px Arial',
+                font: `24px ${FONTS.body}`,
                 fill: '#ffffff',
                 wordWrap: { width: 784 }
             },
@@ -86,7 +88,7 @@ class DialogueBox {
             <div style="
                 font-size: 24px;
                 color: #ffffff;
-                font-family: Arial, sans-serif;
+                font-family: ${FONTS.body}, sans-serif;
                 line-height: 1.4;
                 word-wrap: break-word;
                 white-space: pre-wrap;

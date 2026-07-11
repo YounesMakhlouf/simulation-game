@@ -1,5 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import { createPresetButton } from "../classes/ButtonFactory";
+import { COLORS } from "../configs/Theme";
 
 export class HUDScene extends Scene {
     constructor() {
@@ -10,6 +11,7 @@ export class HUDScene extends Scene {
         this.roundText = null;
         this.phaseText = null;
         this.resourceTexts = {};
+        this.resourceValues = {};
         this.endDiplomacyButton = null;
     }
 
@@ -18,7 +20,9 @@ export class HUDScene extends Scene {
     }
 
     create() {
+        // Scene instances are reused across restarts; drop stale state
         this.resourceTexts = {};
+        this.resourceValues = {};
 
         // Dark top bar behind the HUD text for legibility over the busy tilemap.
         const screenWidth = this.cameras.main.width;
@@ -103,16 +107,7 @@ export class HUDScene extends Scene {
         const buttonY = this.cameras.main.height - 40;
 
         const { container } = createPresetButton(this, "danger", buttonX, buttonY, "Proceed to Action Phase", () => {
-            this.tweens.add({
-                targets: this.endDiplomacyButton,
-                scaleX: 0.95,
-                scaleY: 0.95,
-                duration: 100,
-                yoyo: true,
-                onComplete: () => {
-                    this.gameManager.startActionPhase();
-                },
-            });
+            this.gameManager.startActionPhase();
         }, { alpha: 0.8 });
 
         this.endDiplomacyButton = container;
@@ -135,7 +130,14 @@ export class HUDScene extends Scene {
                     fontSize: "18px", color: "#ffffff",
                 });
             }
-            this.resourceTexts[key].setText(`${key}: ${value}`);
+            const text = this.resourceTexts[key];
+            text.setText(`${key}: ${value}`);
+
+            const prev = this.resourceValues[key];
+            if (prev !== undefined && value !== prev) {
+                this.showResourceDelta(text, value - prev);
+            }
+            this.resourceValues[key] = value;
             yPos += 25;
         }
 
@@ -151,6 +153,25 @@ export class HUDScene extends Scene {
                 this.intelButton.setAlpha(1).setInteractive({ useHandCursor: true });
             }
         }
+    }
+
+    // Floating +N/-N next to a resource line that rises and fades out
+    showResourceDelta(anchor, delta) {
+        const floater = this.add.text(anchor.x + anchor.width + 8, anchor.y, `${delta > 0 ? "+" : ""}${delta}`, {
+            fontSize: "18px",
+            fontStyle: "bold",
+            color: delta > 0 ? COLORS.positiveCss : COLORS.negativeCss,
+            stroke: "#000000",
+            strokeThickness: 3,
+        });
+        this.tweens.add({
+            targets: floater,
+            y: floater.y - 18,
+            alpha: 0,
+            duration: 1500,
+            ease: "Cubic.easeOut",
+            onComplete: () => floater.destroy(),
+        });
     }
 
     updatePhase(newPhase) {
