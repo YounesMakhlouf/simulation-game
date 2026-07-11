@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { COLORS } from '../configs/Theme';
 
 export class ScoreboardScene extends Scene {
     constructor() {
@@ -20,7 +21,7 @@ export class ScoreboardScene extends Scene {
         // Main panel
         this.add.graphics()
             .fillStyle(0x111111, 0.95)
-            .lineStyle(2, 0xffd700, 1) // Gold border
+            .lineStyle(2, COLORS.gold, 1)
             .fillRoundedRect(100, 100, 824, 568, 15)
             .strokeRoundedRect(100, 100, 824, 568, 15);
 
