@@ -160,8 +160,8 @@ async def get_all_characters(
 
         profiles.append(
             CharacterProfile(
-                id=raw_data.get("id"),
-                name=raw_data.get("name"),
+                id=char_id,
+                name=raw_data["name"],
                 title=ui_profile_data.get("title", "No Title Available"),
                 description=ui_profile_data.get(
                     "description", "No Description Available"
