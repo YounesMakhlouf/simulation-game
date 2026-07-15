@@ -46,9 +46,10 @@ def get_character_action_chain():
     """
     # Use a low temperature for more deterministic, strategic, and less "creative" actions.
     model = get_chat_model(temperature=0.3, model_name=settings.GROQ_LLM_MODEL_ACTION)
-    structured_llm = model.with_structured_output(
-        Action, method="json_schema", strict=True
-    )
+    # No strict=True: it is validation-only on Groq (not constrained decoding)
+    # and mangles the schema — dicts get additionalProperties=false and
+    # Optional fields become required — so valid generations get 400s.
+    structured_llm = model.with_structured_output(Action, method="json_schema")
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", DELEGATE_ACTION_PROMPT.prompt),
@@ -80,9 +81,7 @@ def get_judge_resolution_chain():
         max_tokens=settings.GROQ_JUDGE_MAX_TOKENS,
     )
 
-    structured_llm = model.with_structured_output(
-        JudgeOutput, method="json_schema", strict=True
-    )
+    structured_llm = model.with_structured_output(JudgeOutput, method="json_schema")
     prompt = ChatPromptTemplate.from_messages(
         [
             ("system", JUDGE_RESOLUTION_PROMPT.prompt),
