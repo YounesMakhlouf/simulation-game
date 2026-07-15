@@ -169,10 +169,25 @@ export class CharacterSelect extends Scene {
     }
 
     createSelectButton() {
-        createPresetButton(this, "confirm", this.scale.width / 2, this.scale.height - 48, "Confirm Delegate", () => {
-            if (this.selectedCharacter) {
+        createPresetButton(this, "confirm", this.scale.width / 2, this.scale.height - 48, "Confirm Delegate", async () => {
+            if (!this.selectedCharacter) return;
+            try {
+                await ApiService.startGame(this.selectedCharacter.id);
                 this.scene.start("Game", { characterId: this.selectedCharacter.id });
+            } catch (error) {
+                console.error("Failed to start game:", error);
+                this.showError("Could not start the game. A saved game may be in progress — use 'New Game' from the main menu.");
             }
         });
+    }
+
+    showError(message) {
+        if (this.errorText) this.errorText.destroy();
+        this.errorText = this.add
+            .text(this.scale.width / 2, this.scale.height - 100, message, {
+                fontSize: "18px", fontFamily: FONTS.body, color: "#ff6666",
+                align: "center", wordWrap: { width: this.scale.width - 200 },
+            })
+            .setOrigin(0.5);
     }
 }

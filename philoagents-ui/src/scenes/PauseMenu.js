@@ -52,13 +52,15 @@ export class PauseMenu extends BaseModal {
 
     async resetGame() {
         try {
+            await ApiService.resetGame();
             await ApiService.resetMemory();
 
-            // Do not resume the old Game instance; we're restarting
+            // The reset cleared the character binding, so a new character
+            // must be chosen; do not resume the old Game instance.
             this.options.resumeGameOnClose = false;
             this.scene.stop("HUDScene");
             this.scene.stop("Game");
-            this.scene.start("Game");
+            this.scene.start("CharacterSelect");
             this.closeModal();
         } catch (error) {
             console.error("Failed to reset game:", error);

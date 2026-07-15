@@ -46,6 +46,19 @@ class EndGameRequest(BaseModel):
     undergame_guess: str
 
 
+class SessionResponse(BaseModel):
+    """Which character (if any) the current saved game is bound to."""
+
+    player_character_id: str | None
+    player_character_name: str | None
+    round_number: int
+    is_game_over: bool
+
+
+class StartGameRequest(BaseModel):
+    character_id: str
+
+
 class ScoreDetails(BaseModel):
     name: str
     faction_score: int
@@ -61,18 +74,58 @@ class ScoreboardResponse(BaseModel):
 # --- API Endpoints ---
 
 
+@router.get("/session", response_model=SessionResponse)
+async def get_session(service: GameLoopService = Depends(get_game_service)):
+    """
+    Returns which character the current saved game is bound to, so the UI can
+    offer "Continue as X" instead of a fresh character selection.
+    """
+    state = service.get_current_state()
+    player_id = state.player_character_id
+    return SessionResponse(
+        player_character_id=player_id,
+        player_character_name=state.characters[player_id].name if player_id else None,
+        round_number=state.round_number,
+        is_game_over=service.is_game_over,
+    )
+
+
+@router.post("/start")
+async def start_game(
+    request: StartGameRequest, service: GameLoopService = Depends(get_game_service)
+):
+    """
+    Binds the human player to a character for the current game. Rejects the
+    binding with 409 when a game bound to another character is in progress.
+    """
+    try:
+        service.start_game(request.character_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return {"message": f"Game started as '{request.character_id}'."}
+
+
 @router.get("/status/{character_id}", response_model=GameStatusResponse)
 async def get_game_status(
     character_id: str, service: GameLoopService = Depends(get_game_service)
 ):
     """
     Endpoint for the player's UI to get the current state of the game
-    from their character's perspective.
+    from their character's perspective. Only the character the game is bound
+    to may be queried, so one seat cannot read another seat's private intel.
     """
     current_state = service.get_current_state()
     if character_id not in current_state.characters:
         raise HTTPException(
             status_code=404, detail=f"Character '{character_id}' not found."
+        )
+    player_id = current_state.player_character_id
+    if player_id is not None and character_id != player_id:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This game is bound to '{player_id}'.",
         )
 
     player_char = current_state.characters[character_id]

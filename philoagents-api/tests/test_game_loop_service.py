@@ -529,3 +529,55 @@ def test_finalize_scores_is_single_shot_ignoring_later_guesses(monkeypatch):
     assert service.game_state.player_undergame_guess == "first guess"
     assert repository.save_calls == 1
     assert first == second
+
+
+# --- player character binding ---
+
+
+def test_start_game_binds_and_persists():
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    service.start_game("hannibal")
+    assert service.game_state.player_character_id == "hannibal"
+    assert repository.saved.player_character_id == "hannibal"
+
+
+def test_start_game_is_idempotent_for_same_character():
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    service.start_game("hannibal")
+    service.start_game("hannibal")
+    assert repository.save_calls == 1
+
+
+def test_start_game_rejects_switching_characters():
+    service = make_service()
+    service.start_game("hannibal")
+    with pytest.raises(RuntimeError, match="already in progress"):
+        service.start_game("scipio")
+
+
+def test_start_game_rejects_unknown_character():
+    service = make_service()
+    with pytest.raises(ValueError, match="not found"):
+        service.start_game("caesar")
+
+
+def test_submit_action_rejects_other_character_when_bound():
+    service = make_service()
+    service.start_game("hannibal")
+    with pytest.raises(ValueError, match="cannot act as"):
+        service.submit_player_action(make_action("scipio"))
+
+
+def test_unbound_game_accepts_any_character():
+    service = make_service()
+    service.submit_player_action(make_action("scipio"))
+    assert "scipio" in service.submitted_actions
+
+
+def test_reset_clears_player_binding():
+    service = make_service(FakeStateRepository())
+    service.start_game("hannibal")
+    service.reset()
+    assert service.game_state.player_character_id is None

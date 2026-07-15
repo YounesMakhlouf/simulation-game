@@ -91,6 +91,44 @@ class GameLoopService:
         """Returns a copy of the current game state."""
         return self.game_state.model_copy(deep=True)
 
+    def start_game(self, character_id: str):
+        """
+        Binds the human player to a character for the current game.
+
+        Idempotent for the already-bound character; switching characters
+        mid-game requires a reset.
+
+        Raises:
+            ValueError: If the character does not exist.
+            RuntimeError: If the game is already bound to another character.
+        """
+        if character_id not in self.game_state.characters:
+            raise ValueError(f"Character '{character_id}' not found.")
+        bound = self.game_state.player_character_id
+        if bound is not None and bound != character_id:
+            raise RuntimeError(
+                f"A game is already in progress with "
+                f"'{self.game_state.characters[bound].name}'. Reset the game "
+                f"to play a different character."
+            )
+        if bound is None:
+            self.game_state.player_character_id = character_id
+            if self.state_repository is not None:
+                self.state_repository.save(self.game_state)
+            logger.info(f"Player bound to character '{character_id}'.")
+
+    def _ensure_player_is(self, character_id: str):
+        """
+        Raises ValueError when the game is bound to a different character.
+        Unbound games (saves predating the binding) accept any character.
+        """
+        bound = self.game_state.player_character_id
+        if bound is not None and character_id != bound:
+            raise ValueError(
+                f"You are playing '{bound}' in this game; cannot act as "
+                f"'{character_id}'."
+            )
+
     async def finalize_scores(
         self, player_character_id: str, undergame_guess: str
     ) -> tuple[dict, str]:
@@ -112,6 +150,7 @@ class GameLoopService:
             raise ValueError("The game is not over yet; scores cannot be finalized.")
         if player_character_id not in self.game_state.characters:
             raise ValueError(f"Character '{player_character_id}' not found.")
+        self._ensure_player_is(player_character_id)
 
         # Lock all guesses on first call; ignore later attempts to change them.
         if self.game_state.player_undergame_guess is None:
@@ -183,6 +222,7 @@ class GameLoopService:
             raise ValueError(
                 f"Character with ID '{action.character_id}' does not exist."
             )
+        self._ensure_player_is(action.character_id)
         if action.character_id in self.submitted_actions:
             raise ValueError("Character has already submitted an action this round.")
         self._validate_resource_cost(action)
