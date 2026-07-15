@@ -51,8 +51,6 @@ class SessionResponse(BaseModel):
 
     player_character_id: str | None
     player_character_name: str | None
-    round_number: int
-    is_game_over: bool
 
 
 class StartGameRequest(BaseModel):
@@ -85,8 +83,6 @@ async def get_session(service: GameLoopService = Depends(get_game_service)):
     return SessionResponse(
         player_character_id=player_id,
         player_character_name=state.characters[player_id].name if player_id else None,
-        round_number=state.round_number,
-        is_game_over=service.is_game_over,
     )
 
 

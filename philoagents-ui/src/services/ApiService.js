@@ -60,10 +60,10 @@ class ApiService {
     /**
      * Fetches the current session: which character (if any) the saved game
      * is bound to.
-     * @returns {Promise<object>} { player_character_id, player_character_name, round_number, is_game_over }
+     * @returns {Promise<object>} { player_character_id, player_character_name }
      */
     async getSession() {
-        return await this.request('/game/session', 'GET');
+        return this.request('/game/session', 'GET');
     }
 
     /**
@@ -71,14 +71,14 @@ class ApiService {
      * @param {string} characterId - The ID of the chosen character.
      */
     async startGame(characterId) {
-        return await this.request('/game/start', 'POST', { character_id: characterId });
+        return this.request('/game/start', 'POST', { character_id: characterId });
     }
 
     /**
      * Resets the game to the initial scenario, clearing all progress.
      */
     async resetGame() {
-        return await this.request('/game/reset', 'POST');
+        return this.request('/game/reset', 'POST');
     }
 
     /**
