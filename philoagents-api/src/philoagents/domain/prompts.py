@@ -242,20 +242,20 @@ Do not state the Hidden Rule. Only show its consequences.
         }
       ],
     "status_updates": [
-        {{
+        {
           "character_id": "hanno_the_great",
-          "statuses": {{
+          "statuses": {
             "SenateSupport": "High",
             "WarFatigue": "Growing"
-          }}
-        }},
-        {{
+          }
+        },
+        {
           "character_id": "castlereagh",
-          "statuses": {{
+          "statuses": {
             "ContinentalAlliance": "Secured",
             "TradeEmbargoOnFrance": "Active"
-          }}
-        }}
+          }
+        }
       ],
    "private_intel_reports": [
     {
