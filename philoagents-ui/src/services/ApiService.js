@@ -58,6 +58,30 @@ class ApiService {
     }
 
     /**
+     * Fetches the current session: which character (if any) the saved game
+     * is bound to.
+     * @returns {Promise<object>} { player_character_id, player_character_name }
+     */
+    async getSession() {
+        return this.request('/game/session', 'GET');
+    }
+
+    /**
+     * Binds the player to a character, starting (or continuing) the game.
+     * @param {string} characterId - The ID of the chosen character.
+     */
+    async startGame(characterId) {
+        return this.request('/game/start', 'POST', { character_id: characterId });
+    }
+
+    /**
+     * Resets the game to the initial scenario, clearing all progress.
+     */
+    async resetGame() {
+        return this.request('/game/reset', 'POST');
+    }
+
+    /**
      * Fetches the entire current game state for a specific character.
      * @param {string} characterId - The ID of the player's character.
      * @returns {Promise<object>} The full game state object.

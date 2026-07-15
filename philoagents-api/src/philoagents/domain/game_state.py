@@ -20,6 +20,14 @@ class GameState(BaseModel):
     characters: Dict[str, Character] = Field(
         description="A dictionary mapping character_id to their full Character object."
     )
+    player_character_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "The character the human player controls, bound when the game "
+            "starts. None until a character is chosen (or for saves predating "
+            "this field)."
+        ),
+    )
     last_round_actions: Optional[List[Action]] = Field(default=None, description="...")
     player_undergame_guess: Optional[str] = Field(
         default=None,
