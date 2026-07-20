@@ -70,6 +70,7 @@ export class Game extends Scene {
         this.gameManager.events.on("showCrisisUpdate", this.showCrisisModal, this);
         this.gameManager.events.on("showActionModal", this.showActionModal, this);
         this.gameManager.events.on("error", this.showError, this);
+        this.gameManager.events.on("connectionLost", this.handleConnectionLost, this);
         this.gameManager.events.on("showEndGameModal", this.showEndGameModal, this);
 
         // Tear down timers and listeners when the scene stops.
@@ -347,19 +348,23 @@ export class Game extends Scene {
     
     showCrisisModal(crisisText, roundNumber) {
         console.log(`Game Scene: Launching CrisisModal for round ${roundNumber}.`);
-        this.scene.pause("Game"); // Pause the game world
+        // Pause the HUD too, or its buttons stay clickable under the modal.
+        this.scene.pause("Game");
+        this.scene.pause("HUDScene");
         this.scene.launch("CrisisModal", {text: crisisText, round: roundNumber});
     }
 
     showIntelModal(intelReports) {
         console.log("Game Scene: Launching IntelModal.");
         this.scene.pause("Game");
+        this.scene.pause("HUDScene");
         this.scene.launch("IntelModal", {intelReports: intelReports});
     }
 
     showActionModal() {
         console.log("Game Scene: Launching ActionModal.");
         this.scene.pause("Game");
+        this.scene.pause("HUDScene");
         // Pass the gameManager instance so the modal can call back to it
         this.scene.launch("ActionModal", {gameManager: this.gameManager});
     }
@@ -367,6 +372,14 @@ export class Game extends Scene {
     showError(errorMessage) {
         console.error(`Game Scene: Displaying error: ${errorMessage}`);
         this.showToast(errorMessage, "rgba(139,0,0,0.8)");
+    }
+
+    handleConnectionLost(message) {
+        this.showError(`${message} Returning to the main menu.`);
+        this.time.delayedCall(2500, () => {
+            this.scene.stop("HUDScene");
+            this.scene.start("MainMenu");
+        });
     }
 
     // Minimal in-game notification (non-blocking)

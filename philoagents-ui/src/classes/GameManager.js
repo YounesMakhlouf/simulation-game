@@ -52,13 +52,13 @@ export class GameManager {
           this.gameState.crisis_update,
           this.gameState.round_number
         );
+        this.startDiplomacyPhase();
       }
-
-      // After the player acknowledges the update, start the next phase
-      this.startDiplomacyPhase();
     } catch (error) {
       console.error("GameManager: Failed to process game state.", error);
-      this.events.emit("error", "Could not connect to the server.");
+      // Startup-only path: without a game state there is nothing to play,
+      // so send the player back to the menu instead of a transient toast.
+      this.events.emit("connectionLost", "Could not connect to the server.");
     }
   }
 

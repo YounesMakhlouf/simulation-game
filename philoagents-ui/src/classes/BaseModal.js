@@ -197,7 +197,11 @@ export class BaseModal extends Scene {
 
     closeModal() {
         this.scene.stop(this.scene.key);
-        if (this.options.resumeGameOnClose) this.scene.resume("Game");
+        if (this.options.resumeGameOnClose) {
+            this.scene.resume("Game");
+            // No-op when the HUD wasn't paused (e.g. PauseMenu).
+            this.scene.resume("HUDScene");
+        }
         if (typeof this.options.onClose === "function") this.options.onClose();
     }
 
