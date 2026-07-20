@@ -31,11 +31,14 @@ async def action_decision_node(state: ActionState) -> Dict:
 
     action_response = await action_chain.ainvoke(
         {
+            "character_id": character.id,
             "character_name": character.name,
             "character_perspective": character.perspective,
             "character_style": character.style,
             "character_goals": character.goals,
             "character_resources": character.resources,
+            "character_statuses": character.statuses or "None.",
+            "known_intel": "\n".join(character.known_intel) or "None.",
             "other_players_dossier": state["other_players_dossier"],
             "crisis_update": state["crisis_update"],
         }

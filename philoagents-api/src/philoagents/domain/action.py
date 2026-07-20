@@ -22,9 +22,6 @@ class Action(BaseModel):
     character_id: str = Field(
         description="The ID of the character performing the action."
     )
-    reasoning: str = Field(
-        description="The character's in-world justification for taking this action."
-    )
     action_type: ActionType = Field(description="The category of the action.")
     action_details: str = Field(
         description="A clear, specific description of the action being taken."
