@@ -1,10 +1,10 @@
-import Phaser, {Scene} from "phaser";
+import Phaser, { Scene } from "phaser";
 import Character from "../classes/Character";
 import DialogueBox from "../classes/DialogueBox";
 import DialogueManager from "../classes/DialogueManager";
-import {CHARACTER_CONFIG} from "../configs/CharacterConfig";
-import {GameManager} from "../classes/GameManager";
-import {COLORS, FONTS} from "../configs/Theme";
+import { CHARACTER_CONFIG } from "../configs/CharacterConfig";
+import { GameManager } from "../classes/GameManager";
+import { COLORS, FONTS } from "../configs/Theme";
 
 export class Game extends Scene {
     constructor() {
@@ -59,13 +59,13 @@ export class Game extends Scene {
                 fontFamily: FONTS.body,
                 color: COLORS.goldCss,
                 backgroundColor: "rgba(0,0,0,0.7)",
-                padding: {x: 6, y: 3},
+                padding: { x: 6, y: 3 },
             })
             .setOrigin(0.5, 1)
             .setDepth(21)
             .setVisible(false);
 
-        this.scene.run("HUDScene", {gameManager: this.gameManager});
+        this.scene.run("HUDScene", { gameManager: this.gameManager });
 
         this.gameManager.events.on("showCrisisUpdate", this.showCrisisModal, this);
         this.gameManager.events.on("showActionModal", this.showActionModal, this);
@@ -84,7 +84,7 @@ export class Game extends Scene {
         console.log("Game Scene: Game Over. Launching EndGameModal.");
         this.scene.pause("Game");
         this.scene.pause("HUDScene");
-        this.scene.launch("EndGameModal", {gameManager: this.gameManager});
+        this.scene.launch("EndGameModal", { gameManager: this.gameManager });
     }
 
     createDelegates(map, layers) {
@@ -165,7 +165,7 @@ export class Game extends Scene {
     }
 
     createTilemap() {
-        return this.make.tilemap({key: "map"});
+        return this.make.tilemap({ key: "map" });
     }
 
     addTileset(map) {
@@ -180,9 +180,9 @@ export class Game extends Scene {
         const belowLayer = map.createLayer("Below Player", tilesets, 0, 0);
         const worldLayer = map.createLayer("World", tilesets, 0, 0);
         const aboveLayer = map.createLayer("Above Player", tilesets, 0, 0);
-        worldLayer.setCollisionByProperty({collides: true});
+        worldLayer.setCollisionByProperty({ collides: true });
         aboveLayer.setDepth(10);
-        return {belowLayer, worldLayer, aboveLayer};
+        return { belowLayer, worldLayer, aboveLayer };
     }
 
     setupPlayer(map, worldLayer) {
@@ -211,9 +211,9 @@ export class Game extends Scene {
         const anims = this.anims;
         const animConfig = [{
             key: `${atlasKey}-left-walk`, prefix: `${atlasKey}-left-walk-`,
-        }, {key: `${atlasKey}-right-walk`, prefix: `${atlasKey}-right-walk-`}, {
+        }, { key: `${atlasKey}-right-walk`, prefix: `${atlasKey}-right-walk-` }, {
             key: `${atlasKey}-front-walk`, prefix: `${atlasKey}-front-walk-`,
-        }, {key: `${atlasKey}-back-walk`, prefix: `${atlasKey}-back-walk-`},];
+        }, { key: `${atlasKey}-back-walk`, prefix: `${atlasKey}-back-walk-` },];
 
         animConfig.forEach((config) => {
             anims.create({
@@ -345,20 +345,19 @@ export class Game extends Scene {
             }
         });
     }
-    
+
     showCrisisModal(crisisText, roundNumber) {
         console.log(`Game Scene: Launching CrisisModal for round ${roundNumber}.`);
-        // Pause the HUD too, or its buttons stay clickable under the modal.
         this.scene.pause("Game");
         this.scene.pause("HUDScene");
-        this.scene.launch("CrisisModal", {text: crisisText, round: roundNumber});
+        this.scene.launch("CrisisModal", { text: crisisText, round: roundNumber });
     }
 
     showIntelModal(intelReports) {
         console.log("Game Scene: Launching IntelModal.");
         this.scene.pause("Game");
         this.scene.pause("HUDScene");
-        this.scene.launch("IntelModal", {intelReports: intelReports});
+        this.scene.launch("IntelModal", { intelReports: intelReports });
     }
 
     showActionModal() {
@@ -366,7 +365,7 @@ export class Game extends Scene {
         this.scene.pause("Game");
         this.scene.pause("HUDScene");
         // Pass the gameManager instance so the modal can call back to it
-        this.scene.launch("ActionModal", {gameManager: this.gameManager});
+        this.scene.launch("ActionModal", { gameManager: this.gameManager });
     }
 
     showError(errorMessage) {
@@ -390,7 +389,7 @@ export class Game extends Scene {
                 fontFamily: FONTS.body,
                 color: "#ffffff",
                 backgroundColor,
-                padding: {x: 12, y: 8},
+                padding: { x: 12, y: 8 },
                 stroke: "#000000",
                 strokeThickness: 3,
             })
