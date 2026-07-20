@@ -1,11 +1,15 @@
+from functools import lru_cache
+
 from langchain_huggingface import HuggingFaceEmbeddings
 
 
+@lru_cache
 def get_embedding_model(
     model_id: str,
     device: str = "cpu",
 ) -> HuggingFaceEmbeddings:
-    """Gets a HuggingFace embedding model instance.
+    """Gets a HuggingFace embedding model instance, cached per (model_id,
+    device) so the retriever and the scoring service share one loaded model.
 
     Args:
         model_id (str): The ID/name of the HuggingFace embedding model to use

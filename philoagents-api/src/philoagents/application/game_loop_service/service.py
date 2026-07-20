@@ -432,12 +432,15 @@ class GameLoopService:
         state_for_judge.characters = characters
         # Keep the judge's input lean: last_round_actions duplicates what the
         # judge already saw, and the prompt grows each round — a bloated state
-        # JSON blows the per-minute token limit on free-tier Groq.
+        # JSON blows the per-minute token limit on free-tier Groq. known_intel
+        # only ever grows and the judge writes intel rather than reading it,
+        # so past reports are excluded too.
         current_state_json_str = state_for_judge.model_dump_json(
             exclude={
-                "last_round_actions",
-                "player_undergame_guess",
-                "ai_undergame_guesses",
+                "last_round_actions": True,
+                "player_undergame_guess": True,
+                "ai_undergame_guesses": True,
+                "characters": {"__all__": {"known_intel"}},
             }
         )
         initial_state = {
