@@ -447,7 +447,7 @@ def test_reset_restores_initial_state_and_clears_persistence():
     service.submitted_actions["hannibal"] = make_action("hannibal")
     service.is_game_over = True
 
-    state = service.reset()
+    state = asyncio.run(service.reset())
 
     assert state.round_number == 1
     assert state.crisis_update == "Initial crisis"
@@ -460,7 +460,7 @@ def test_reset_rejected_while_round_is_processing():
     service = make_service()
     service.is_processing_round = True
     with pytest.raises(RuntimeError, match="Cannot reset"):
-        service.reset()
+        asyncio.run(service.reset())
 
 
 # --- finalize_scores single-shot behavior ---
@@ -536,7 +536,7 @@ def test_finalize_scores_is_single_shot_ignoring_later_guesses(monkeypatch):
 def test_start_game_binds_and_persists():
     repository = FakeStateRepository()
     service = make_service(repository)
-    service.start_game("hannibal")
+    asyncio.run(service.start_game("hannibal"))
     assert service.game_state.player_character_id == "hannibal"
     assert repository.saved.player_character_id == "hannibal"
 
@@ -544,27 +544,27 @@ def test_start_game_binds_and_persists():
 def test_start_game_is_idempotent_for_same_character():
     repository = FakeStateRepository()
     service = make_service(repository)
-    service.start_game("hannibal")
-    service.start_game("hannibal")
+    asyncio.run(service.start_game("hannibal"))
+    asyncio.run(service.start_game("hannibal"))
     assert repository.save_calls == 1
 
 
 def test_start_game_rejects_switching_characters():
     service = make_service()
-    service.start_game("hannibal")
+    asyncio.run(service.start_game("hannibal"))
     with pytest.raises(RuntimeError, match="already in progress"):
-        service.start_game("scipio")
+        asyncio.run(service.start_game("scipio"))
 
 
 def test_start_game_rejects_unknown_character():
     service = make_service()
     with pytest.raises(ValueError, match="not found"):
-        service.start_game("caesar")
+        asyncio.run(service.start_game("caesar"))
 
 
 def test_submit_action_rejects_other_character_when_bound():
     service = make_service()
-    service.start_game("hannibal")
+    asyncio.run(service.start_game("hannibal"))
     with pytest.raises(ValueError, match="cannot act as"):
         service.submit_player_action(make_action("scipio"))
 
@@ -577,6 +577,6 @@ def test_unbound_game_accepts_any_character():
 
 def test_reset_clears_player_binding():
     service = make_service(FakeStateRepository())
-    service.start_game("hannibal")
-    service.reset()
+    asyncio.run(service.start_game("hannibal"))
+    asyncio.run(service.reset())
     assert service.game_state.player_character_id is None

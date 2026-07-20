@@ -95,7 +95,7 @@ async def start_game(
     binding with 409 when a game bound to another character is in progress.
     """
     try:
-        service.start_game(request.character_id)
+        await service.start_game(request.character_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except RuntimeError as e:
@@ -213,7 +213,7 @@ async def reset_game(service: GameLoopService = Depends(get_game_service)):
     Resets the game to the initial scenario state and clears any persisted progress.
     """
     try:
-        service.reset()
+        await service.reset()
         return {"message": "Game has been reset to the initial scenario state."}
     except RuntimeError as e:
         raise HTTPException(status_code=409, detail=str(e))

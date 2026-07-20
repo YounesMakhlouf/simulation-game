@@ -1,3 +1,5 @@
+import asyncio
+
 from loguru import logger
 from pymongo import MongoClient
 
@@ -17,36 +19,33 @@ async def reset_conversation_state() -> dict:
     Raises:
         Exception: If there's an error connecting to MongoDB or deleting collections
     """
+    return await asyncio.to_thread(_reset_conversation_state)
+
+
+def _reset_conversation_state() -> dict:
     try:
-        client = MongoClient(settings.MONGO_URI)
-        db = client[settings.MONGO_DB_NAME]
+        with MongoClient(settings.MONGO_URI) as client:
+            db = client[settings.MONGO_DB_NAME]
 
-        collections_deleted = []
-
-        if settings.MONGO_STATE_CHECKPOINT_COLLECTION in db.list_collection_names():
-            db.drop_collection(settings.MONGO_STATE_CHECKPOINT_COLLECTION)
-            collections_deleted.append(settings.MONGO_STATE_CHECKPOINT_COLLECTION)
-            logger.info(
-                f"Deleted collection: {settings.MONGO_STATE_CHECKPOINT_COLLECTION}"
-            )
-
-        if settings.MONGO_STATE_WRITES_COLLECTION in db.list_collection_names():
-            db.drop_collection(settings.MONGO_STATE_WRITES_COLLECTION)
-            collections_deleted.append(settings.MONGO_STATE_WRITES_COLLECTION)
-            logger.info(f"Deleted collection: {settings.MONGO_STATE_WRITES_COLLECTION}")
-
-        client.close()
+            collections_deleted = []
+            for collection in (
+                settings.MONGO_STATE_CHECKPOINT_COLLECTION,
+                settings.MONGO_STATE_WRITES_COLLECTION,
+            ):
+                if collection in db.list_collection_names():
+                    db.drop_collection(collection)
+                    collections_deleted.append(collection)
+                    logger.info(f"Deleted collection: {collection}")
 
         if collections_deleted:
             return {
                 "status": "success",
                 "message": f"Successfully deleted collections: {', '.join(collections_deleted)}",
             }
-        else:
-            return {
-                "status": "success",
-                "message": "No collections needed to be deleted",
-            }
+        return {
+            "status": "success",
+            "message": "No collections needed to be deleted",
+        }
 
     except Exception as e:
         logger.error(f"Failed to reset conversation state: {str(e)}")

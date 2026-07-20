@@ -72,7 +72,7 @@ class GameLoopService:
         )
         return True
 
-    def reset(self) -> GameState:
+    async def reset(self) -> GameState:
         """
         Resets the game to the initial scenario state and clears any persisted progress.
         """
@@ -83,7 +83,7 @@ class GameLoopService:
         self.submitted_actions = {}
         self.is_game_over = False
         if self.state_repository is not None:
-            self.state_repository.clear()
+            await self._persist(self.state_repository.clear)
         logger.info("Game state reset to the initial scenario state.")
         return self.get_current_state()
 
@@ -91,7 +91,15 @@ class GameLoopService:
         """Returns a copy of the current game state."""
         return self.game_state.model_copy(deep=True)
 
-    def start_game(self, character_id: str):
+    @staticmethod
+    async def _persist(repository_call, *args):
+        """
+        Runs a blocking repository call off the event loop, so a slow MongoDB
+        cannot freeze every other request and open websocket.
+        """
+        return await asyncio.to_thread(repository_call, *args)
+
+    async def start_game(self, character_id: str):
         """
         Binds the human player to a character for the current game.
 
@@ -114,7 +122,7 @@ class GameLoopService:
         if bound is None:
             self.game_state.player_character_id = character_id
             if self.state_repository is not None:
-                self.state_repository.save(self.game_state)
+                await self._persist(self.state_repository.save, self.game_state)
             logger.info(f"Player bound to character '{character_id}'.")
 
     def _ensure_player_is(self, character_id: str):
@@ -159,7 +167,7 @@ class GameLoopService:
                 player_character_id
             )
             if self.state_repository is not None:
-                self.state_repository.save(self.game_state)
+                await self._persist(self.state_repository.save, self.game_state)
 
         undergame_guesses = {
             player_character_id: self.game_state.player_undergame_guess,
@@ -503,7 +511,7 @@ class GameLoopService:
         self.submitted_actions = {}
 
         if self.state_repository is not None:
-            self.state_repository.save(self.game_state)
+            await self._persist(self.state_repository.save, self.game_state)
 
         logger.info(f"--- Round {self.game_state.round_number} has begun! ---")
         if self.game_state.round_number > self.max_rounds:
