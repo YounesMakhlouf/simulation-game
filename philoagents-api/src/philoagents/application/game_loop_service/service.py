@@ -336,7 +336,6 @@ class GameLoopService:
         """
         return Action(
             character_id=character.id,
-            reasoning="The delegate failed to issue orders in time.",
             action_type=ActionType.DIPLOMACY,
             action_details=(
                 f"{character.name} holds position and maintains their current posture this round."
@@ -370,7 +369,7 @@ class GameLoopService:
             all_characters = self.game_state.characters
             for char_id, other_char in all_characters.items():
                 if other_char.id != character.id:
-                    entry = f"- **{other_char.name}**\n  Reputation: {other_char.perspective}"
+                    entry = f"- **{other_char.name}**\n  Perspective: {other_char.perspective}"
                     dossier_entries.append(entry)
 
             other_players_dossier = "\n".join(dossier_entries)

@@ -70,7 +70,6 @@ def make_service(
 def make_action(character_id: str, resource_cost: Optional[dict] = None) -> Action:
     return Action(
         character_id=character_id,
-        reasoning="Test reasoning",
         action_type=ActionType.MILITARY,
         action_details="March on the enemy camp.",
         resource_cost=resource_cost or {},

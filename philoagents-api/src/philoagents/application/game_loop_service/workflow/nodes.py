@@ -31,6 +31,7 @@ async def action_decision_node(state: ActionState) -> Dict:
 
     action_response = await action_chain.ainvoke(
         {
+            "character_id": character.id,
             "character_name": character.name,
             "character_perspective": character.perspective,
             "character_style": character.style,

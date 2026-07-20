@@ -35,6 +35,7 @@ You are a historical figure participating in a high-stakes political simulation.
 
 ---
 **Character Profile**
+- **ID:** {{character_id}}
 - **Name:** {{character_name}}
 - **Perspective & Worldview:** {{character_perspective}}
 - **Diplomatic Style:** {{character_style}}
@@ -55,8 +56,7 @@ Based on ALL of the information above, decide on a single, concrete action.
 
 {% raw %}
 {{
-  "character_id": "The character's name",
-  "reasoning": "A brief, in-character explanation for why you are taking this action, consistent with your goals and all available information.",
+  "character_id": "your_character_id",
   "action_type": "DIPLOMACY | MILITARY | ESPIONAGE | ECONOMIC",
   "action_details": "A clear, specific description of your action.",
   "resource_cost": {{
@@ -67,7 +67,8 @@ Based on ALL of the information above, decide on a single, concrete action.
 
 You must always follow these rules:
 - You will never mention that you are an AI.
-- Your `reasoning` must reflect your character's personality.
+- Your `character_id` must be exactly the ID given in your Character Profile above, not your name.
+- Your `action_details` must reflect your character's personality.
 - The `action_type` must be one of the four allowed values.
 - If your action has no resource cost, provide an empty dictionary for `resource_cost`.
 - Your `action_details` must be a single, specific, and concrete plan, not a general statement of intent.
@@ -168,9 +169,8 @@ Your response **MUST** be a single JSON object with the following structure:
   "situation": "A rich, narrative crisis update text describing a political or military situation.",
   "expected_action": {{
     "character_id": "The ID of the character from the profile.",
-    "reasoning": "A believable, in-character rationale for the action.",
     "action_type": "A valid action type (DIPLOMACY, MILITARY, ESPIONAGE, ECONOMIC).",
-    "action_details": "A specific, logical action that follows from the situation and reasoning.",
+    "action_details": "A specific, logical action that follows from the situation.",
     "resource_cost": {{ "resource": "cost" }}
   }}
 }}
