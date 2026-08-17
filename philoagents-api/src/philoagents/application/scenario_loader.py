@@ -1,12 +1,13 @@
-# in philoagents/application/scenario_loader.py
-
 import json
 from pathlib import Path
 from typing import Dict, List, Union
 
-# Import the necessary domain models and factory
+from loguru import logger
+
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.domain.game_state import GameState
+
+_PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ScenarioLoader:
@@ -21,8 +22,7 @@ class ScenarioLoader:
         Args:
             scenario_path: The file path to the scenario pack directory. Can be a string or a pathlib.Path object.
         """
-        base_path = Path("philoagents")
-        self.path = base_path / scenario_path
+        self.path = _PACKAGE_ROOT / scenario_path
         if not self.path.is_dir():
             raise FileNotFoundError(f"Scenario directory not found at: {self.path}")
 
@@ -46,7 +46,7 @@ class ScenarioLoader:
         with open(rag_sources_file, "r") as f:
             self.rag_sources_data = json.load(f)
 
-        print(f"Successfully loaded scenario '{self.manifest['name']}'")
+        logger.info(f"Successfully loaded scenario '{self.manifest['name']}'")
 
     def get_undergame_plot(self) -> str:
         """Returns the secret undergame plot for the scenario."""

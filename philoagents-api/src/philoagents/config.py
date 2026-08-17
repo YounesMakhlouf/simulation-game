@@ -15,8 +15,6 @@ class Settings(BaseSettings):
     # delegate actions and summaries on gpt-oss-20b, and the judge alone on
     # gpt-oss-120b. Both gpt-oss models support Groq's strict structured
     # outputs (constrained decoding).
-    # NOTE: qwen3-32b shut down 2026-07-17; llama-3.3-70b-versatile and
-    # llama-3.1-8b-instant shut down 2026-08-16. Do not switch back to them.
     GROQ_API_KEY: str
     GROQ_LLM_MODEL: str = "qwen/qwen3.6-27b"
     GROQ_LLM_MODEL_CONTEXT_SUMMARY: str = "openai/gpt-oss-20b"

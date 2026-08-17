@@ -9,12 +9,13 @@ WORKDIR /app
 # Increase timeout for large package downloads (NVIDIA CUDA libraries)
 ENV UV_HTTP_TIMEOUT=300
 
-# Install the application dependencies.
+# Install third-party dependencies first so this layer only rebuilds when the
+# lock file changes, then copy the source and install the project itself.
 COPY uv.lock pyproject.toml README.md ./
+RUN uv sync --frozen --no-cache --no-install-project
+
+COPY src src/
+COPY tools tools/
 RUN uv sync --frozen --no-cache
 
-# Copy the application into the container.
-COPY src/philoagents philoagents/
-COPY tools tools/
-
-CMD ["/app/.venv/bin/fastapi", "run", "philoagents/infrastructure/api.py", "--port", "8000", "--host", "0.0.0.0"]
+CMD ["/app/.venv/bin/fastapi", "run", "src/philoagents/infrastructure/api.py", "--port", "8000", "--host", "0.0.0.0"]
