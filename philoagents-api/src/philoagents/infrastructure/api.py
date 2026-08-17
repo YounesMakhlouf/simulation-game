@@ -29,7 +29,9 @@ configure()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown events for the API."""
-    get_game_service()  # build singletons at boot so a bad scenario/Mongo fails fast
+    # Build singletons at boot so a bad scenario/Mongo fails fast, going
+    # through dependency_overrides so tests can stub the provider.
+    app.dependency_overrides.get(get_game_service, get_game_service)()
     yield
     # Shutdown code goes here
     opik_tracer = OpikTracer()
@@ -81,7 +83,10 @@ async def chat(
 
 
 @app.websocket("/ws/chat")
-async def websocket_chat(websocket: WebSocket):
+async def websocket_chat(
+    websocket: WebSocket,
+    character_factory: CharacterFactory = Depends(get_character_factory),
+):
     await websocket.accept()
 
     try:
@@ -141,7 +146,6 @@ async def websocket_chat(websocket: WebSocket):
                 continue
 
             try:
-                character_factory = get_character_factory()
                 receiver_character = character_factory.get_character(
                     data["receiver_id"]
                 )
