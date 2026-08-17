@@ -1,3 +1,4 @@
+import inspect
 import json
 from contextlib import asynccontextmanager
 
@@ -31,7 +32,9 @@ async def lifespan(app: FastAPI):
     """Handles startup and shutdown events for the API."""
     # Build singletons at boot so a bad scenario/Mongo fails fast, going
     # through dependency_overrides so tests can stub the provider.
-    app.dependency_overrides.get(get_game_service, get_game_service)()
+    result = app.dependency_overrides.get(get_game_service, get_game_service)()
+    if inspect.isawaitable(result):
+        await result
     yield
     # Shutdown code goes here
     opik_tracer = OpikTracer()
