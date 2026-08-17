@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from philoagents.application import LongTermMemoryCreator
+from philoagents.application.long_term_memory import LongTermMemoryCreator
 from philoagents.application.scenario_loader import ScenarioLoader
 from philoagents.config import settings
 

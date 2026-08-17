@@ -1,6 +1,7 @@
 {
-    "name": "template-webpack",
-    "version": "3.2.1",
+    "name": "clash-of-titans-ui",
+    "version": "0.1.0",
+    "description": "Frontend game client for Clash of Titans, an AI-powered grand strategy game engine.",
     "main": "src/main.js",
     "scripts": {
         "dev": "webpack-dev-server --config webpack/config.js --open",
@@ -9,15 +10,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/phaserjs/template-webpack.git"
+        "url": "git+https://github.com/YounesMakhlouf/simulation-game.git"
     },
-    "author": "Phaser Studio <support@phaser.io> (https://phaser.io/)",
     "license": "MIT",
-    "licenseUrl": "https://www.opensource.org/licenses/mit-license.php",
     "bugs": {
-        "url": "https://github.com/phaserjs/template-webpack/issues"
+        "url": "https://github.com/YounesMakhlouf/simulation-game/issues"
     },
-    "homepage": "https://github.com/phaserjs/template-webpack#readme",
+    "homepage": "https://github.com/YounesMakhlouf/simulation-game#readme",
     "engines": {
         "node": ">=22.15.0"
     },
