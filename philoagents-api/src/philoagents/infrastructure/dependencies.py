@@ -1,4 +1,5 @@
 # This file is for creating and providing shared, singleton instances of services, factories, and other dependencies.
+from functools import lru_cache
 
 from loguru import logger
 
@@ -8,39 +9,31 @@ from philoagents.config import settings
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure.mongo import GameStateRepository
 
-# --- SINGLETON INSTANTIATION (happens once on startup) ---
 
-logger.info(f"Loading scenario from: {settings.SCENARIO_PATH}")
-scenario_loader = ScenarioLoader(scenario_path=settings.SCENARIO_PATH)
-
-character_factory_instance = scenario_loader.create_character_factory()
-
-initial_game_state = scenario_loader.create_initial_game_state()
-undergame_plot = scenario_loader.get_undergame_plot()
-undergame_plot_display = scenario_loader.get_undergame_plot_for_display()
-game_state_repository = GameStateRepository()
-game_service_instance = GameLoopService(
-    initial_state=initial_game_state,
-    undergame_plot=undergame_plot,
-    factory=character_factory_instance,
-    undergame_plot_display=undergame_plot_display,
-    state_repository=game_state_repository,
-)
-if not game_service_instance.try_resume():
-    logger.info("No saved game found; starting a new game.")
-logger.info(
-    f"Game service initialized for scenario: '{scenario_loader.manifest['name']}'"
-)
+@lru_cache
+def _get_scenario_loader() -> ScenarioLoader:
+    logger.info(f"Loading scenario from: {settings.SCENARIO_PATH}")
+    return ScenarioLoader(scenario_path=settings.SCENARIO_PATH)
 
 
-# --- DEPENDENCY INJECTION PROVIDER FUNCTIONS ---
-
-
+@lru_cache
 def get_character_factory() -> CharacterFactory:
     """A FastAPI dependency that provides the singleton CharacterFactory instance."""
-    return character_factory_instance
+    return _get_scenario_loader().create_character_factory()
 
 
+@lru_cache
 def get_game_service() -> GameLoopService:
     """A FastAPI dependency that provides the singleton GameLoopService instance."""
-    return game_service_instance
+    loader = _get_scenario_loader()
+    service = GameLoopService(
+        initial_state=loader.create_initial_game_state(),
+        undergame_plot=loader.get_undergame_plot(),
+        factory=get_character_factory(),
+        undergame_plot_display=loader.get_undergame_plot_for_display(),
+        state_repository=GameStateRepository(),
+    )
+    if not service.try_resume():
+        logger.info("No saved game found; starting a new game.")
+    logger.info(f"Game service initialized for scenario: '{loader.manifest['name']}'")
+    return service

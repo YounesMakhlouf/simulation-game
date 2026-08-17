@@ -16,7 +16,10 @@ from philoagents.application.conversation_service.reset_conversation import (
 from philoagents.application.game_loop_service.api import router as game_loop_router
 from philoagents.config import settings
 from philoagents.domain.character_factory import CharacterFactory
-from philoagents.infrastructure.dependencies import get_character_factory
+from philoagents.infrastructure.dependencies import (
+    get_character_factory,
+    get_game_service,
+)
 
 from .opik_utils import configure
 
@@ -26,7 +29,7 @@ configure()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown events for the API."""
-    # Startup code (if any) goes here
+    get_game_service()  # build singletons at boot so a bad scenario/Mongo fails fast
     yield
     # Shutdown code goes here
     opik_tracer = OpikTracer()
