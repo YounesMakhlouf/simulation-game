@@ -36,6 +36,8 @@ npm run dev
 ```
 
 The local development server runs on http://localhost:8080 by default.
+It rebuilds when source files change; refresh the browser to load the new bundle.
+Set `HOST=0.0.0.0` to access it from outside the machine (Docker sets this).
 Note: The backend API must be running for the game to be fully functional.
 
 ## Configuring the API URL

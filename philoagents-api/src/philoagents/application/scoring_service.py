@@ -1,6 +1,6 @@
 import math
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Callable, Optional
 
 from philoagents.config import settings
 from philoagents.domain import Character
@@ -21,7 +21,7 @@ def _default_embed_fn() -> EmbedFn:
 
 
 class ScoringService:
-    def __init__(self, embed_fn: Optional[EmbedFn] = None):
+    def __init__(self, embed_fn: EmbedFn | None = None):
         self._embed_fn = embed_fn
 
     def calculate_final_scores(

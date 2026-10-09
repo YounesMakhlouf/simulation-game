@@ -1,5 +1,4 @@
 import time
-from typing import Dict, List
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
@@ -23,7 +22,7 @@ class EvaluationDatasetGenerator:
         self.__chain = self.__build_chain()
         self.__splitter = self.__build_splitter()
 
-    def __call__(self, rag_sources: List[Dict]) -> EvaluationDataset:
+    def __call__(self, rag_sources: list[dict]) -> EvaluationDataset:
         """
         Executes the full dataset generation pipeline for a given set of RAG sources.
 
@@ -41,9 +40,9 @@ class EvaluationDatasetGenerator:
                     dataset_sample: EvaluationDatasetSample = self.__chain.invoke(
                         {"character": character, "document": chunk.page_content}
                     )
-                except Exception as e:
-                    logger.error(
-                        f"Error generating dataset sample for {character.name}: {e}"
+                except Exception:
+                    logger.exception(
+                        f"Error generating dataset sample for {character.name}"
                     )
                     continue
 

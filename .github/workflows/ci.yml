@@ -17,8 +17,8 @@ jobs:
       run:
         working-directory: philoagents-api
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
           cache-dependency-glob: philoagents-api/uv.lock
@@ -36,8 +36,8 @@ jobs:
       run:
         working-directory: philoagents-api
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
           cache-dependency-glob: philoagents-api/uv.lock
@@ -53,10 +53,10 @@ jobs:
       run:
         working-directory: philoagents-ui
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
-          node-version: 22
+          node-version: 26
           cache: npm
           cache-dependency-path: philoagents-ui/package-lock.json
       - name: Install dependencies
@@ -71,10 +71,10 @@ jobs:
       matrix:
         image: [philoagents-api, philoagents-ui]
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@v7.0.1
+      - uses: docker/setup-buildx-action@v4.4.1
       - name: Build ${{ matrix.image }} image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7.4.0
         with:
           context: ./${{ matrix.image }}
           push: false

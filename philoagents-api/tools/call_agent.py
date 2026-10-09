@@ -9,6 +9,7 @@ from philoagents.application.conversation_service.generate_response import (
 )
 from philoagents.application.scenario_loader import ScenarioLoader
 from philoagents.config import settings
+from philoagents.domain.exceptions import CharacterNotFound
 
 
 def async_command(f):
@@ -56,7 +57,7 @@ async def main(scenario_path: Path, receiver_id: str, query: str) -> None:
     character_factory = loader.create_character_factory()
     try:
         receiver_character = character_factory.get_character(receiver_id)
-    except Exception as e:
+    except CharacterNotFound as e:
         print(f"\033[31mError: {e}\033[0m")
         print(
             f"Available character IDs are: {character_factory.get_available_character_ids()}"

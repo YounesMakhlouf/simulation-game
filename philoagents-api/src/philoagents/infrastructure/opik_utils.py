@@ -21,7 +21,7 @@ def configure() -> None:
                 f"Opik configured successfully (project '{settings.COMET_PROJECT}')."
             )
         except Exception:
-            logger.warning(
+            logger.exception(
                 "Couldn't configure Opik. There is probably a problem with the COMET_API_KEY or COMET_PROJECT environment variables or with the Opik server."
             )
     else:
@@ -35,6 +35,7 @@ def get_dataset(name: str) -> opik.Dataset | None:
     try:
         dataset = client.get_dataset(name=name)
     except Exception:
+        logger.exception(f"Could not retrieve dataset {name!r}.")
         dataset = None
 
     return dataset
@@ -54,7 +55,7 @@ def create_dataset(name: str, description: str, items: list[dict]) -> opik.Datas
             logger.info(f"Successfully deleted existing dataset '{name}'.")
         except Exception as e:
             logger.error(f"Failed to delete existing dataset '{name}': {e}")
-            raise e
+            raise
 
     dataset = client.create_dataset(name=name, description=description)
     dataset.insert(items)

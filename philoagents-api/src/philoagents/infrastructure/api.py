@@ -1,9 +1,11 @@
 import inspect
 import json
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 from opik.integrations.langchain import OpikTracer
 from pydantic import BaseModel, Field
 
@@ -67,7 +69,7 @@ class ChatMessage(BaseModel):
 @app.post("/chat")
 async def chat(
     chat_message: ChatMessage,
-    factory: CharacterFactory = Depends(get_character_factory),
+    factory: Annotated[CharacterFactory, Depends(get_character_factory)],
 ):
     try:
         receiver_character = factory.get_character(chat_message.receiver_id)
@@ -79,6 +81,7 @@ async def chat(
         return {"response": response}
 
     except Exception as e:
+        logger.exception("Chat request failed.")
         opik_tracer = OpikTracer()
         opik_tracer.flush()
 
@@ -88,7 +91,7 @@ async def chat(
 @app.websocket("/ws/chat")
 async def websocket_chat(
     websocket: WebSocket,
-    character_factory: CharacterFactory = Depends(get_character_factory),
+    character_factory: Annotated[CharacterFactory, Depends(get_character_factory)],
 ):
     await websocket.accept()
 
@@ -98,7 +101,7 @@ async def websocket_chat(
                 raw = await websocket.receive_text()
             except WebSocketDisconnect:
                 raise
-            except Exception:
+            except (KeyError, RuntimeError):
                 # A non-text frame (e.g. binary) makes receive_text() raise.
                 # Reject it but keep the connection usable.
                 await websocket.send_json(
@@ -174,6 +177,7 @@ async def websocket_chat(
                 )
 
             except Exception as e:
+                logger.exception("Streaming chat request failed.")
                 opik_tracer = OpikTracer()
                 opik_tracer.flush()
 
@@ -196,6 +200,7 @@ async def reset_conversation():
         result = await reset_conversation_state()
         return result
     except Exception as e:
+        logger.exception("Conversation reset failed.")
         raise HTTPException(status_code=500, detail=str(e))
 
 

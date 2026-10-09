@@ -69,7 +69,7 @@ def main(scenario_path: Path, temperature: float, max_samples: int) -> None:
 
     except Exception as e:
         logger.error(f"An error occurred during dataset generation: {e}")
-        raise e
+        raise
 
 
 if __name__ == "__main__":

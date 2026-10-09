@@ -1,6 +1,5 @@
-from typing import Optional
-
 from loguru import logger
+from pydantic import ValidationError
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
@@ -42,7 +41,7 @@ class GameStateRepository:
         except PyMongoError as e:
             logger.error(f"Failed to persist game state: {e}")
 
-    def load(self) -> Optional[GameState]:
+    def load(self) -> GameState | None:
         try:
             document = self.collection.find_one({"_id": self.GAME_STATE_DOC_ID})
         except PyMongoError as e:
@@ -54,7 +53,7 @@ class GameStateRepository:
 
         try:
             return GameState.model_validate(document["state"])
-        except Exception as e:
+        except (ValidationError, KeyError, TypeError) as e:
             logger.warning(f"Saved game state is invalid and will be ignored: {e}")
             return None
 

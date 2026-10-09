@@ -1,4 +1,4 @@
-from typing import Generic, Type, TypeVar
+from typing import Self
 
 from loguru import logger
 from pydantic import BaseModel
@@ -6,10 +6,8 @@ from pymongo import MongoClient, errors
 
 from philoagents.config import settings
 
-T = TypeVar("T", bound=BaseModel)
 
-
-class MongoClientWrapper(Generic[T]):
+class MongoClientWrapper[T: BaseModel]:
     """Thin wrapper around a MongoDB collection connection.
 
     Manages the client lifecycle (context manager support) and provides
@@ -33,7 +31,7 @@ class MongoClientWrapper(Generic[T]):
 
     def __init__(
         self,
-        model: Type[T],
+        model: type[T],
         collection_name: str,
         database_name: str = settings.MONGO_DB_NAME,
         mongodb_uri: str = settings.MONGO_URI,
@@ -70,7 +68,7 @@ class MongoClientWrapper(Generic[T]):
             f"Connected to MongoDB instance:\n URI: {mongodb_uri}\n Database: {database_name}\n Collection: {collection_name}"
         )
 
-    def __enter__(self) -> "MongoClientWrapper":
+    def __enter__(self) -> Self:
         """Enable context manager support.
 
         Returns:

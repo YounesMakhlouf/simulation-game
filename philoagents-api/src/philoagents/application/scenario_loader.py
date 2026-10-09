@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Union
 
 from loguru import logger
 
@@ -15,7 +14,7 @@ class ScenarioLoader:
     Loads all necessary data for a specific historical scenario from a directory.
     """
 
-    def __init__(self, scenario_path: Union[str, Path]):
+    def __init__(self, scenario_path: str | Path):
         """
         Initializes the loader by reading all configuration files from the scenario path.
 
@@ -56,7 +55,7 @@ class ScenarioLoader:
         """Returns the secret undergame plot for the scenario."""
         return self.manifest["undergame_plot_display"]
 
-    def get_rag_sources(self) -> List[Dict]:
+    def get_rag_sources(self) -> list[dict]:
         """Returns the list of RAG sources for the scenario."""
         return self.rag_sources_data
 

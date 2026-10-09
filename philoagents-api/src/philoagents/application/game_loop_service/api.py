@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
@@ -65,7 +65,7 @@ class ScoreDetails(BaseModel):
 
 
 class ScoreboardResponse(BaseModel):
-    scores: Dict[str, ScoreDetails]
+    scores: dict[str, ScoreDetails]
     actual_undergame: str
 
 
@@ -73,7 +73,7 @@ class ScoreboardResponse(BaseModel):
 
 
 @router.get("/session", response_model=SessionResponse)
-async def get_session(service: GameLoopService = Depends(get_game_service)):
+async def get_session(service: Annotated[GameLoopService, Depends(get_game_service)]):
     """
     Returns which character the current saved game is bound to, so the UI can
     offer "Continue as X" instead of a fresh character selection.
@@ -88,7 +88,8 @@ async def get_session(service: GameLoopService = Depends(get_game_service)):
 
 @router.post("/start")
 async def start_game(
-    request: StartGameRequest, service: GameLoopService = Depends(get_game_service)
+    request: StartGameRequest,
+    service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     """
     Binds the human player to a character for the current game. Rejects the
@@ -105,7 +106,7 @@ async def start_game(
 
 @router.get("/status/{character_id}", response_model=GameStatusResponse)
 async def get_game_status(
-    character_id: str, service: GameLoopService = Depends(get_game_service)
+    character_id: str, service: Annotated[GameLoopService, Depends(get_game_service)]
 ):
     """
     Endpoint for the player's UI to get the current state of the game
@@ -144,7 +145,7 @@ async def get_game_status(
 
 @router.get("/characters", response_model=CharacterListResponse)
 async def get_all_characters(
-    factory: CharacterFactory = Depends(get_character_factory),
+    factory: Annotated[CharacterFactory, Depends(get_character_factory)],
 ):
     """
     Returns a list of all playable characters in the current scenario
@@ -177,7 +178,7 @@ async def get_all_characters(
 async def submit_action(
     action: Action,
     background_tasks: BackgroundTasks,
-    service: GameLoopService = Depends(get_game_service),
+    service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     """
     Endpoint for the human player to submit their official action for the round.
@@ -208,7 +209,7 @@ async def submit_action(
 
 
 @router.post("/reset")
-async def reset_game(service: GameLoopService = Depends(get_game_service)):
+async def reset_game(service: Annotated[GameLoopService, Depends(get_game_service)]):
     """
     Resets the game to the initial scenario state and clears any persisted progress.
     """
@@ -221,7 +222,8 @@ async def reset_game(service: GameLoopService = Depends(get_game_service)):
 
 @router.post("/end", response_model=ScoreboardResponse)
 async def end_game(
-    request: EndGameRequest, service: GameLoopService = Depends(get_game_service)
+    request: EndGameRequest,
+    service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     """
     Receives the player's final Undergame guess, triggers the final scoring for

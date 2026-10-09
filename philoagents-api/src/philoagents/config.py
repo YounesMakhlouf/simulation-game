@@ -11,12 +11,12 @@ class Settings(BaseSettings):
 
     # --- GROQ Configuration ---
     # Free-tier rate limits are per model ID, so each role below is assigned
-    # its own pool: dialogue (the token-heaviest workload) on qwen3.6-27b,
+    # its own pool: dialogue (the token-heaviest workload) on qwen3.8-27b,
     # delegate actions and summaries on gpt-oss-20b, and the judge alone on
     # gpt-oss-120b. Both gpt-oss models support Groq's strict structured
     # outputs (constrained decoding).
     GROQ_API_KEY: str
-    GROQ_LLM_MODEL: str = "qwen/qwen3.6-27b"
+    GROQ_LLM_MODEL: str = "qwen/qwen3.8-27b"
     GROQ_LLM_MODEL_CONTEXT_SUMMARY: str = "openai/gpt-oss-20b"
     GROQ_LLM_MODEL_SUMMARY: str = "openai/gpt-oss-20b"
     GROQ_LLM_MODEL_ACTION: str = "openai/gpt-oss-20b"

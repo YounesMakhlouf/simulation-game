@@ -1,8 +1,3 @@
-# in philoagents/domain/character_factory.py
-
-from typing import Dict, List
-
-# Import the domain models and the new, simpler exception
 from philoagents.domain import Character
 from philoagents.domain.exceptions import CharacterNotFound
 
@@ -15,7 +10,7 @@ class CharacterFactory:
     It provides a clean interface to retrieve character objects by their ID.
     """
 
-    def __init__(self, character_data: List[Dict]):
+    def __init__(self, character_data: list[dict]):
         """
         Initializes the factory with a list of character data dictionaries.
 
@@ -28,16 +23,16 @@ class CharacterFactory:
             pydantic.ValidationError: If any character dictionary in the list
                                       is missing required fields.
         """
-        self._raw_data: Dict[str, Dict] = {
+        self._raw_data: dict[str, dict] = {
             char_dict["id"]: char_dict for char_dict in character_data
         }
 
         # We process the list into a dictionary for fast, O(1) lookups by character ID.
         # Pydantic automatically validates the data during this conversion.
-        self._characters: Dict[str, Character] = {
+        self._characters: dict[str, Character] = {
             char_dict["id"]: Character(**char_dict) for char_dict in character_data
         }
-        self.available_ids: List[str] = list(self._characters.keys())
+        self.available_ids: list[str] = list(self._characters.keys())
         print(
             f"CharacterFactory initialized with {len(self.available_ids)} characters."
         )
@@ -62,15 +57,15 @@ class CharacterFactory:
 
         return self._characters[id_lower].model_copy(deep=True)
 
-    def get_available_character_ids(self) -> List[str]:
+    def get_available_character_ids(self) -> list[str]:
         """Returns a list of all available character IDs loaded into the factory."""
         return self.available_ids
 
-    def get_all_characters(self) -> List[Character]:
+    def get_all_characters(self) -> list[Character]:
         """Returns a list of all character objects."""
         return [char.model_copy(deep=True) for char in self._characters.values()]
 
-    def get_character_raw_data(self, character_id: str) -> Dict:
+    def get_character_raw_data(self, character_id: str) -> dict:
         """
         Retrieves the original, raw dictionary for a character by ID.
         This is useful for accessing extra data not present in the core domain model,

@@ -1,6 +1,7 @@
 import uuid
+from collections.abc import AsyncGenerator, Iterator
 from contextlib import contextmanager
-from typing import Any, AsyncGenerator, Iterator, List, Union
+from typing import Any
 
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 from langgraph.checkpoint.mongodb.saver import MongoDBSaver
@@ -33,7 +34,7 @@ def __get_conversation_thread_id(
 
 @contextmanager
 def __compiled_graph(
-    messages: Union[str, List[dict]],
+    messages: str | list[dict],
     sender_id: str,
     receiver_character: Character,
     new_thread: bool,
@@ -73,7 +74,7 @@ def __compiled_graph(
 
 
 async def get_response(
-    messages: Union[str, List[dict]],
+    messages: str | list[dict],
     sender_id: str,
     receiver_character: Character,
     new_thread: bool = False,
@@ -105,11 +106,11 @@ async def get_response(
         last_message = output_state["messages"][-1]
         return last_message.content, ConversationState(**output_state)
     except Exception as e:
-        raise RuntimeError(f"Error running conversation workflow: {str(e)}") from e
+        raise RuntimeError(f"Error running conversation workflow: {e!s}") from e
 
 
 async def get_streaming_response(
-    messages: Union[str, List[dict]],
+    messages: str | list[dict],
     sender_id: str,
     receiver_character: Character,
     new_thread: bool = False,
@@ -144,13 +145,13 @@ async def get_streaming_response(
 
     except Exception as e:
         raise RuntimeError(
-            f"Error running streaming conversation workflow: {str(e)}"
+            f"Error running streaming conversation workflow: {e!s}"
         ) from e
 
 
 def __format_messages(
-    messages: Union[str, list[dict[str, Any]]],
-) -> list[Union[HumanMessage, AIMessage]]:
+    messages: str | list[dict[str, Any]],
+) -> list[HumanMessage | AIMessage]:
     """Convert various message formats to a list of LangChain message objects.
 
     Args:

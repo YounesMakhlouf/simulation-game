@@ -6,30 +6,30 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi[standard]>=0.136.3",
-    "langchain-core>=1.4.7",
+    "fastapi[standard]>=0.143.0",
+    "langchain-core>=1.6.9",
     "langchain-groq>=1.1.3",
-    "langchain-mongodb>=0.11.0",
-    "langgraph>=1.2.5",
-    "langgraph-checkpoint-mongodb>=0.4.0",
-    "opik>=2.0.62",
-    "pydantic-settings>=2.14.1",
-    "pymongo>=4.16.0",
+    "langchain-mongodb>=0.12.1",
+    "langgraph>=1.2.14",
+    "langgraph-checkpoint-mongodb>=0.5.1",
+    "opik>=2.2.96",
+    "pydantic-settings>=2.15.0",
+    "pymongo>=4.18.3",
     "langchain-community>=0.4.2",
     "loguru>=0.7.3",
-    "langchain-huggingface>=1.2.2",
+    "langchain-huggingface>=1.2.3",
     "wikipedia>=1.4.0",
-    "pydantic>=2.13.4",
-    "datasketch>=1.10.0",
-    "sentence-transformers>=5.5.1",
-    "torch>=2.12.0",
+    "pydantic>=2.14.0",
+    "datasketch>=2.0.0",
+    "sentence-transformers>=6.1.0",
+    "torch>=2.14.1",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.1.0",
-    "ruff>=0.15.17",
-    "pre-commit>=4.6.0",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+    "pre-commit>=4.6.2",
 ]
 
 # Pull the CPU-only torch build instead of the default CUDA wheels (~3GB of
@@ -44,7 +44,7 @@ explicit = true
 torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.32.4"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
@@ -52,3 +52,6 @@ packages = ["src/philoagents"]
 
 [tool.ruff]
 target-version = "py312"
+
+[tool.ruff.lint]
+logger-objects = ["loguru.logger"]

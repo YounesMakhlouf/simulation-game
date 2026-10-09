@@ -1,6 +1,6 @@
 services:
   local_dev_atlas:
-    image: mongodb/mongodb-atlas-local:8.0
+    image: mongodb/mongodb-atlas-local:8.0.32
     hostname: local_dev_atlas
     ports:
       - "27017:27017"

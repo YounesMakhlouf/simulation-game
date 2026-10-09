@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 
 import pytest
 
@@ -14,7 +13,7 @@ from philoagents.domain.resources import PrivateIntel, VictoryPointAward
 class FakeStateRepository:
     """In-memory stand-in for GameStateRepository."""
 
-    def __init__(self, saved: Optional[GameState] = None):
+    def __init__(self, saved: GameState | None = None):
         self.saved = saved
         self.save_calls = 0
         self.clear_calls = 0
@@ -23,7 +22,7 @@ class FakeStateRepository:
         self.saved = state.model_copy(deep=True)
         self.save_calls += 1
 
-    def load(self) -> Optional[GameState]:
+    def load(self) -> GameState | None:
         return self.saved
 
     def clear(self) -> None:
@@ -55,8 +54,8 @@ def make_state(round_number: int = 1) -> GameState:
 
 
 def make_service(
-    repository: Optional[FakeStateRepository] = None,
-    state: Optional[GameState] = None,
+    repository: FakeStateRepository | None = None,
+    state: GameState | None = None,
 ) -> GameLoopService:
     return GameLoopService(
         initial_state=state or make_state(),
@@ -67,7 +66,7 @@ def make_service(
     )
 
 
-def make_action(character_id: str, resource_cost: Optional[dict] = None) -> Action:
+def make_action(character_id: str, resource_cost: dict | None = None) -> Action:
     return Action(
         character_id=character_id,
         action_type=ActionType.MILITARY,

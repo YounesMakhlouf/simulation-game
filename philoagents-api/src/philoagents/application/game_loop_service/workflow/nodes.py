@@ -1,5 +1,4 @@
 import json
-from typing import Dict, List
 
 from loguru import logger
 
@@ -17,7 +16,7 @@ from philoagents.domain.resources import CharacterStatusUpdate, ResourceChange
 # --- Delegate Action Agent Node ---
 
 
-async def action_decision_node(state: ActionState) -> Dict:
+async def action_decision_node(state: ActionState) -> dict:
     """
     The primary node for the Delegate Action Agent.
 
@@ -62,10 +61,10 @@ async def action_decision_node(state: ActionState) -> Dict:
 
 
 def _apply_judge_output(
-    characters: Dict[str, Character],
-    resource_changes: List[ResourceChange],
-    status_updates: List[CharacterStatusUpdate],
-) -> Dict[str, Character]:
+    characters: dict[str, Character],
+    resource_changes: list[ResourceChange],
+    status_updates: list[CharacterStatusUpdate],
+) -> dict[str, Character]:
     """
     Applies the Judge's outcome deltas to the settled character states.
 
@@ -125,7 +124,7 @@ def _apply_judge_output(
     return characters
 
 
-async def resolution_node(state: ResolutionState) -> Dict:
+async def resolution_node(state: ResolutionState) -> dict:
     """
     The primary node for the AI Judge Agent.
 

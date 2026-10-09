@@ -1,5 +1,3 @@
-from typing import Dict, List
-
 from langchain_core.documents import Document
 from loguru import logger
 
@@ -40,7 +38,7 @@ class LongTermMemoryCreator:
 
         return cls(retriever, splitter, extractor)
 
-    def __call__(self, rag_sources: List[Dict]) -> None:
+    def __call__(self, rag_sources: list[dict]) -> None:
         """
         Executes the full RAG ingestion pipeline for a given set of sources.
 

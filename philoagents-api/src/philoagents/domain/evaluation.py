@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import List
 
 from pydantic import BaseModel
 
@@ -29,7 +28,7 @@ class EvaluationDatasetSample(BaseModel):
     """
 
     character_id: str | None = None
-    messages: List[Message]
+    messages: list[Message]
 
 
 class EvaluationDataset(BaseModel):
@@ -39,7 +38,7 @@ class EvaluationDataset(BaseModel):
         samples: A list of EvaluationDatasetSample objects.
     """
 
-    samples: List[EvaluationDatasetSample]
+    samples: list[EvaluationDatasetSample]
 
     def save_to_json(self, file_path: Path) -> None:
         """Saves the evaluation dataset to a JSON file.

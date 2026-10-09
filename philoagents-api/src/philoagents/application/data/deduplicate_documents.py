@@ -1,5 +1,4 @@
 import re
-from typing import List, Tuple
 
 from datasketch import MinHash, MinHashLSH
 from langchain_core.documents import Document
@@ -9,8 +8,8 @@ from philoagents.config import settings
 
 
 def deduplicate_documents(
-    documents: List[Document], threshold: float = 0.7
-) -> List[Document]:
+    documents: list[Document], threshold: float = 0.7
+) -> list[Document]:
     """Remove duplicate documents from a list based on content similarity.
 
     Uses MinHash algorithm to identify similar documents and removes duplicates
@@ -46,10 +45,10 @@ def deduplicate_documents(
 
 
 def find_duplicates(
-    documents: List[Document],
+    documents: list[Document],
     threshold: float = 0.7,
     num_perm: int = int(settings.RAG_CHUNK_SIZE * 0.5),
-) -> List[Tuple[int, int, float]]:
+) -> list[tuple[int, int, float]]:
     """Find duplicate documents using MinHash algorithm.
 
     Creates MinHash signatures for each document and uses Locality Sensitive Hashing (LSH)
@@ -95,7 +94,7 @@ def find_duplicates(
 
         # Find duplicates
         for j in similar_docs:
-            similarity = minhashes[i].jaccard(minhashes[j])
+            similarity = minhash.jaccard(minhashes[j])
             if similarity >= threshold:
                 # Ensure we don't add the same pair twice (in different order)
                 pair = tuple(sorted([i, j]))

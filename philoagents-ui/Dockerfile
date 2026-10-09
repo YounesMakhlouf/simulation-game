@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:26.11.1-alpine
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy project files
 COPY . .
@@ -21,6 +21,8 @@ RUN npm run build
 
 # Expose port 8080 (matches webpack dev server port)
 EXPOSE 8080
+
+ENV HOST=0.0.0.0
 
 # Start the development server
 CMD ["npm", "run", "dev"]

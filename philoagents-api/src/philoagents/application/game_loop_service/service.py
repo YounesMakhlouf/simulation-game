@@ -1,5 +1,4 @@
 import asyncio
-from typing import Dict, List, Optional
 
 from loguru import logger
 from opik.integrations.langchain import OpikTracer
@@ -36,14 +35,14 @@ class GameLoopService:
         factory: CharacterFactory,
         undergame_plot_display: str,
         max_rounds: int = 4,  # TODO: increase after we're done testing. Needs higher model limits
-        state_repository: Optional[GameStateRepository] = None,
+        state_repository: GameStateRepository | None = None,
     ):
         self.game_state = initial_state
         self._initial_state = initial_state.model_copy(deep=True)
         self.undergame_plot = undergame_plot
         self.undergame_plot_display = undergame_plot_display
         self.factory = factory
-        self.submitted_actions: Dict[str, Action] = {}
+        self.submitted_actions: dict[str, Action] = {}
         self.max_rounds = max_rounds
         self.is_game_over = False
         self.state_repository = state_repository
@@ -184,7 +183,7 @@ class GameLoopService:
         )
         return raw_scores, self.undergame_plot_display
 
-    async def _generate_ai_guesses(self, player_character_id: str) -> Dict[str, str]:
+    async def _generate_ai_guesses(self, player_character_id: str) -> dict[str, str]:
         """
         Asks each AI character for its theory of the Undergame, concurrently.
         A character that fails or times out falls back to a neutral guess.
@@ -209,8 +208,8 @@ class GameLoopService:
                     ),
                     timeout=settings.AI_ACTION_TIMEOUT_SECONDS,
                 )
-            except Exception as e:
-                logger.error(f"Undergame guess failed for '{character.id}': {e}")
+            except Exception:
+                logger.exception(f"Undergame guess failed for '{character.id}'")
                 return "The events were simply the result of political maneuvering."
 
         guesses = await asyncio.gather(*(guess_for(char) for char in ai_characters))
@@ -261,7 +260,7 @@ class GameLoopService:
                     f"only {available} is available."
                 )
 
-    def _charge_action_costs(self, actions: List[Action]) -> Dict[str, Character]:
+    def _charge_action_costs(self, actions: list[Action]) -> dict[str, Character]:
         """
         Deducts each action's declared resource cost on a deep copy of the
         characters, so the game economy does not depend on the Judge LLM doing
@@ -296,7 +295,7 @@ class GameLoopService:
                 character.resources[resource] = remaining
         return characters
 
-    def _deliver_private_intel(self, private_reports: Optional[List[PrivateIntel]]):
+    def _deliver_private_intel(self, private_reports: list[PrivateIntel] | None):
         """
         Appends new intelligence reports to the appropriate characters' state.
         """
@@ -317,7 +316,7 @@ class GameLoopService:
                     f"Could not deliver intel to non-existent character ID: {recipient_id}"
                 )
 
-    def _apply_victory_points(self, vp_awards: Optional[List[VictoryPointAward]]):
+    def _apply_victory_points(self, vp_awards: list[VictoryPointAward] | None):
         if not vp_awards:
             return
         for award in vp_awards:
@@ -351,7 +350,7 @@ class GameLoopService:
             resource_cost={},
         )
 
-    async def _run_ai_delegate_turns(self) -> List[Action]:
+    async def _run_ai_delegate_turns(self) -> list[Action]:
         """
         Invokes the action agent for all AI characters concurrently.
         """
@@ -375,7 +374,7 @@ class GameLoopService:
 
             dossier_entries = []
             all_characters = self.game_state.characters
-            for char_id, other_char in all_characters.items():
+            for other_char in all_characters.values():
                 if other_char.id != character.id:
                     entry = f"- **{other_char.name}**\n  Perspective: {other_char.perspective}"
                     dossier_entries.append(entry)
@@ -395,10 +394,10 @@ class GameLoopService:
                     get_single_action(character),
                     timeout=settings.AI_ACTION_TIMEOUT_SECONDS,
                 )
-            except Exception as e:
-                logger.error(
+            except Exception:
+                logger.exception(
                     f"AI delegate '{character.id}' failed to produce an action, "
-                    f"using fallback: {e}"
+                    "using fallback"
                 )
                 return self._fallback_action(character)
 
@@ -407,12 +406,12 @@ class GameLoopService:
         return ai_actions
 
     async def _run_judge_turn(
-        self, all_actions: List[Action], characters: Dict[str, Character]
+        self, all_actions: list[Action], characters: dict[str, Character]
     ) -> tuple[
         str,
-        Dict[str, Character],
-        Optional[List[PrivateIntel]],
-        Optional[List[VictoryPointAward]],
+        dict[str, Character],
+        list[PrivateIntel] | None,
+        list[VictoryPointAward] | None,
     ]:
         """
         Invokes the judge agent to resolve the round.

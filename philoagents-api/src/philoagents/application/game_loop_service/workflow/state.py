@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from typing_extensions import TypedDict
 
 from philoagents.domain import Action, Character
@@ -24,7 +22,7 @@ class ActionState(TypedDict):
     character: Character
     crisis_update: str
     other_players_dossier: str
-    action: Optional[Action]
+    action: Action | None
 
 
 class ResolutionState(TypedDict):
@@ -49,11 +47,11 @@ class ResolutionState(TypedDict):
                             primary output of the graph.
     """
 
-    actions: List[Action]
-    characters: Dict[str, Character]
+    actions: list[Action]
+    characters: dict[str, Character]
     undergame_plot: str
-    current_game_state_json: Optional[str]
-    crisis_update: Optional[str]
-    updated_characters: Optional[Dict[str, Character]]
-    victory_point_awards: Optional[List[VictoryPointAward]]
-    private_intel_reports: Optional[List[PrivateIntel]]
+    current_game_state_json: str | None
+    crisis_update: str | None
+    updated_characters: dict[str, Character] | None
+    victory_point_awards: list[VictoryPointAward] | None
+    private_intel_reports: list[PrivateIntel] | None

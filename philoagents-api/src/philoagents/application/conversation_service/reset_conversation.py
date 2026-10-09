@@ -2,6 +2,7 @@ import asyncio
 
 from loguru import logger
 from pymongo import MongoClient
+from pymongo.errors import PyMongoError
 
 from philoagents.config import settings
 
@@ -47,6 +48,6 @@ def _reset_conversation_state() -> dict:
             "message": "No collections needed to be deleted",
         }
 
-    except Exception as e:
-        logger.error(f"Failed to reset conversation state: {str(e)}")
-        raise Exception(f"Failed to reset conversation state: {str(e)}")
+    except PyMongoError as e:
+        logger.error(f"Failed to reset conversation state: {e!s}")
+        raise RuntimeError(f"Failed to reset conversation state: {e!s}") from e

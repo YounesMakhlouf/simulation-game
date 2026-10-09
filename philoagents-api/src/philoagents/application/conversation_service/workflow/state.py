@@ -1,4 +1,4 @@
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from langgraph.graph.message import AnyMessage, add_messages
 from typing_extensions import TypedDict
@@ -24,13 +24,13 @@ class ConversationState(TypedDict):
         summary: A running summary of the conversation to manage token count.
     """
 
-    messages: Annotated[List[AnyMessage], add_messages]
+    messages: Annotated[list[AnyMessage], add_messages]
     character_id: str
     character_name: str
     character_perspective: str
     character_style: str
-    retrieved_context: Optional[str]
-    summary: Optional[str]
+    retrieved_context: str | None
+    summary: str | None
 
 
 def state_to_str(state: ConversationState) -> str:
@@ -39,9 +39,9 @@ def state_to_str(state: ConversationState) -> str:
     useful for debugging and logging.
     """
     # Prefer showing the summary if it exists, otherwise show the raw messages.
-    if "summary" in state and state["summary"]:
+    if state.get("summary"):
         conversation_history = f"Summary: '{state['summary']}'"
-    elif "messages" in state and state["messages"]:
+    elif state.get("messages"):
         # Format messages for readability
         formatted_messages = "\n  ".join(
             [f"{m.type.capitalize()}: {m.content}" for m in state["messages"]]

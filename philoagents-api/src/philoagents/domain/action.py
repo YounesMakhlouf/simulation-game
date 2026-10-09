@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Dict
 
 from pydantic import BaseModel, Field
 
@@ -26,7 +25,7 @@ class Action(BaseModel):
     action_details: str = Field(
         description="A clear, specific description of the action being taken."
     )
-    resource_cost: Dict[str, int] = Field(
+    resource_cost: dict[str, int] = Field(
         description="A dictionary of resources to be spent on this action.",
         default_factory=dict,
     )

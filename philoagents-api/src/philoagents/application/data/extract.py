@@ -1,4 +1,4 @@
-from typing import Dict, Generator, List
+from collections.abc import Generator
 
 from bs4 import BeautifulSoup
 from langchain_community.document_loaders import WebBaseLoader, WikipediaLoader
@@ -19,8 +19,8 @@ class RagExtractor:
         self.character_factory = character_factory
 
     def get_extraction_generator(
-        self, rag_sources: List[Dict]
-    ) -> Generator[tuple[Character, List[Document]], None, None]:
+        self, rag_sources: list[dict]
+    ) -> Generator[tuple[Character, list[Document]], None, None]:
         """
         Extracts documents for all characters defined in the RAG sources, yielding one at a time.
 
@@ -47,8 +47,8 @@ class RagExtractor:
             yield character, character_docs
 
     def _extract_for_character(
-        self, character: Character, source_info: Dict
-    ) -> List[Document]:
+        self, character: Character, source_info: dict
+    ) -> list[Document]:
         """
         Orchestrates the extraction from all configured sources for a single character.
         """
@@ -67,7 +67,7 @@ class RagExtractor:
         return docs
 
     @staticmethod
-    def _extract_wikipedia(character: Character, query: str) -> List[Document]:
+    def _extract_wikipedia(character: Character, query: str) -> list[Document]:
         """Extracts a document for a single character from Wikipedia."""
         loader = WikipediaLoader(
             query=query,
@@ -83,7 +83,7 @@ class RagExtractor:
         return docs
 
     @staticmethod
-    def _extract_britannica(character: Character, urls: List[str]) -> List[Document]:
+    def _extract_britannica(character: Character, urls: list[str]) -> list[Document]:
         """Extracts documents from Encyclopedia Britannica URLs."""
         if not urls:
             return []
