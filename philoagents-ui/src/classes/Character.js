@@ -264,18 +264,6 @@ class Character {
       );
     }
   }
-
-  destroy() {
-    if (this.movementTimer) {
-      this.scene.time.removeEvent(this.movementTimer);
-    }
-    if (this.stuckCheckTimer) {
-      this.scene.time.removeEvent(this.stuckCheckTimer);
-    }
-    
-    this.nameLabel.destroy();
-    this.sprite.destroy();
-  }
 }
 
 export default Character; 

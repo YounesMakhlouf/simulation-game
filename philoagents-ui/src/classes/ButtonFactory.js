@@ -63,21 +63,6 @@ const BUTTON_PRESETS = {
         fontStyle: "normal",
         liftOnHover: false,
     },
-
-    // Small utility button
-    small: {
-        width: 280,
-        height: 50,
-        radius: 12,
-        maxFontSize: 22,
-        bgColor: 0xffffff,
-        hoverBgColor: 0x87ceeb,
-        shadowColor: 0x666666,
-        textColor: "#000000",
-        fontFamily: FONTS.body,
-        fontStyle: "bold",
-        liftOnHover: true,
-    },
 };
 
 /**
@@ -178,7 +163,7 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
 /**
  * Creates a button using a preset style.
  * @param {Phaser.Scene} scene - The Phaser scene
- * @param {string} preset - Preset name: 'menu', 'confirm', 'danger', 'info', 'small'
+ * @param {string} preset - Preset name: 'menu', 'confirm', 'danger', 'info'
  * @param {number} x - X position
  * @param {number} y - Y position
  * @param {string} text - Button label

@@ -12,8 +12,8 @@ def deduplicate_documents(
 ) -> list[Document]:
     """Remove duplicate documents from a list based on content similarity.
 
-    Uses MinHash algorithm to identify similar documents and removes duplicates
-    based on the specified similarity threshold.
+    Uses exact content comparison for documents with fewer than three words,
+    and MinHash similarity for longer documents.
 
     Args:
         documents: List of documents to deduplicate.
@@ -51,8 +51,8 @@ def find_duplicates(
 ) -> list[tuple[int, int, float]]:
     """Find duplicate documents using MinHash algorithm.
 
-    Creates MinHash signatures for each document and uses Locality Sensitive Hashing (LSH)
-    to efficiently find similar document pairs.
+    Compares documents with fewer than three words exactly. For longer documents,
+    uses MinHash signatures and Locality Sensitive Hashing (LSH) to find similar pairs.
 
     Args:
         documents: List of documents to check for duplicates.
@@ -66,28 +66,34 @@ def find_duplicates(
         for document pairs that exceed the similarity threshold.
     """
 
-    minhashes = []
+    minhashes = {}
+    short_documents: dict[str, list[int]] = {}
+    duplicates = []
 
-    for doc in documents:
-        minhash = MinHash(num_perm=num_perm)
+    for index, doc in enumerate(documents):
         text = doc.page_content.lower()
         words = re.findall(r"\w+", text)
+        if len(words) < 3:
+            previous_indices = short_documents.setdefault(doc.page_content, [])
+            duplicates.extend((previous, index, 1.0) for previous in previous_indices)
+            previous_indices.append(index)
+            continue
 
+        minhash = MinHash(num_perm=num_perm)
         # Create shingles (3-grams of words)
-        for i in range(len(words) - 3):
+        for i in range(len(words) - 2):
             shingle = " ".join(words[i : i + 3])
             minhash.update(shingle.encode("utf-8"))
-        minhashes.append(minhash)
+        minhashes[index] = minhash
 
     # Find similar document pairs using LSH (Locality Sensitive Hashing)
     lsh = MinHashLSH(threshold=threshold, num_perm=num_perm)
 
     # Add documents to LSH index
-    for i, minhash in enumerate(minhashes):
+    for i, minhash in minhashes.items():
         lsh.insert(i, minhash)
 
-    duplicates = []
-    for i, minhash in enumerate(minhashes):
+    for i, minhash in minhashes.items():
         similar_docs = lsh.query(minhash)
         # Remove self from results
         similar_docs = [j for j in similar_docs if j != i]

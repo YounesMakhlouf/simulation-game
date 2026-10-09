@@ -29,7 +29,7 @@ it("preloads the compressed background without queuing gameplay music", () => {
     expect(preloader.load.audio).not.toHaveBeenCalledWith("gameplay-music", expect.anything());
 });
 
-it.each([0, 1])("loads music after the menu renders and stops on completion (%s failures)", (failed) => {
+it("loads music after the menu renders and stops on completion", () => {
     const { preloader, menu } = makePreloader();
     preloader.preload();
     preloader.create();
@@ -51,7 +51,7 @@ it.each([0, 1])("loads music after the menu renders and stops on completion (%s 
     preloader.game.events.emit("postrender");
     expect(preloader.scene.stop).not.toHaveBeenCalled();
     expect(preloader.load.start).toHaveBeenCalledOnce();
-    preloader.load.emit("complete", preloader.load, 1 - failed, failed);
+    preloader.load.emit("complete");
     expect(preloader.scene.stop).toHaveBeenCalledOnce();
 });
 

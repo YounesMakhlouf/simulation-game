@@ -140,13 +140,6 @@ class DialogueBox {
         }
     }
 
-    destroy() {
-        if (this.domElement) {
-            this.domElement.destroy();
-        }
-        this.container.destroy();
-    }
-
     isVisible() {
         return this.container.visible;
     }

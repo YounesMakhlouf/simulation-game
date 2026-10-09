@@ -134,13 +134,29 @@ describe("pollForNextRound", () => {
 
   it("restarting polling invalidates the previous loop", async () => {
     const manager = makeManager(1);
-    manager.pollForNextRound();
-    const firstRunId = manager._pollRunId;
+    const crisis = vi.fn();
+    manager.events.on("showCrisisUpdate", crisis);
+    let resolveRequest;
+    ApiService.getGameState
+      .mockReturnValueOnce(new Promise((resolve) => { resolveRequest = resolve; }))
+      .mockResolvedValueOnce(state(2));
 
     manager.pollForNextRound();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
 
-    expect(manager._pollRunId).toBeGreaterThan(firstRunId);
-    expect(manager._pollTimer).not.toBeNull();
+    manager.pollForNextRound();
+    resolveRequest(state(3));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(crisis).not.toHaveBeenCalled();
+    expect(manager.gameState.round_number).toBe(1);
+    expect(vi.getTimerCount()).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(ApiService.getGameState).toHaveBeenCalledTimes(2);
+    expect(crisis).toHaveBeenCalledExactlyOnceWith("Crisis of round 2", 2);
+    expect(manager.gameState.round_number).toBe(2);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

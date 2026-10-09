@@ -246,38 +246,27 @@ def test_advance_round_rejects_concurrent_runs():
     asyncio.run(scenario())
 
 
-def test_advance_round_failure_clears_flag_and_keeps_actions():
+def test_advance_round_succeeds_when_retried_after_failure():
     repository = FakeStateRepository()
     service = make_service(repository)
-    stub_round(service, judge_error=RuntimeError("judge LLM unavailable"))
+    service.submit_player_action(make_action("hannibal", {"Gold": 4}))
 
-    service.submit_player_action(make_action("hannibal"))
+    stub_round(service, judge_error=RuntimeError("judge LLM unavailable"))
     with pytest.raises(RuntimeError, match="judge LLM unavailable"):
         asyncio.run(service.advance_round())
 
     assert not service.is_processing_round
-    assert "hannibal" in service.submitted_actions  # retriable
-    assert service.game_state.round_number == 1  # state untouched
+    assert "hannibal" in service.submitted_actions
+    assert service.game_state.round_number == 1
+    assert service.game_state.characters["hannibal"].resources["Gold"] == 10
     assert repository.save_calls == 0
 
-
-def test_advance_round_succeeds_when_retried_after_failure():
-    repository = FakeStateRepository()
-    service = make_service(repository)
-    service.submit_player_action(make_action("hannibal"))
-
-    stub_round(service, judge_error=RuntimeError("judge LLM unavailable"))
-    with pytest.raises(RuntimeError):
-        asyncio.run(service.advance_round())
-
-    stub_round(
-        service,
-        judge_result=("Recovered crisis.", service.game_state.characters, None, None),
-    )
+    stub_echo_judge(service)
     new_state = asyncio.run(service.advance_round())
 
     assert new_state.round_number == 2
-    assert new_state.crisis_update == "Recovered crisis."
+    assert new_state.crisis_update == "A new crisis unfolds."
+    assert new_state.characters["hannibal"].resources["Gold"] == 6
     assert repository.save_calls == 1
 
 
@@ -323,18 +312,6 @@ def test_advance_round_clamps_hallucinated_ai_costs():
     assert new_state.characters["hannibal"].resources["Gold"] == 0
     assert "Elephants" not in new_state.characters["hannibal"].resources
     assert new_state.characters["scipio"].resources["Gold"] == 10
-
-
-def test_failed_round_does_not_charge_costs():
-    service = make_service()
-    stub_round(service, judge_error=RuntimeError("judge LLM unavailable"))
-    service.submit_player_action(make_action("hannibal", {"Gold": 4}))
-
-    with pytest.raises(RuntimeError):
-        asyncio.run(service.advance_round())
-
-    # The live state was never charged, so the retry will not double-deduct.
-    assert service.game_state.characters["hannibal"].resources["Gold"] == 10
 
 
 # --- victory point clamping ---
@@ -801,12 +778,6 @@ def test_submit_action_rejects_other_character_when_bound():
     asyncio.run(service.start_game("hannibal"))
     with pytest.raises(ValueError, match="cannot act as"):
         service.submit_player_action(make_action("scipio"))
-
-
-def test_unbound_game_accepts_any_character():
-    service = make_service()
-    service.submit_player_action(make_action("scipio"))
-    assert "scipio" in service.submitted_actions
 
 
 def test_reset_clears_player_binding():

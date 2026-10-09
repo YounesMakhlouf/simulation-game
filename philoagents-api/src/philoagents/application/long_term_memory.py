@@ -82,20 +82,3 @@ class LongTermMemoryCreator:
                 mongodb_client=client,
             )
             index.create(embedding_dim=settings.RAG_TEXT_EMBEDDING_MODEL_DIM)
-
-
-class LongTermMemoryRetriever:
-    def __init__(self, retriever: Retriever) -> None:
-        self.retriever = retriever
-
-    @classmethod
-    def build_from_settings(cls) -> "LongTermMemoryRetriever":
-        retriever = get_retriever(
-            embedding_model_id=settings.RAG_TEXT_EMBEDDING_MODEL_ID,
-            k=settings.RAG_TOP_K,
-            device=settings.RAG_DEVICE,
-        )
-        return cls(retriever)
-
-    def __call__(self, query: str) -> list[Document]:
-        return self.retriever.invoke(query)
