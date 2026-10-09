@@ -61,3 +61,27 @@ it.each([undefined, 0, -1, "150000"])("rejects an invalid server scoring timeout
         .rejects.toThrow("Server returned an invalid scoring timeout.");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+it("aborts an in-flight chat request without returning fallback dialogue", async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn((url, options) => new Promise((resolve, reject) => {
+        options.signal.addEventListener("abort", () => reject(options.signal.reason), { once: true });
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const pending = ApiService.sendMessage("scipio", "hannibal", "Hi", controller.signal);
+    const cancelled = expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    controller.abort();
+    await cancelled;
+    expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true);
+    expect(console.error).not.toHaveBeenCalled();
+});
+
+it("does not start a chat request that was already cancelled", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(ApiService.sendMessage("scipio", "hannibal", "Hi", controller.signal))
+        .rejects.toMatchObject({ name: "AbortError" });
+    expect(fetchMock).not.toHaveBeenCalled();
+});

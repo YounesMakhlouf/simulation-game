@@ -17,7 +17,7 @@ export class Preloader extends Scene {
         this.load.setPath("assets");
 
         // General assets
-        this.load.image("background", "hannibal_crossing_the_alps.png");
+        this.load.image("background", "hannibal_crossing_the_alps.webp");
         this.load.image("hannibal_barca_portrait", "images/portraits/hannibal_barca.webp");
         this.load.image("hanno_the_great_portrait", "images/portraits/hanno_the_great.webp");
         this.load.image("scipio_africanus_portrait", "images/portraits/scipio_africanus.webp");
@@ -38,11 +38,21 @@ export class Preloader extends Scene {
         this.load.atlas("philip_v_of_macedon", "characters/philip_v_of_macedon/atlas.png", "characters/philip_v_of_macedon/atlas.json");
         this.load.atlas("scipio_africanus", "characters/scipio_africanus/atlas.png", "characters/scipio_africanus/atlas.json");
         this.load.atlas("hannibal_barca", "characters/hannibal_barca/atlas.png", "characters/hannibal_barca/atlas.json");
-        this.load.audio("gameplay-music", "audio/epic-theme.ogg");
         this.load.audio("ui-click", "audio/click.wav");
     }
 
     create() {
-        this.scene.start("MainMenu");
+        this.load.removeAllListeners("progress");
+        this.children.removeAll(true);
+
+        // Keep this loader alive if the player leaves the menu before music arrives.
+        this.scene.get("MainMenu").events.once("create", () => {
+            this.game.events.once("postrender", () => {
+                this.load.audio("gameplay-music", "audio/epic-theme.ogg");
+                this.load.once("complete", () => this.scene.stop());
+                this.load.start();
+            });
+        });
+        this.scene.launch("MainMenu");
     }
 }

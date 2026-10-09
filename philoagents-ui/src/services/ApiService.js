@@ -5,13 +5,16 @@ class ApiService {
         this.apiUrl = getApiBaseUrl();
     }
 
-    async request(endpoint, method, data, timeoutMs = REQUEST_TIMEOUT_MS) {
+    async request(endpoint, method, data, timeoutMs = REQUEST_TIMEOUT_MS, signal) {
+        signal?.throwIfAborted();
         const url = `${this.apiUrl}${endpoint}`;
         const options = {
             method, headers: {
                 'Content-Type': 'application/json',
             }, body: data ? JSON.stringify(data) : undefined,
-            signal: AbortSignal.timeout(timeoutMs),
+            signal: signal
+                ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])
+                : AbortSignal.timeout(timeoutMs),
         };
 
         let response;
@@ -33,14 +36,15 @@ class ApiService {
         return response.json();
     }
 
-    async sendMessage(senderId, receiverId, message) {
+    async sendMessage(senderId, receiverId, message, signal) {
         try {
             const data = await this.request('/chat', 'POST', {
                 sender_id: senderId, receiver_id: receiverId, message: message,
-            });
+            }, undefined, signal);
 
             return data.response;
         } catch (error) {
+            if (signal?.aborted) throw error;
             console.error('Error sending message to API:', error);
             return this.getFallbackResponse();
         }

@@ -15,6 +15,8 @@ class WebSocketApiService {
         this.connected = false;
         this.connectionPromise = null;
         this.connectionTimeout = REQUEST_TIMEOUT_MS;
+        this.connectionTimeoutId = null;
+        this.rejectConnection = null;
     }
 
     connect() {
@@ -23,39 +25,43 @@ class WebSocketApiService {
         }
 
         this.connectionPromise = new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-                if (this.socket) {
-                    this.socket.close();
-                }
-                this.connectionPromise = null;
-                reject(new Error('WebSocket connection timeout'));
+            this.rejectConnection = reject;
+            this.connectionTimeoutId = setTimeout(() => {
+                this.disconnect(new Error('WebSocket connection timeout'));
             }, this.connectionTimeout);
 
-            this.socket = new WebSocket(`${this.baseUrl}/ws/chat`);
+            const socket = new WebSocket(`${this.baseUrl}/ws/chat`);
+            this.socket = socket;
 
-            this.socket.onopen = () => {
+            socket.onopen = () => {
+                if (this.socket !== socket) return;
                 console.log('WebSocket connection established');
                 this.connected = true;
-                clearTimeout(timeoutId);
+                clearTimeout(this.connectionTimeoutId);
+                this.connectionTimeoutId = null;
+                this.rejectConnection = null;
                 resolve();
             };
 
-            this.socket.onmessage = this.handleMessage.bind(this);
-
-            this.socket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                clearTimeout(timeoutId);
-                this.connectionPromise = null;
-                reject(error);
+            socket.onmessage = (event) => {
+                if (this.socket === socket) this.handleMessage(event);
             };
 
-            this.socket.onclose = () => {
+            socket.onerror = (error) => {
+                if (this.socket !== socket) return;
+                console.error('WebSocket error:', error);
+                this.notifyError(error);
+                this.disconnect(error);
+            };
+
+            socket.onclose = () => {
+                if (this.socket !== socket) return;
                 console.log('WebSocket connection closed');
-                this.connected = false;
-                this.connectionPromise = null;
                 // A close during an active exchange means no terminating frame
                 // will ever arrive; let the consumer unblock instead of hanging.
-                this.notifyError(new Error('WebSocket connection closed'));
+                const error = new Error('WebSocket connection closed');
+                this.notifyError(error);
+                this.disconnect(error);
             };
         });
 
@@ -123,6 +129,7 @@ class WebSocketApiService {
     }
 
     registerCallbacks(callbacks) {
+        this.messageCallbacks.clear();
         if (callbacks.onMessage) {
             this.messageCallbacks.set('message', callbacks.onMessage);
         }
@@ -146,16 +153,21 @@ class WebSocketApiService {
         }
     }
 
-    disconnect() {
-        if (this.socket) {
-            // Clear the callbacks first so the deliberate close below does not
-            // fire the error callback via onclose.
-            this.messageCallbacks.clear();
-            this.socket.close();
-            this.connected = false;
-            this.connectionPromise = null;
+    disconnect(reason = new DOMException('WebSocket connection cancelled', 'AbortError')) {
+        this.messageCallbacks.clear();
+        clearTimeout(this.connectionTimeoutId);
+        this.connectionTimeoutId = null;
+        this.rejectConnection?.(reason);
+        this.rejectConnection = null;
+        this.connectionPromise = null;
+        this.connected = false;
+        const socket = this.socket;
+        this.socket = null;
+        if (socket) {
+            socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+            socket.close();
         }
     }
 }
 
-export default new WebSocketApiService(); 
+export default new WebSocketApiService();

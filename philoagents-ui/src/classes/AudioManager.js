@@ -7,6 +7,12 @@ export class AudioManager {
         this.game = game;
         this.currentMusic = null;
         this.musicVolume = 0.5; // Default volume (0 to 1)
+        this.pendingMusic = null;
+        this.game.cache.audio.events.on("add", (_cache, key) => {
+            if (this.pendingMusic?.key === key) {
+                this.playMusic(key, this.pendingMusic.loop);
+            }
+        });
     }
 
     /**
@@ -15,6 +21,11 @@ export class AudioManager {
      * @param {boolean} loop - Whether the music should loop. Defaults to true.
      */
     playMusic(key, loop = true) {
+        if (!this.game.cache.audio.exists(key)) {
+            this.pendingMusic = { key, loop };
+            return;
+        }
+        this.pendingMusic = null;
         // Stop any currently playing music to prevent overlap
         if (this.currentMusic) {
             this.currentMusic.stop();

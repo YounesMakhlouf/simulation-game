@@ -14,14 +14,13 @@ class DialogueManager {
         this.isStreaming = false;
         this.currentMessage = '';
         this.streamingText = '';
+        this.exchangeController = null;
 
         // Cursor properties
         this.cursorBlinkEvent = null;
         this.cursorVisible = true;
 
-        // Connection management
         this.hasSetupListeners = false;
-        this.disconnectTimeout = null;
     }
 
     // === Initialization ===
@@ -31,12 +30,20 @@ class DialogueManager {
 
         if (!this.hasSetupListeners) {
             this.setupKeyboardListeners();
+            this.onSceneClose = () => this.destroy();
+            this.scene.events.once('shutdown', this.onSceneClose);
+            this.scene.events.once('destroy', this.onSceneClose);
             this.hasSetupListeners = true;
         }
     }
 
     setupKeyboardListeners() {
-        this.scene.input.keyboard.on('keydown', async (event) => {
+        this.keyboard = this.scene.input.keyboard;
+        this.keydownListener = (event) => {
+            if (event.key === 'Escape' && this.isInDialogue()) {
+                this.closeDialogue();
+                return;
+            }
             if (!this.isTyping) {
                 if (this.isStreaming && (event.key === 'Space' || event.key === ' ')) {
                     this.skipStreaming();
@@ -45,44 +52,59 @@ class DialogueManager {
             }
 
             this.handleKeyPress(event);
-        });
+        };
+        this.keyboard.on('keydown', this.keydownListener);
     }
 
     // === Input Handling ===
 
     async handleKeyPress(event) {
+        if (event.key === 'Escape') {
+            this.closeDialogue();
+            return;
+        }
+        if (!this.isTyping || this.exchangeController) return;
         if (event.key === 'Enter') {
             await this.handleEnterKey();
-        } else if (event.key === 'Escape') {
-            this.closeDialogue();
         } else if (event.key === 'Backspace') {
             this.currentMessage = this.currentMessage.slice(0, -1);
             this.updateDialogueText();
         } else if (event.key.length === 1) { // Single character keys
-            if (!this.isTyping) {
-                this.currentMessage = '';
-                this.isTyping = true;
-            }
-
             this.currentMessage += event.key;
             this.updateDialogueText();
         }
     }
 
     async handleEnterKey() {
+        if (this.exchangeController || !this.isInDialogue()) return;
         if (this.currentMessage.trim() !== '') {
+            const controller = new AbortController();
+            this.exchangeController = controller;
+            const message = this.currentMessage;
+            this.currentMessage = '';
+            this.isTyping = false;
             this.dialogueBox.setSpeaker(this.activeDelegate.name);
             this.dialogueBox.show('...', true);
             this.stopCursorBlink();
 
-            if (this.activeDelegate.defaultMessage) {
-                await this.handleDefaultMessage();
-            } else {
-                await this.handleWebSocketMessage(this.currentMessage);
+            try {
+                if (this.activeDelegate.defaultMessage) {
+                    await this.handleDefaultMessage(controller.signal);
+                } else {
+                    await this.handleWebSocketMessage(message, controller.signal);
+                }
+            } catch (error) {
+                if (!controller.signal.aborted) {
+                    console.error('Dialogue exchange failed:', error);
+                    this.dialogueBox.show('Conversation could not be completed. Please try again.', true);
+                }
+            } finally {
+                if (this.exchangeController === controller) {
+                    WebSocketApiService.disconnect();
+                    this.exchangeController = null;
+                    this.isStreaming = false;
+                }
             }
-
-            this.currentMessage = '';
-            this.isTyping = false;
         } else if (!this.isTyping) {
             this.restartTypingPrompt();
         }
@@ -90,76 +112,73 @@ class DialogueManager {
 
     // === Message Processing ===
 
-    async handleDefaultMessage() {
+    async handleDefaultMessage(signal) {
         const apiResponse = this.activeDelegate.defaultMessage;
         this.dialogueBox.show('', true);
-        await this.streamText(apiResponse);
+        await this.streamText(apiResponse, signal);
     }
 
-    async handleWebSocketMessage(message) {
+    async handleWebSocketMessage(message, signal) {
         this.dialogueBox.show('', true);
         this.isStreaming = true;
         this.streamingText = '';
 
         try {
-            await this.processWebSocketMessage(message);
+            await this.processWebSocketMessage(message, signal);
         } catch (error) {
+            signal.throwIfAborted();
             console.error('WebSocket error:', error);
-            await this.fallbackToRegularApi(message);
-        } finally {
-            this.isTyping = false;
+            WebSocketApiService.disconnect();
+            await this.fallbackToRegularApi(message, signal);
         }
     }
 
-    async processWebSocketMessage(message) {
+    async processWebSocketMessage(message, signal) {
         await WebSocketApiService.connect();
+        signal.throwIfAborted();
 
-        let streamError = null;
-        let lastActivity = Date.now();
-        const callbacks = {
-            onMessage: () => {
-                this.finishStreaming();
-            }, onChunk: (chunk) => {
-                lastActivity = Date.now();
-                this.streamingText += chunk;
-                this.dialogueBox.show(this.streamingText, true);
-            }, onStreamingStart: () => {
-                lastActivity = Date.now();
-                this.isStreaming = true;
-            }, onStreamingEnd: () => {
-                this.finishStreaming();
-            }, onError: (error) => {
-                streamError = error;
-                this.isStreaming = false;
-            }
-        };
-
-        await WebSocketApiService.sendMessage(this.playerCharacterId, this.activeDelegate.id, message, callbacks);
-
-        // Wait for the stream to finish, but never forever: a dropped
-        // connection or a silent server must not freeze the dialogue.
-        while (this.isStreaming) {
-            if (Date.now() - lastActivity > STREAM_IDLE_TIMEOUT_MS) {
-                streamError = new Error('The response stream timed out.');
-                this.isStreaming = false;
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        if (streamError && !this.streamingText) {
-            // Nothing arrived; let the caller fall back to the REST API.
-            WebSocketApiService.disconnect();
-            throw streamError;
-        }
-        if (streamError) {
-            // Keep the partial reply rather than re-sending the message.
-            console.warn('Stream interrupted, keeping partial response:', streamError);
-            this.dialogueBox.show(this.streamingText, true);
-        }
-
-        this.currentMessage = '';
-        WebSocketApiService.disconnect();
+        await new Promise((resolve, reject) => {
+            let timeout;
+            let finished = false;
+            const onAbort = () => finish(signal.reason);
+            const finish = (error) => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(timeout);
+                signal.removeEventListener('abort', onAbort);
+                if (signal.aborted || (error && !this.streamingText)) {
+                    reject(error);
+                } else {
+                    if (error) console.warn('Stream interrupted, keeping partial response:', error);
+                    this.finishStreaming();
+                    resolve();
+                }
+            };
+            const resetTimeout = () => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => finish(new Error('The response stream timed out.')), STREAM_IDLE_TIMEOUT_MS);
+            };
+            const callbacks = {
+                onMessage: () => finish(),
+                onChunk: (chunk) => {
+                    if (finished || signal.aborted) return;
+                    resetTimeout();
+                    this.streamingText += chunk;
+                    this.dialogueBox.show(this.streamingText, true);
+                },
+                onStreamingStart: () => {
+                    if (finished || signal.aborted) return;
+                    resetTimeout();
+                    this.isStreaming = true;
+                },
+                onStreamingEnd: () => finish(),
+                onError: (error) => finish(error),
+            };
+            signal.addEventListener('abort', onAbort, { once: true });
+            resetTimeout();
+            WebSocketApiService.sendMessage(this.playerCharacterId, this.activeDelegate.id, message, callbacks)
+                .catch(finish);
+        });
     }
 
     finishStreaming() {
@@ -167,9 +186,10 @@ class DialogueManager {
         this.dialogueBox.show(this.streamingText, true);
     }
 
-    async fallbackToRegularApi(message) {
-        const apiResponse = await ApiService.sendMessage(this.playerCharacterId, this.activeDelegate.id, message);
-        await this.streamText(apiResponse);
+    async fallbackToRegularApi(message, signal) {
+        const apiResponse = await ApiService.sendMessage(this.playerCharacterId, this.activeDelegate.id, message, signal);
+        signal.throwIfAborted();
+        await this.streamText(apiResponse, signal);
     }
 
     // === UI Management ===
@@ -218,7 +238,7 @@ class DialogueManager {
     }
 
     startDialogue(playerCharacterId, delegate) {
-        this.cancelDisconnectTimeout();
+        this.closeDialogue();
         this.playerCharacterId = playerCharacterId;
         this.activeDelegate = delegate;
         this.isTyping = true;
@@ -233,13 +253,23 @@ class DialogueManager {
     }
 
     closeDialogue() {
+        this.exchangeController?.abort();
+        this.exchangeController = null;
+        WebSocketApiService.disconnect();
         this.dialogueBox.hide();
         this.isTyping = false;
         this.currentMessage = '';
         this.isStreaming = false;
 
         this.stopCursorBlink();
-        this.scheduleDisconnect();
+    }
+
+    destroy() {
+        this.closeDialogue();
+        this.keyboard?.off('keydown', this.keydownListener);
+        this.scene.events.off('shutdown', this.onSceneClose);
+        this.scene.events.off('destroy', this.onSceneClose);
+        this.hasSetupListeners = false;
     }
 
     isInDialogue() {
@@ -249,6 +279,10 @@ class DialogueManager {
     continueDialogue() {
         if (!this.dialogueBox.isVisible()) return;
 
+        if (this.exchangeController) {
+            if (this.isStreaming) this.skipStreaming();
+            return;
+        }
         if (this.isStreaming) {
             this.skipStreaming();
         } else if (!this.isTyping) {
@@ -261,7 +295,8 @@ class DialogueManager {
 
     // === Text Streaming ===
 
-    async streamText(text, speed = 30) {
+    async streamText(text, signal, speed = 30) {
+        signal.throwIfAborted();
         this.isStreaming = true;
         let displayedText = '';
 
@@ -271,7 +306,18 @@ class DialogueManager {
             displayedText += text[i];
             this.dialogueBox.show(displayedText, true);
 
-            await new Promise(resolve => setTimeout(resolve, speed));
+            await new Promise(resolve => {
+                const onAbort = () => {
+                    clearTimeout(timer);
+                    resolve();
+                };
+                const timer = setTimeout(() => {
+                    signal.removeEventListener('abort', onAbort);
+                    resolve();
+                }, speed);
+                signal.addEventListener('abort', onAbort, { once: true });
+            });
+            signal.throwIfAborted();
 
             if (!this.isStreaming) break;
         }
@@ -287,23 +333,6 @@ class DialogueManager {
     skipStreaming() {
         this.isStreaming = false;
     }
-
-    // === Connection Management ===
-
-    cancelDisconnectTimeout() {
-        if (this.disconnectTimeout) {
-            clearTimeout(this.disconnectTimeout);
-            this.disconnectTimeout = null;
-        }
-    }
-
-    scheduleDisconnect() {
-        this.cancelDisconnectTimeout();
-
-        this.disconnectTimeout = setTimeout(() => {
-            WebSocketApiService.disconnect();
-        }, 5000);
-    }
 }
 
-export default DialogueManager; 
+export default DialogueManager;
