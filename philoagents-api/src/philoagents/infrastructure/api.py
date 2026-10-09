@@ -3,11 +3,20 @@ import json
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from loguru import logger
 from opik.integrations.langchain import OpikTracer
 from pydantic import BaseModel, Field
+from pymongo.errors import PyMongoError
 
 from philoagents.application.conversation_service.generate_response import (
     get_response,
@@ -44,6 +53,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
+@app.exception_handler(PyMongoError)
+async def storage_unavailable(request: Request, error: PyMongoError):
+    logger.error(f"Game storage failed: {error}")
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Game storage is unavailable. Please try again."},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,

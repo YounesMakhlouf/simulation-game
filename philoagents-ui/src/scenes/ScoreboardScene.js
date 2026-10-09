@@ -1,5 +1,6 @@
 import { Scene } from 'phaser';
 import { COLORS } from '../configs/Theme';
+import { escapeHtml } from '../escapeHtml';
 
 export class ScoreboardScene extends Scene {
     constructor() {
@@ -30,7 +31,7 @@ export class ScoreboardScene extends Scene {
             <div class="scoreboard-container">
                 <h1 class="scoreboard-title">Final Scores</h1>
                 <h2 class="scoreboard-subtitle">The Secret Undergame:</h2>
-                <p class="scoreboard-text">${this.scores.actual_undergame}</p>
+                <p class="scoreboard-text">${escapeHtml(this.scores.actual_undergame)}</p>
                 
                 <table class="scoreboard-table">
                     <thead>
@@ -71,10 +72,10 @@ export class ScoreboardScene extends Scene {
             
             return `
                 <tr class="${winnerClass}">
-                    <td>${scoreData.name}</td>
-                    <td>${scoreData.faction_score}</td>
-                    <td>${scoreData.undergame_score}</td>
-                    <td><strong>${scoreData.total_score}</strong></td>
+                    <td>${escapeHtml(scoreData.name)}</td>
+                    <td>${escapeHtml(scoreData.faction_score)}</td>
+                    <td>${escapeHtml(scoreData.undergame_score)}</td>
+                    <td><strong>${escapeHtml(scoreData.total_score)}</strong></td>
                 </tr>
             `;
         }).join('');

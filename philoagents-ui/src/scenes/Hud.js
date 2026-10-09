@@ -107,7 +107,11 @@ export class HUDScene extends Scene {
         const buttonY = this.cameras.main.height - 40;
 
         const { container } = createPresetButton(this, "danger", buttonX, buttonY, "Proceed to Action Phase", () => {
-            this.gameManager.startActionPhase();
+            if (this.gameManager.gamePhase === "ROUND_FAILED") {
+                this.gameManager.retryRound();
+            } else {
+                this.gameManager.startActionPhase();
+            }
         }, { alpha: 0.8 });
 
         this.endDiplomacyButton = container;
@@ -182,6 +186,9 @@ export class HUDScene extends Scene {
 
         const phaseName = newPhase.replace("_", " ").toUpperCase();
         this.phaseText.setText(`Phase: ${phaseName}`);
-        this.endDiplomacyButton.setVisible(newPhase === "DIPLOMACY");
+        this.endDiplomacyButton.getData("label").setText(
+            newPhase === "ROUND_FAILED" ? "Retry Round" : "Proceed to Action Phase"
+        );
+        this.endDiplomacyButton.setVisible(newPhase === "DIPLOMACY" || newPhase === "ROUND_FAILED");
     }
 }

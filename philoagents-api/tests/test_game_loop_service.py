@@ -1,6 +1,9 @@
 import asyncio
+import threading
+from unittest.mock import Mock
 
 import pytest
+from pymongo.errors import ConnectionFailure
 
 from philoagents.application.game_loop_service import service as service_module
 from philoagents.application.game_loop_service.service import GameLoopService
@@ -347,7 +350,8 @@ def test_vp_awards_are_clamped_to_the_per_round_cap():
             VictoryPointAward(
                 character_id="caesar", points_awarded=5, reason="Unknown character"
             ),
-        ]
+        ],
+        service.game_state.characters,
     )
 
     assert service.game_state.characters["hannibal"].victory_points == cap
@@ -579,3 +583,165 @@ def test_reset_clears_player_binding():
     asyncio.run(service.start_game("hannibal"))
     asyncio.run(service.reset())
     assert service.game_state.player_character_id is None
+
+
+def test_failed_round_save_keeps_live_state_and_actions_for_retry(monkeypatch):
+    repository = FakeStateRepository(saved=make_state())
+    service = make_service(repository)
+    stub_round(service)
+
+    async def judge(actions, characters):
+        return (
+            "Resolved crisis",
+            characters,
+            [PrivateIntel(recipient_id="hannibal", report="Secret")],
+            [
+                VictoryPointAward(
+                    character_id="hannibal", points_awarded=3, reason="Win"
+                )
+            ],
+        )
+
+    service._run_judge_turn = judge
+    service.submit_player_action(make_action("hannibal", {"Gold": 4}))
+    initial = service.get_current_state()
+    save = repository.save
+    monkeypatch.setattr(
+        repository, "save", Mock(side_effect=ConnectionFailure("offline"))
+    )
+
+    with pytest.raises(ConnectionFailure):
+        asyncio.run(service.advance_round())
+
+    assert service.get_current_state() == initial
+    assert repository.saved == initial
+    assert "hannibal" in service.submitted_actions
+    assert not service.is_processing_round
+    assert "could not be saved" in service.round_error
+
+    monkeypatch.setattr(repository, "save", save)
+    result = asyncio.run(service.advance_round())
+    assert result.round_number == 2
+    assert result.characters["hannibal"].resources["Gold"] == 6
+    assert result.characters["hannibal"].known_intel == ["Secret"]
+    assert result.characters["hannibal"].victory_points == 3
+    assert repository.saved == result
+    assert service.submitted_actions == {}
+    assert service.round_error is None
+
+
+def test_failed_start_save_does_not_bind_player(monkeypatch):
+    repository = FakeStateRepository()
+    service = make_service(repository)
+
+    def fail(state):
+        raise ConnectionFailure("offline")
+
+    monkeypatch.setattr(repository, "save", fail)
+    with pytest.raises(ConnectionFailure):
+        asyncio.run(service.start_game("hannibal"))
+    assert service.game_state.player_character_id is None
+
+
+def test_failed_reset_keeps_live_progress(monkeypatch):
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    asyncio.run(service.start_game("hannibal"))
+    service.game_state.round_number = 3
+    service.submit_player_action(make_action("hannibal"))
+    initial = service.get_current_state()
+
+    def fail():
+        raise ConnectionFailure("offline")
+
+    monkeypatch.setattr(repository, "clear", fail)
+    with pytest.raises(ConnectionFailure):
+        asyncio.run(service.reset())
+    assert service.get_current_state() == initial
+    assert "hannibal" in service.submitted_actions
+
+
+def test_failed_score_save_does_not_lock_unsaved_guesses(monkeypatch):
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    service.is_game_over = True
+    _stub_scoring(service, monkeypatch)
+
+    def fail(state):
+        raise ConnectionFailure("offline")
+
+    monkeypatch.setattr(repository, "save", fail)
+    with pytest.raises(ConnectionFailure):
+        asyncio.run(service.finalize_scores("hannibal", "my theory"))
+    assert service.game_state.player_undergame_guess is None
+    assert service.game_state.ai_undergame_guesses is None
+
+
+def test_resume_database_error_does_not_start_fresh(monkeypatch):
+    repository = FakeStateRepository(saved=make_state(round_number=3))
+    service = make_service(repository)
+
+    def fail():
+        raise ConnectionFailure("offline")
+
+    monkeypatch.setattr(repository, "load", fail)
+    with pytest.raises(ConnectionFailure):
+        service.try_resume()
+    assert repository.saved.round_number == 3
+    assert repository.save_calls == 0
+
+
+def test_slow_round_save_does_not_publish_partial_progress(monkeypatch):
+    async def scenario():
+        repository = FakeStateRepository()
+        service = make_service(repository)
+        stub_echo_judge(service)
+        service.submit_player_action(make_action("hannibal", {"Gold": 4}))
+        entered, release = threading.Event(), threading.Event()
+        save = repository.save
+
+        def delayed_save(state):
+            entered.set()
+            if not release.wait(5):
+                raise TimeoutError("test save was not released")
+            save(state)
+
+        monkeypatch.setattr(repository, "save", delayed_save)
+        task = asyncio.create_task(service.advance_round())
+        try:
+            assert await asyncio.to_thread(entered.wait, 5)
+            assert service.game_state.round_number == 1
+            assert service.game_state.characters["hannibal"].resources["Gold"] == 10
+            assert "hannibal" in service.submitted_actions
+            assert service.is_processing_round
+        finally:
+            release.set()
+            await task
+        assert service.game_state.round_number == 2
+        assert service.game_state.characters["hannibal"].resources["Gold"] == 6
+
+    asyncio.run(scenario())
+
+
+def test_cancelled_round_exposes_retry_and_preserves_action():
+    async def scenario():
+        service = make_service()
+        service.submit_player_action(make_action("hannibal"))
+        entered = asyncio.Event()
+
+        async def interrupted_ai():
+            entered.set()
+            await asyncio.Event().wait()
+
+        service._run_ai_delegate_turns = interrupted_ai
+        task = asyncio.create_task(service.advance_round())
+        await entered.wait()
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert "interrupted" in service.round_error
+        assert not service.is_processing_round
+        assert service.game_state.round_number == 1
+        assert "hannibal" in service.submitted_actions
+
+    asyncio.run(scenario())

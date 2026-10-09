@@ -45,6 +45,11 @@ export class GameManager {
       this.events.emit("stateUpdated", this.gameState);
       if (this.gameState.is_game_over) {
         this.events.emit("showEndGameModal");
+      } else if (this.gameState.round_error) {
+        this.showRoundFailure(this.gameState);
+      } else if (this.gameState.is_processing_round || this.gameState.has_pending_action) {
+        this.setGamePhase("WAITING_FOR_JUDGE");
+        this.pollForNextRound();
       } else {
         // Show the crisis update to the player
         this.events.emit(
@@ -93,9 +98,45 @@ export class GameManager {
 
       // Start polling for the next round's state update.
       this.pollForNextRound();
+      return true;
     } catch (error) {
       console.error("GameManager: Failed to submit action.", error);
-      this.events.emit("error", "Failed to submit your action.");
+      // A lost response may hide an accepted action; check before allowing a resend.
+      try {
+        const state = await this.api.getGameState(this.playerCharacterId);
+        if (state.is_processing_round || state.has_pending_action || state.is_game_over
+            || state.round_number > this.gameState.round_number) {
+          this.setGamePhase("WAITING_FOR_JUDGE");
+          this.pollForNextRound();
+          return true;
+        }
+      } catch (statusError) {
+        console.error("GameManager: Could not check action status.", statusError);
+      }
+      this.setGamePhase("ACTION");
+      this.events.emit("error", error.message);
+      return false;
+    }
+  }
+
+  showRoundFailure(state) {
+    this.stopPolling();
+    this.gameState = state;
+    this.events.emit("stateUpdated", state);
+    this.setGamePhase("ROUND_FAILED");
+    this.events.emit("error", state.round_error);
+  }
+
+  async retryRound() {
+    this.setGamePhase("WAITING_FOR_JUDGE");
+    try {
+      await this.api.retryRound();
+      this.pollForNextRound();
+    } catch (error) {
+      this.setGamePhase("ROUND_FAILED");
+      this.events.emit("error", error.message);
+      // The retry may have reached the server even if its response was lost.
+      this.pollForNextRound();
     }
   }
 
@@ -141,6 +182,16 @@ export class GameManager {
             this.gameState.round_number
           );
           this.startDiplomacyPhase();
+        } else if (newState.round_error) {
+          this.showRoundFailure(newState);
+        } else if (newState.is_processing_round) {
+          this.setGamePhase("WAITING_FOR_JUDGE");
+        } else if (newState.has_pending_action === false) {
+          this.stopPolling();
+          this.gameState = newState;
+          this.events.emit("stateUpdated", newState);
+          this.events.emit("error", "No action is pending. Please submit your action again.");
+          this.startActionPhase();
         }
       } catch (error) {
         console.error("GameManager: Error polling for new round:", error);

@@ -76,7 +76,9 @@ export class ActionModal extends BaseModal {
         this.events.once('shutdown', () => this.input.keyboard.enableGlobalCapture());
     }
 
-    handleSubmit(form) {
+    async handleSubmit(form) {
+        const submitButton = form.getChildByID('submit-button');
+        if (submitButton.disabled) return;
         const errorMessageElement = form.getChildByID('error-message');
         errorMessageElement.style.visibility = 'hidden';
 
@@ -114,7 +116,18 @@ export class ActionModal extends BaseModal {
             resource_cost: resourceCost
         };
 
-        this.gameManager.submitPlayerAction(finalAction);
-        this.closeModal();
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting action...';
+        const accepted = await this.gameManager.submitPlayerAction(finalAction);
+        if (accepted) {
+            this.closeModal();
+            this.scene.resume('Game');
+            this.scene.resume('HUDScene');
+        } else {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit Final Action';
+            errorMessageElement.textContent = 'Your action was not accepted. Please try again.';
+            errorMessageElement.style.visibility = 'visible';
+        }
     }
 }

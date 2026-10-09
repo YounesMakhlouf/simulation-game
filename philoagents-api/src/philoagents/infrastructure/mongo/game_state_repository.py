@@ -1,7 +1,6 @@
 from loguru import logger
 from pydantic import ValidationError
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
 
 from philoagents.config import settings
 from philoagents.domain.game_state import GameState
@@ -10,8 +9,7 @@ from philoagents.domain.game_state import GameState
 class GameStateRepository:
     """Persists the active game state so a server restart can resume an in-progress game.
 
-    All operations are best-effort: persistence failures are logged but never
-    interrupt the game loop, which keeps running on its in-memory state.
+    Storage errors propagate so callers cannot report unsaved changes as success.
     """
 
     GAME_STATE_DOC_ID = "active_game"
@@ -28,25 +26,15 @@ class GameStateRepository:
         self.collection = self.client[database_name][collection_name]
 
     def save(self, state: GameState) -> None:
-        try:
-            self.collection.replace_one(
-                {"_id": self.GAME_STATE_DOC_ID},
-                {
-                    "_id": self.GAME_STATE_DOC_ID,
-                    "state": state.model_dump(mode="json"),
-                },
-                upsert=True,
-            )
-            logger.debug(f"Persisted game state at round {state.round_number}.")
-        except PyMongoError as e:
-            logger.error(f"Failed to persist game state: {e}")
+        self.collection.replace_one(
+            {"_id": self.GAME_STATE_DOC_ID},
+            {"_id": self.GAME_STATE_DOC_ID, "state": state.model_dump(mode="json")},
+            upsert=True,
+        )
+        logger.debug(f"Persisted game state at round {state.round_number}.")
 
     def load(self) -> GameState | None:
-        try:
-            document = self.collection.find_one({"_id": self.GAME_STATE_DOC_ID})
-        except PyMongoError as e:
-            logger.warning(f"Could not load saved game state: {e}")
-            return None
+        document = self.collection.find_one({"_id": self.GAME_STATE_DOC_ID})
 
         if document is None:
             return None
@@ -54,11 +42,9 @@ class GameStateRepository:
         try:
             return GameState.model_validate(document["state"])
         except (ValidationError, KeyError, TypeError) as e:
-            logger.warning(f"Saved game state is invalid and will be ignored: {e}")
-            return None
+            raise ValueError(
+                "Saved game state is invalid; refusing to overwrite it."
+            ) from e
 
     def clear(self) -> None:
-        try:
-            self.collection.delete_one({"_id": self.GAME_STATE_DOC_ID})
-        except PyMongoError as e:
-            logger.error(f"Failed to clear saved game state: {e}")
+        self.collection.delete_one({"_id": self.GAME_STATE_DOC_ID})

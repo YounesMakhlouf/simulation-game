@@ -1,4 +1,5 @@
 import { COLORS, FONTS } from "../configs/Theme";
+import { escapeHtml } from "../escapeHtml";
 
 class DialogueBox {
     constructor(scene, config = {}) {
@@ -111,7 +112,7 @@ class DialogueBox {
                 overflow-x: hidden;
                 box-sizing: border-box;
                 background: transparent;
-            ">${message.replace(/\n/g, "<br>")}</div>
+            ">${escapeHtml(message)}</div>
         `;
 
         this.domElement = this.scene.add

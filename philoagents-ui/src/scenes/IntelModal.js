@@ -1,5 +1,6 @@
 import { BaseModal } from '../classes/BaseModal';
 import { FONTS } from '../configs/Theme';
+import { escapeHtml } from '../escapeHtml';
 
 export class IntelModal extends BaseModal {
     constructor() {
@@ -35,7 +36,7 @@ export class IntelModal extends BaseModal {
         const reportsHtml = this.intelReports.length === 0
             ? '<p>No intelligence reports available.</p>'
             : this.intelReports
-                .map((report, index) => `<h3 style="margin: 0 0 4px;">Report #${index + 1}</h3><p style="margin: 0 0 16px;">${report}</p>`)
+                .map((report, index) => `<h3 style="margin: 0 0 4px;">Report #${index + 1}</h3><p style="margin: 0 0 16px; white-space: pre-wrap;">${escapeHtml(report)}</p>`)
                 .join('');
 
         this.addScrollableDom(`

@@ -25,7 +25,9 @@ class ApiService {
         }
 
         if (!response.ok) {
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
+            const body = await response.json().catch(() => ({}));
+            throw new Error(typeof body.detail === 'string'
+                ? body.detail : `API error: ${response.status} ${response.statusText}`);
         }
 
         return response.json();
@@ -109,6 +111,10 @@ class ApiService {
         }
     }
 
+    async retryRound() {
+        return this.request('/game/retry', 'POST');
+    }
+
     /**
      * Submits the player's final Undergame guess and retrieves the final scores.
      * @param {string} characterId - The ID of the player's character.
@@ -129,4 +135,4 @@ class ApiService {
 }
 
 
-export default new ApiService(); 
+export default new ApiService();

@@ -1,5 +1,6 @@
 import { BaseModal } from "../classes/BaseModal";
 import { FONTS } from "../configs/Theme";
+import { escapeHtml } from "../escapeHtml";
 
 export class CrisisModal extends BaseModal {
   constructor() {
@@ -29,13 +30,13 @@ export class CrisisModal extends BaseModal {
             width: ${b.width}px;
             line-height: 1.4;
             word-wrap: break-word;
-            white-space: normal;
+            white-space: pre-wrap;
             font-family: ${FONTS.body}, sans-serif;
             text-align: left;
             padding: 10px;
             margin-block-end: 1rem;
         ">
-            ${this.crisisText}
+            ${escapeHtml(this.crisisText)}
         </div>
     `);
 

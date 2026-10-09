@@ -2,6 +2,7 @@ import asyncio
 
 from loguru import logger
 from opik.integrations.langchain import OpikTracer
+from pymongo.errors import PyMongoError
 
 from philoagents.application.game_loop_service.workflow.chains import (
     get_undergame_guess_chain,
@@ -42,12 +43,14 @@ class GameLoopService:
         self.undergame_plot = undergame_plot
         self.undergame_plot_display = undergame_plot_display
         self.factory = factory
+        # shortcut: pending actions live in memory; persist them to resume unfinished turns after server restarts.
         self.submitted_actions: dict[str, Action] = {}
         self.max_rounds = max_rounds
         self.is_game_over = False
         self.state_repository = state_repository
         self._round_lock = asyncio.Lock()
         self.is_processing_round = False
+        self.round_error: str | None = None
 
     def try_resume(self) -> bool:
         """
@@ -78,11 +81,13 @@ class GameLoopService:
         if self.is_processing_round:
             raise RuntimeError("Cannot reset the game while a round is being resolved.")
 
-        self.game_state = self._initial_state.model_copy(deep=True)
-        self.submitted_actions = {}
-        self.is_game_over = False
-        if self.state_repository is not None:
-            await self._persist(self.state_repository.clear)
+        async with self._round_lock:
+            if self.state_repository is not None:
+                await self._persist(self.state_repository.clear)
+            self.game_state = self._initial_state.model_copy(deep=True)
+            self.submitted_actions = {}
+            self.is_game_over = False
+            self.round_error = None
         logger.info("Game state reset to the initial scenario state.")
         return self.get_current_state()
 
@@ -109,20 +114,25 @@ class GameLoopService:
             ValueError: If the character does not exist.
             RuntimeError: If the game is already bound to another character.
         """
-        if character_id not in self.game_state.characters:
-            raise ValueError(f"Character '{character_id}' not found.")
-        bound = self.game_state.player_character_id
-        if bound is not None and bound != character_id:
-            raise RuntimeError(
-                f"A game is already in progress with "
-                f"'{self.game_state.characters[bound].name}'. Reset the game "
-                f"to play a different character."
-            )
-        if bound is None:
-            self.game_state.player_character_id = character_id
-            if self.state_repository is not None:
-                await self._persist(self.state_repository.save, self.game_state)
-            logger.info(f"Player bound to character '{character_id}'.")
+        if self.is_processing_round:
+            raise RuntimeError("Cannot start the game while a round is being resolved.")
+        async with self._round_lock:
+            if character_id not in self.game_state.characters:
+                raise ValueError(f"Character '{character_id}' not found.")
+            bound = self.game_state.player_character_id
+            if bound is not None and bound != character_id:
+                raise RuntimeError(
+                    f"A game is already in progress with "
+                    f"'{self.game_state.characters[bound].name}'. Reset the game "
+                    f"to play a different character."
+                )
+            if bound is None:
+                next_state = self.game_state.model_copy(deep=True)
+                next_state.player_character_id = character_id
+                if self.state_repository is not None:
+                    await self._persist(self.state_repository.save, next_state)
+                self.game_state = next_state
+                logger.info(f"Player bound to character '{character_id}'.")
 
     def _ensure_player_is(self, character_id: str):
         """
@@ -159,25 +169,34 @@ class GameLoopService:
             raise ValueError(f"Character '{player_character_id}' not found.")
         self._ensure_player_is(player_character_id)
 
-        # Lock all guesses on first call; ignore later attempts to change them.
-        if self.game_state.player_undergame_guess is None:
-            self.game_state.player_undergame_guess = undergame_guess
-            self.game_state.ai_undergame_guesses = await self._generate_ai_guesses(
-                player_character_id
-            )
-            if self.state_repository is not None:
-                await self._persist(self.state_repository.save, self.game_state)
+        async with self._round_lock:
+            # Reset may have completed while this request waited for the lock.
+            if not self.is_game_over:
+                raise ValueError(
+                    "The game is not over yet; scores cannot be finalized."
+                )
+            self._ensure_player_is(player_character_id)
+            if self.game_state.player_undergame_guess is None:
+                next_state = self.game_state.model_copy(deep=True)
+                next_state.player_undergame_guess = undergame_guess
+                next_state.ai_undergame_guesses = await self._generate_ai_guesses(
+                    player_character_id
+                )
+                if self.state_repository is not None:
+                    await self._persist(self.state_repository.save, next_state)
+                self.game_state = next_state
+            final_state = self.get_current_state()
 
         undergame_guesses = {
-            player_character_id: self.game_state.player_undergame_guess,
-            **(self.game_state.ai_undergame_guesses or {}),
+            player_character_id: final_state.player_undergame_guess,
+            **(final_state.ai_undergame_guesses or {}),
         }
 
         # Embedding inference (and the first-call model load) is synchronous;
         # run it off the event loop so other requests aren't stalled.
         raw_scores = await asyncio.to_thread(
             ScoringService().calculate_final_scores,
-            characters=list(self.game_state.characters.values()),
+            characters=list(final_state.characters.values()),
             undergame_guesses=undergame_guesses,
             actual_undergame=self.undergame_plot,
         )
@@ -225,6 +244,8 @@ class GameLoopService:
             raise ValueError(
                 "The current round is being resolved. Please wait for the next round."
             )
+        if self._round_lock.locked():
+            raise ValueError("Game state is being saved. Please try again.")
         if action.character_id not in self.game_state.characters:
             raise ValueError(
                 f"Character with ID '{action.character_id}' does not exist."
@@ -295,7 +316,11 @@ class GameLoopService:
                 character.resources[resource] = remaining
         return characters
 
-    def _deliver_private_intel(self, private_reports: list[PrivateIntel] | None):
+    def _deliver_private_intel(
+        self,
+        private_reports: list[PrivateIntel] | None,
+        characters: dict[str, Character],
+    ):
         """
         Appends new intelligence reports to the appropriate characters' state.
         """
@@ -307,20 +332,22 @@ class GameLoopService:
         )
         for report in private_reports:
             recipient_id = report.recipient_id
-            if recipient_id in self.game_state.characters:
-                self.game_state.characters[recipient_id].known_intel.append(
-                    report.report
-                )
+            if recipient_id in characters:
+                characters[recipient_id].known_intel.append(report.report)
             else:
                 logger.warning(
                     f"Could not deliver intel to non-existent character ID: {recipient_id}"
                 )
 
-    def _apply_victory_points(self, vp_awards: list[VictoryPointAward] | None):
+    def _apply_victory_points(
+        self,
+        vp_awards: list[VictoryPointAward] | None,
+        characters: dict[str, Character],
+    ):
         if not vp_awards:
             return
         for award in vp_awards:
-            if award.character_id not in self.game_state.characters:
+            if award.character_id not in characters:
                 logger.warning(
                     f"Ignoring VP award for unknown character '{award.character_id}'."
                 )
@@ -331,7 +358,7 @@ class GameLoopService:
                     f"Judge awarded {award.points_awarded} VP to "
                     f"'{award.character_id}'; clamped to {points}."
                 )
-            self.game_state.characters[award.character_id].victory_points += points
+            characters[award.character_id].victory_points += points
             logger.info(
                 f"Awarded {points} VP to {award.character_id} for: {award.reason}"
             )
@@ -471,9 +498,20 @@ class GameLoopService:
 
         async with self._round_lock:
             self.is_processing_round = True
+            self.round_error = None
             try:
                 return await self._advance_round()
-            except Exception:
+            except asyncio.CancelledError:
+                self.round_error = (
+                    "The round was interrupted. Retry your submitted action."
+                )
+                raise
+            except Exception as error:
+                self.round_error = (
+                    "The round could not be saved. Retry when storage is available."
+                    if isinstance(error, PyMongoError)
+                    else "The round could not be completed. Retry your submitted action."
+                )
                 logger.exception(
                     f"Failed to resolve round {self.game_state.round_number}."
                 )
@@ -501,19 +539,21 @@ class GameLoopService:
             victory_point_awards,
         ) = await self._run_judge_turn(all_actions_for_round, settled_characters)
 
-        # 3. Update the master game state for the new round.
-        self.game_state.round_number += 1
-        self.game_state.crisis_update = new_crisis_update
-        self.game_state.characters = updated_characters
-        self.game_state.last_round_actions = all_actions_for_round
-        self._deliver_private_intel(private_reports)
-        self._apply_victory_points(victory_point_awards)
-
-        # 4. Reset submitted actions for the next round
-        self.submitted_actions = {}
-
+        # Publish the entire round only after its save succeeds.
+        next_state = self.game_state.model_copy(
+            update={
+                "round_number": self.game_state.round_number + 1,
+                "crisis_update": new_crisis_update,
+                "characters": updated_characters,
+                "last_round_actions": all_actions_for_round,
+            }
+        ).model_copy(deep=True)
+        self._deliver_private_intel(private_reports, next_state.characters)
+        self._apply_victory_points(victory_point_awards, next_state.characters)
         if self.state_repository is not None:
-            await self._persist(self.state_repository.save, self.game_state)
+            await self._persist(self.state_repository.save, next_state)
+        self.game_state = next_state
+        self.submitted_actions = {}
 
         logger.info(f"--- Round {self.game_state.round_number} has begun! ---")
         if self.game_state.round_number > self.max_rounds:

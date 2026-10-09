@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from loguru import logger
 from pydantic import BaseModel
 
 from philoagents.application.game_loop_service.service import GameLoopService
@@ -25,6 +26,8 @@ class GameStatusResponse(BaseModel):
     known_intel: list[str]
     is_game_over: bool
     is_processing_round: bool = False
+    has_pending_action: bool = False
+    round_error: str | None = None
 
 
 class CharacterProfile(BaseModel):
@@ -140,6 +143,8 @@ async def get_game_status(
         known_intel=player_char.known_intel,
         is_game_over=service.is_game_over,
         is_processing_round=service.is_processing_round,
+        has_pending_action=character_id in service.submitted_actions,
+        round_error=service.round_error,
     )
 
 
@@ -188,24 +193,42 @@ async def submit_action(
         # Submit the human player's action first
         service.submit_player_action(action)
     except ValueError as e:
-        # If the action was already accepted but no round is being processed,
-        # a previous resolution attempt failed. Re-trigger it instead of
-        # dead-ending the player; the round lock makes this safe.
-        if (
-            action.character_id in service.submitted_actions
-            and not service.is_processing_round
-        ):
-            background_tasks.add_task(service.advance_round)
-            return {"message": "Action already received. Retrying round resolution."}
         raise HTTPException(status_code=400, detail=str(e))
 
     # Trigger the rest of the round to process in the background.
     # This makes the API return instantly, providing a better user experience.
-    background_tasks.add_task(service.advance_round)
+    service.is_processing_round = True
+    background_tasks.add_task(_resolve_round, service)
 
     return {
         "message": "Action received. The round is now being processed by all delegates."
     }
+
+
+async def _resolve_round(service: GameLoopService):
+    try:
+        await service.advance_round()
+    except Exception:
+        logger.exception(
+            "Background round failed; the client can retry the submitted action."
+        )
+
+
+@router.post("/retry", status_code=202)
+async def retry_round(
+    background_tasks: BackgroundTasks,
+    service: Annotated[GameLoopService, Depends(get_game_service)],
+):
+    if service.is_processing_round or service._round_lock.locked():
+        raise HTTPException(status_code=409, detail="The game is being updated.")
+    if service.is_game_over or not service.submitted_actions:
+        raise HTTPException(
+            status_code=409, detail="There is no pending round to retry."
+        )
+    service.round_error = None
+    service.is_processing_round = True
+    background_tasks.add_task(_resolve_round, service)
+    return {"message": "Retrying the submitted round."}
 
 
 @router.post("/reset")

@@ -10,6 +10,7 @@ vi.mock("../src/services/ApiService", () => ({
   default: {
     getGameState: vi.fn(),
     submitAction: vi.fn(),
+    retryRound: vi.fn(),
   },
 }));
 
@@ -31,6 +32,8 @@ const state = (round, over = false) => ({
 beforeEach(() => {
   vi.useFakeTimers();
   ApiService.getGameState.mockReset();
+  ApiService.submitAction.mockReset();
+  ApiService.retryRound.mockReset();
 });
 
 afterEach(() => {
@@ -38,6 +41,25 @@ afterEach(() => {
 });
 
 describe("pollForNextRound", () => {
+  it("stops on a reported round failure and offers a retry", async () => {
+    const manager = makeManager();
+    const error = vi.fn();
+    manager.events.on("error", error);
+    ApiService.getGameState.mockResolvedValue({ ...state(1), round_error: "Retry this round." });
+
+    manager.pollForNextRound();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+
+    expect(manager.gamePhase).toBe("ROUND_FAILED");
+    expect(manager._pollTimer).toBeNull();
+    expect(error).toHaveBeenCalledWith("Retry this round.");
+    ApiService.retryRound.mockResolvedValue({});
+    await manager.retryRound();
+    expect(ApiService.retryRound).toHaveBeenCalledOnce();
+    expect(manager.gamePhase).toBe("WAITING_FOR_JUDGE");
+    expect(manager._pollTimer).not.toBeNull();
+  });
+
   it("keeps polling while the round is unchanged, then advances", async () => {
     const manager = makeManager(1);
     const crisis = vi.fn();
@@ -138,15 +160,91 @@ describe("destroy", () => {
 });
 
 describe("submitPlayerAction", () => {
-  it("emits an error and does not poll when submission fails", async () => {
+  it("restores the action phase when the server rejects the submission", async () => {
     const manager = makeManager(1);
     const error = vi.fn();
     manager.events.on("error", error);
     ApiService.submitAction.mockRejectedValue(new Error("400"));
+    ApiService.getGameState.mockResolvedValue(state(1));
 
-    await manager.submitPlayerAction({ character_id: "hannibal" });
+    const accepted = await manager.submitPlayerAction({ character_id: "hannibal" });
 
-    expect(error).toHaveBeenCalledWith("Failed to submit your action.");
+    expect(error).toHaveBeenCalledWith("400");
+    expect(accepted).toBe(false);
+    expect(manager.gamePhase).toBe("ACTION");
     expect(manager._pollTimer).toBeNull();
   });
+
+  it("polls an accepted action when its HTTP response was lost", async () => {
+    const manager = makeManager();
+    const error = vi.fn();
+    manager.events.on("error", error);
+    ApiService.submitAction.mockRejectedValue(new Error("timeout"));
+    ApiService.getGameState.mockResolvedValue({ ...state(1), is_processing_round: true, has_pending_action: true });
+
+    expect(await manager.submitPlayerAction({ character_id: "hannibal" })).toBe(true);
+    expect(manager.gamePhase).toBe("WAITING_FOR_JUDGE");
+    expect(manager._pollTimer).not.toBeNull();
+    expect(error).not.toHaveBeenCalled();
+  });
+});
+
+describe("resume", () => {
+  it("resumes polling when a round is processing", async () => {
+    const manager = makeManager();
+    const crisis = vi.fn();
+    manager.events.on("showCrisisUpdate", crisis);
+    ApiService.getGameState.mockResolvedValue({ ...state(1), is_processing_round: true });
+
+    await manager.startGame();
+
+    expect(manager.gamePhase).toBe("WAITING_FOR_JUDGE");
+    expect(manager._pollTimer).not.toBeNull();
+    expect(crisis).not.toHaveBeenCalled();
+  });
+
+  it("offers a retry after reloading a failed round", async () => {
+    const manager = makeManager();
+    manager.events.on("error", () => {});
+    ApiService.getGameState.mockResolvedValue({ ...state(1), round_error: "Round failed", has_pending_action: true });
+    await manager.startGame();
+    expect(manager.gamePhase).toBe("ROUND_FAILED");
+    expect(manager._pollTimer).toBeNull();
+  });
+});
+
+it("keeps the retry available if the retry request fails", async () => {
+  const manager = makeManager();
+  manager.events.on("error", () => {});
+  ApiService.retryRound.mockRejectedValue(new Error("offline"));
+  await manager.retryRound();
+  expect(manager.gamePhase).toBe("ROUND_FAILED");
+  expect(manager._pollTimer).not.toBeNull();
+});
+
+it("recovers a retry whose response was lost", async () => {
+  const manager = makeManager();
+  manager.events.on("error", () => {});
+  ApiService.retryRound.mockRejectedValue(new Error("timeout"));
+  ApiService.getGameState.mockResolvedValue({ ...state(1), is_processing_round: true });
+  await manager.retryRound();
+  await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+  expect(manager.gamePhase).toBe("WAITING_FOR_JUDGE");
+  ApiService.getGameState.mockResolvedValue(state(2));
+  await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+  expect(manager.gamePhase).toBe("DIPLOMACY");
+  expect(manager._pollTimer).toBeNull();
+});
+
+it("reopens action submission if a server restart discarded the pending action", async () => {
+  const manager = makeManager();
+  manager.events.on("error", () => {});
+  const actionModal = vi.fn();
+  manager.events.on("showActionModal", actionModal);
+  ApiService.getGameState.mockResolvedValue({ ...state(1), is_processing_round: false, has_pending_action: false });
+  manager.pollForNextRound();
+  await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+  expect(manager.gamePhase).toBe("ACTION");
+  expect(actionModal).toHaveBeenCalledOnce();
+  expect(manager._pollTimer).toBeNull();
 });
