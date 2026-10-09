@@ -127,6 +127,7 @@ class DialogueManager {
             await this.processWebSocketMessage(message, signal);
         } catch (error) {
             signal.throwIfAborted();
+            if (this.streamingText) throw error;
             console.error('WebSocket error:', error);
             WebSocketApiService.disconnect();
             await this.fallbackToRegularApi(message, signal);
@@ -146,10 +147,9 @@ class DialogueManager {
                 finished = true;
                 clearTimeout(timeout);
                 signal.removeEventListener('abort', onAbort);
-                if (signal.aborted || (error && !this.streamingText)) {
+                if (signal.aborted || error) {
                     reject(error);
                 } else {
-                    if (error) console.warn('Stream interrupted, keeping partial response:', error);
                     this.finishStreaming();
                     resolve();
                 }

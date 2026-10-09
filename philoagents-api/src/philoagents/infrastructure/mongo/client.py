@@ -65,7 +65,7 @@ class MongoClientWrapper[T: BaseModel]:
         self.database = self.client[database_name]
         self.collection = self.database[collection_name]
         logger.info(
-            f"Connected to MongoDB instance:\n URI: {mongodb_uri}\n Database: {database_name}\n Collection: {collection_name}"
+            f"Connected to MongoDB instance:\n Database: {database_name}\n Collection: {collection_name}"
         )
 
     def __enter__(self) -> Self:

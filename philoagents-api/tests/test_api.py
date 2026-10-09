@@ -4,7 +4,10 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.language_models.fake_chat_models import FakeListChatModel
+from langchain_core.runnables import RunnableLambda
 from pymongo.errors import ConnectionFailure
+from starlette.websockets import WebSocketDisconnect
 from test_game_loop_service import (
     FakeStateRepository,
     make_action,
@@ -14,7 +17,10 @@ from test_game_loop_service import (
     stub_round,
 )
 
-from philoagents.application.conversation_service import negotiation
+from philoagents.application.conversation_service import generate_response, negotiation
+from philoagents.application.conversation_service.workflow import (
+    nodes as conversation_nodes,
+)
 from philoagents.application.game_loop_service import api as game_api
 from philoagents.application.game_loop_service import service as game_service_module
 from philoagents.application.game_loop_service.workflow import nodes as action_nodes
@@ -60,7 +66,9 @@ def test_dependency_injection_and_chat(monkeypatch):
         )
         assert response.status_code == 200
         assert response.json() == {"response": "Hello"}
-        with client.websocket_connect("/ws/chat") as websocket:
+        with client.websocket_connect(
+            "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+        ) as websocket:
             websocket.send_bytes(b"not a text frame")
             assert "Only text" in websocket.receive_json()["error"]
             websocket.send_text("invalid JSON")
@@ -75,6 +83,40 @@ def game_client(monkeypatch):
     )
     with TestClient(api.app) as client:
         yield client, service
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [None, "null", "https://untrusted.example", "https://allowed.example.evil"],
+)
+def test_websocket_rejects_untrusted_origins_before_chat(
+    game_client, monkeypatch, origin
+):
+    client, service = game_client
+    monkeypatch.setattr(api.settings, "CORS_ALLOW_ORIGINS", ["https://allowed.example"])
+    stream = Mock()
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    initial = service.get_current_state()
+    with (
+        pytest.raises(WebSocketDisconnect) as closed,
+        client.websocket_connect(
+            "/ws/chat", headers={"origin": origin} if origin is not None else {}
+        ),
+    ):
+        pytest.fail("Untrusted connection was accepted")
+    assert closed.value.code == 1008
+    stream.assert_not_called()
+    assert service.get_current_state() == initial
+
+
+def test_websocket_accepts_configured_origin(game_client, monkeypatch):
+    client, _ = game_client
+    monkeypatch.setattr(api.settings, "CORS_ALLOW_ORIGINS", ["https://allowed.example"])
+    with client.websocket_connect(
+        "/ws/chat", headers={"origin": "https://allowed.example"}
+    ) as websocket:
+        websocket.send_text("invalid JSON")
+        assert "valid JSON" in websocket.receive_json()["error"]
 
 
 @pytest.mark.parametrize("invalid", ["too_long", "wrong_type", "missing_id", "array"])
@@ -101,7 +143,9 @@ def test_chat_validation_is_shared_and_rejected_turns_do_not_reach_models(
     monkeypatch.setattr(api, "get_response", respond)
     monkeypatch.setattr(api, "get_streaming_response", stream)
     assert client.post("/chat", json=payload).status_code == 422
-    with client.websocket_connect("/ws/chat") as websocket:
+    with client.websocket_connect(
+        "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+    ) as websocket:
         websocket.send_json(payload)
         assert "error" in websocket.receive_json()
         respond.assert_not_awaited()
@@ -136,7 +180,9 @@ def test_chat_accepts_text_at_the_configured_limit(game_client, monkeypatch, str
     monkeypatch.setattr(api, "get_response", respond)
     monkeypatch.setattr(api, "get_streaming_response", stream)
     if streaming:
-        with client.websocket_connect("/ws/chat") as websocket:
+        with client.websocket_connect(
+            "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+        ) as websocket:
             websocket.send_json(payload)
             assert websocket.receive_json() == {"streaming": True}
             assert websocket.receive_json() == {"chunk": "Hello"}
@@ -204,7 +250,9 @@ def test_chat_uses_new_game_id_after_reset_on_existing_socket(game_client, monke
     monkeypatch.setattr(api, "get_streaming_response", stream)
     payload = {"message": "Hi", "sender_id": "scipio", "receiver_id": "hannibal"}
     original_id = service.game_state.game_id
-    with client.websocket_connect("/ws/chat") as websocket:
+    with client.websocket_connect(
+        "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+    ) as websocket:
         for _ in range(2):
             assert client.post("/chat", json=payload).status_code == 200
             websocket.send_json(payload)
@@ -333,7 +381,9 @@ def test_negotiations_use_live_state_and_reach_only_participants_actions(
         "receiver_id": "hannibal",
     }
     if streaming:
-        with client.websocket_connect("/ws/chat") as websocket:
+        with client.websocket_connect(
+            "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+        ) as websocket:
             websocket.send_json(payload)
             assert websocket.receive_json() == {"streaming": True}
             assert websocket.receive_json() == {"chunk": "I accept your truce."}
@@ -408,7 +458,9 @@ def test_failed_negotiation_is_reported_without_publishing_unsaved_memory(
         )
     payload = {"message": "Agree?", "sender_id": "scipio", "receiver_id": "hannibal"}
     if streaming:
-        with client.websocket_connect("/ws/chat") as websocket:
+        with client.websocket_connect(
+            "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+        ) as websocket:
             websocket.send_json(payload)
             assert websocket.receive_json() == {"streaming": True}
             assert websocket.receive_json() == {"chunk": "I agree."}
@@ -448,3 +500,83 @@ def test_invalid_or_late_negotiation_never_calls_the_model(
     )
     assert response.status_code == 400
     respond.assert_not_awaited()
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+@pytest.mark.parametrize("failure", ["summary", "save"])
+def test_failed_chat_is_absent_from_next_turn_history(
+    game_client, monkeypatch, negotiation_chain, streaming, failure
+):
+    client, service = game_client
+    client.post("/game/start", json={"character_id": "scipio"})
+    seen = []
+
+    def capture(inputs):
+        seen.append([message.text for message in inputs["messages"]])
+        return inputs["messages"]
+
+    chain = RunnableLambda(capture) | FakeListChatModel(responses=["Reply"])
+    monkeypatch.setattr(
+        conversation_nodes, "get_character_response_chain", lambda: chain
+    )
+    monkeypatch.setattr(
+        generate_response, "OpikTracer", lambda **kwargs: BaseCallbackHandler()
+    )
+    mongo = Mock(
+        side_effect=AssertionError("Game chat must not write Mongo checkpoints")
+    )
+    monkeypatch.setattr(generate_response.MongoDBSaver, "from_conn_string", mongo)
+
+    def exchange(message, succeeds=True):
+        payload = {"message": message, "sender_id": "scipio", "receiver_id": "hannibal"}
+        if streaming:
+            with client.websocket_connect(
+                "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+            ) as websocket:
+                websocket.send_json(payload)
+                assert websocket.receive_json() == {"streaming": True}
+                while True:
+                    frame = websocket.receive_json()
+                    if "chunk" in frame:
+                        continue
+                    assert ("error" not in frame) == succeeds
+                    break
+        else:
+            response = client.post("/chat", json=payload)
+            assert (response.status_code == 200) == succeeds
+
+    exchange("Accepted offer")
+    accepted = service.get_current_state()
+    assert accepted.conversation_histories
+    original_save = service.state_repository.save
+    if failure == "summary":
+        negotiation_chain.ainvoke.side_effect = RuntimeError("Summary failed")
+    else:
+        monkeypatch.setattr(
+            service.state_repository,
+            "save",
+            Mock(side_effect=ConnectionFailure("Save failed")),
+        )
+    exchange("Rejected offer", succeeds=False)
+    assert service.get_current_state() == accepted
+    assert service.state_repository.saved == accepted
+
+    negotiation_chain.ainvoke.side_effect = None
+    monkeypatch.setattr(service.state_repository, "save", original_save)
+    resumed = make_service(service.state_repository)
+    assert resumed.try_resume()
+    service.game_state = resumed.game_state
+    exchange("Next offer")
+    assert seen[-1] == ["Accepted offer", "Reply", "Next offer"]
+    mongo.assert_not_called()
+
+    monkeypatch.setattr(
+        api, "reset_conversation_state", AsyncMock(return_value={"status": "success"})
+    )
+    assert client.post("/reset-memory").status_code == 200
+    assert service.state_repository.saved.conversation_histories == {}
+    exchange("After memory reset")
+    assert seen[-1] == ["After memory reset"]
+    assert client.post("/game/reset").status_code == 200
+    exchange("New playthrough")
+    assert seen[-1] == ["New playthrough"]

@@ -41,7 +41,17 @@ class GameStateRepository:
 
         try:
             return GameState.model_validate(document["state"])
-        except (ValidationError, KeyError, TypeError) as e:
+        except ValidationError as e:
+            if any(error["type"] == "missing" for error in e.errors()):
+                self.clear()
+                logger.warning(
+                    "Deleted obsolete saved game with missing required fields."
+                )
+                return None
+            raise ValueError(
+                "Saved game state is invalid; refusing to overwrite it."
+            ) from e
+        except (KeyError, TypeError) as e:
             raise ValueError(
                 "Saved game state is invalid; refusing to overwrite it."
             ) from e

@@ -103,6 +103,7 @@ async def chat(
                 sender_id=chat_message.sender_id,
                 receiver_character=state.characters[chat_message.receiver_id],
                 game_id=state.game_id,
+                conversation_histories=state.conversation_histories,
                 crisis_update=f"Round {state.round_number}: {state.crisis_update}",
                 negotiation_summaries=state.negotiation_summaries.get(
                     chat_message.receiver_id, {}
@@ -137,6 +138,9 @@ async def websocket_chat(
     websocket: WebSocket,
     service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
+    if websocket.headers.get("origin") not in settings.CORS_ALLOW_ORIGINS:
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
 
     try:
@@ -186,6 +190,7 @@ async def websocket_chat(
                         sender_id=chat_message.sender_id,
                         receiver_character=state.characters[chat_message.receiver_id],
                         game_id=state.game_id,
+                        conversation_histories=state.conversation_histories,
                         crisis_update=f"Round {state.round_number}: {state.crisis_update}",
                         negotiation_summaries=state.negotiation_summaries.get(
                             chat_message.receiver_id, {}
@@ -229,8 +234,10 @@ async def websocket_chat(
 
 
 @app.post("/reset-memory")
-async def reset_conversation():
-    """Resets the conversation state. It deletes the two collections needed for keeping LangGraph state in MongoDB.
+async def reset_conversation(
+    service: Annotated[GameLoopService, Depends(get_game_service)],
+):
+    """Clears accepted game history and standalone LangGraph conversation collections.
 
     Raises:
         HTTPException: If there is an error resetting the conversation state.
@@ -239,6 +246,7 @@ async def reset_conversation():
     """
     try:
         result = await reset_conversation_state()
+        await service.reset_conversation_history()
         return result
     except Exception as e:
         logger.exception("Conversation reset failed.")

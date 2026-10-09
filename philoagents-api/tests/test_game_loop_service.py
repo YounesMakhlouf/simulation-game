@@ -53,6 +53,7 @@ def make_state(round_number: int = 1) -> GameState:
         round_number=round_number,
         crisis_update="Initial crisis",
         negotiation_summaries={},
+        conversation_histories={},
         characters={
             "hannibal": make_character("hannibal"),
             "scipio": make_character("scipio"),
@@ -80,6 +81,22 @@ def make_action(character_id: str, resource_cost: dict | None = None) -> Action:
         action_details="March on the enemy camp.",
         resource_cost=resource_cost or {},
     )
+
+
+def test_failed_memory_reset_preserves_accepted_history(monkeypatch):
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    service.game_state.conversation_histories = {
+        "thread": {"messages": [], "summary": "Accepted agreement"}
+    }
+    repository.save(service.game_state)
+    initial = service.get_current_state()
+    monkeypatch.setattr(
+        repository, "save", Mock(side_effect=ConnectionFailure("offline"))
+    )
+    with pytest.raises(ConnectionFailure):
+        asyncio.run(service.reset_conversation_history())
+    assert service.game_state == repository.saved == initial
 
 
 # --- submit_player_action guards ---

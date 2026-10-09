@@ -3,7 +3,7 @@ services:
     image: mongodb/mongodb-atlas-local:8.0.32
     hostname: local_dev_atlas
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     environment:
       - MONGODB_INITDB_ROOT_USERNAME=philoagents
       - MONGODB_INITDB_ROOT_PASSWORD=philoagents
@@ -20,7 +20,7 @@ services:
     environment:
       - MONGO_URI=mongodb://philoagents:philoagents@local_dev_atlas:27017/?directConnection=true
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file:
       - ./philoagents-api/.env
     networks:

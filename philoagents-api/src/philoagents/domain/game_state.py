@@ -25,6 +25,9 @@ class GameState(BaseModel):
     negotiation_summaries: dict[str, dict[str, str]] = Field(
         description="Private negotiation summaries keyed by participant, then counterparty."
     )
+    conversation_histories: dict[str, dict] = Field(
+        description="Accepted conversation messages and summaries, keyed by thread ID."
+    )
     player_character_id: str | None = Field(
         default=None,
         description=(

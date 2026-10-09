@@ -174,20 +174,30 @@ it("cancels a default reply's animation timer when dialogue closes", async () =>
     expect(WebSocketApiService.connect).not.toHaveBeenCalled();
 });
 
-it("falls back after a silent stream but retains a partial reply after interruption", async () => {
+it("falls back after a silent stream", async () => {
     const pending = manager.handleEnterKey();
     await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS + 1000);
     await pending;
     expect(ApiService.sendMessage).toHaveBeenCalledTimes(1);
     expect(box.show).toHaveBeenLastCalledWith("Hello", true);
+});
 
-    manager.continueDialogue();
-    manager.currentMessage = "Next";
-    const next = manager.handleEnterKey();
+it.each(["server error", "timeout"])("marks a streamed reply incomplete after %s without resending", async (failure) => {
+    const pending = manager.handleEnterKey();
     await vi.advanceTimersByTimeAsync(0);
-    exchanges[1].onChunk("Partial reply");
-    exchanges[1].onError(new Error("Interrupted"));
-    await next;
-    expect(ApiService.sendMessage).toHaveBeenCalledTimes(1);
-    expect(box.show).toHaveBeenLastCalledWith("Partial reply", true);
+    exchanges[0].onChunk("I agree to your offer.");
+    if (failure === "server error") {
+        exchanges[0].onError(new Error("Conversation could not be saved."));
+    } else {
+        await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS);
+    }
+    await pending;
+    expect(ApiService.sendMessage).not.toHaveBeenCalled();
+    expect(box.show).toHaveBeenLastCalledWith("Conversation could not be completed. Please try again.", true);
+    expect(manager.isStreaming).toBe(false);
+    expect(manager.exchangeController).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+    const updates = box.show.mock.calls.length;
+    exchanges[0].onStreamingEnd();
+    expect(box.show).toHaveBeenCalledTimes(updates);
 });

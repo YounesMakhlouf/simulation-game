@@ -1,9 +1,16 @@
 import uuid
 from collections.abc import AsyncGenerator, Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Any
 
-from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
+from langchain_core.messages import (
+    AIMessage,
+    AIMessageChunk,
+    HumanMessage,
+    messages_from_dict,
+    messages_to_dict,
+)
+from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.mongodb.saver import MongoDBSaver
 from opik.integrations.langchain import OpikTracer
 
@@ -43,19 +50,23 @@ def __compiled_graph(
     game_id: str | None,
     crisis_update: str,
     negotiation_summaries: dict[str, str],
+    conversation_histories: dict[str, dict] | None,
 ) -> Generator[tuple[Any, dict, dict], None, None]:
     """
-    Shared setup for a conversation turn: opens the MongoDB checkpointer and
-    yields the compiled graph, run config, and initial state. The graph is only
-    valid inside the `with` block (the checkpointer connection closes on exit).
+    Game conversations use an isolated checkpointer and accepted history.
+    Standalone conversations use MongoDB. The graph is valid inside this block.
     """
     graph_builder = create_workflow_graph()
 
-    with MongoDBSaver.from_conn_string(
-        conn_string=settings.MONGO_URI,
-        db_name=settings.MONGO_DB_NAME,
-        checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
-        writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
+    with (
+        nullcontext(InMemorySaver())
+        if conversation_histories is not None
+        else MongoDBSaver.from_conn_string(
+            conn_string=settings.MONGO_URI,
+            db_name=settings.MONGO_DB_NAME,
+            checkpoint_collection_name=settings.MONGO_STATE_CHECKPOINT_COLLECTION,
+            writes_collection_name=settings.MONGO_STATE_WRITES_COLLECTION,
+        )
     ) as checkpointer:
         graph = graph_builder.compile(checkpointer=checkpointer)
         opik_tracer = OpikTracer(
@@ -82,7 +93,22 @@ def __compiled_graph(
             "crisis_update": crisis_update,
             "negotiation_summaries": negotiation_summaries,
         }
+        if conversation_histories is not None:
+            history = conversation_histories.get(thread_id, {})
+            initial_state["messages"] = (
+                messages_from_dict(history.get("messages", []))
+                + initial_state["messages"]
+            )
+            initial_state["summary"] = history.get("summary")
         yield graph, config, initial_state
+
+
+def _stage_history(histories: dict[str, dict] | None, config: dict, state: dict):
+    if histories is not None:
+        histories[config["configurable"]["thread_id"]] = {
+            "messages": messages_to_dict(state["messages"]),
+            "summary": state.get("summary"),
+        }
 
 
 async def get_response(
@@ -93,6 +119,7 @@ async def get_response(
     negotiation_summaries: dict[str, str],
     new_thread: bool = False,
     game_id: str | None = None,
+    conversation_histories: dict[str, dict] | None = None,
 ) -> tuple[str, ConversationState]:
     """
     Runs a single turn of a conversation through the graph for a non-streaming response.
@@ -106,6 +133,7 @@ async def get_response(
         crisis_update: The current public crisis, or standalone conversation context.
         negotiation_summaries: Only the receiver's private negotiations.
         game_id: Persisted playthrough ID; omitted for standalone CLI/evaluation chats.
+        conversation_histories: Staged game history, saved with the negotiation.
 
     Returns:
         A tuple containing the string content of the final response and the
@@ -120,6 +148,7 @@ async def get_response(
             game_id,
             crisis_update,
             negotiation_summaries,
+            conversation_histories,
         ) as (
             graph,
             config,
@@ -129,6 +158,7 @@ async def get_response(
                 input=initial_state,
                 config=config,
             )
+            _stage_history(conversation_histories, config, output_state)
         last_message = output_state["messages"][-1]
         return last_message.text, ConversationState(**output_state)
     except Exception as e:
@@ -143,6 +173,7 @@ async def get_streaming_response(
     negotiation_summaries: dict[str, str],
     new_thread: bool = False,
     game_id: str | None = None,
+    conversation_histories: dict[str, dict] | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Runs a conversation through the graph with a streaming response.
@@ -155,6 +186,7 @@ async def get_streaming_response(
         crisis_update: The current public crisis, or standalone conversation context.
         negotiation_summaries: Only the receiver's private negotiations.
         game_id: Persisted playthrough ID; omitted for standalone CLI/evaluation chats.
+        conversation_histories: Staged game history, saved with the negotiation.
 
     Yields:
         Chunks of the response content as they become available.
@@ -168,6 +200,7 @@ async def get_streaming_response(
             game_id,
             crisis_update,
             negotiation_summaries,
+            conversation_histories,
         ) as (
             graph,
             config,
@@ -182,6 +215,9 @@ async def get_streaming_response(
                     chunk[0], AIMessageChunk
                 ):
                     yield chunk[0].text
+            if conversation_histories is not None:
+                output_state = await graph.aget_state(config)
+                _stage_history(conversation_histories, config, output_state.values)
 
     except Exception as e:
         raise RuntimeError(

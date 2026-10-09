@@ -79,4 +79,5 @@ class ScenarioLoader:
             crisis_update=self.initial_state_data["crisis_update"],
             characters=initial_characters,
             negotiation_summaries={},
+            conversation_histories={},
         )

@@ -101,6 +101,16 @@ class GameLoopService:
         """Returns a copy of the current game state."""
         return self.game_state.model_copy(deep=True)
 
+    async def reset_conversation_history(self):
+        if self.is_processing_round:
+            raise RuntimeError("Cannot reset memory while a round is being resolved.")
+        async with self._round_lock:
+            next_state = self.get_current_state()
+            next_state.conversation_histories = {}
+            if self.state_repository is not None:
+                await self._persist(self.state_repository.save, next_state)
+            self.game_state = next_state
+
     @asynccontextmanager
     async def negotiation_turn(
         self, sender_id: str, receiver_id: str
@@ -510,6 +520,7 @@ class GameLoopService:
                 "last_round_actions": True,
                 "player_undergame_guess": True,
                 "ai_undergame_guesses": True,
+                "conversation_histories": True,
                 "characters": {"__all__": {"known_intel"}},
             }
         )
