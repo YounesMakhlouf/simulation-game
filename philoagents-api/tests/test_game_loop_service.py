@@ -1,6 +1,7 @@
 import asyncio
 import threading
 from unittest.mock import Mock
+from uuid import uuid4
 
 import pytest
 from pymongo.errors import ConnectionFailure
@@ -47,6 +48,7 @@ def make_character(character_id: str, victory_points: int = 0) -> Character:
 
 def make_state(round_number: int = 1) -> GameState:
     return GameState(
+        game_id=str(uuid4()),
         round_number=round_number,
         crisis_update="Initial crisis",
         characters={
@@ -423,6 +425,7 @@ def test_try_resume_restores_saved_state():
 
     assert service.try_resume() is True
     assert service.game_state.round_number == 3
+    assert service.game_state.game_id == saved.game_id
     assert service.is_game_over is False
 
 
@@ -435,16 +438,33 @@ def test_try_resume_marks_finished_game_as_over():
 
 
 def test_try_resume_without_saved_game():
-    assert make_service(FakeStateRepository()).try_resume() is False
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    assert service.try_resume() is False
+    resumed = make_service(repository)
+    assert resumed.try_resume() is True
+    assert resumed.game_state.game_id == service.game_state.game_id
 
 
 def test_try_resume_without_repository():
     assert make_service().try_resume() is False
 
 
-def test_reset_restores_initial_state_and_clears_persistence():
+def test_fresh_game_cannot_start_if_its_id_cannot_be_persisted(monkeypatch):
     repository = FakeStateRepository()
     service = make_service(repository)
+    monkeypatch.setattr(
+        repository, "save", Mock(side_effect=ConnectionFailure("offline"))
+    )
+    with pytest.raises(ConnectionFailure):
+        service.try_resume()
+    assert repository.saved is None
+
+
+def test_reset_restores_initial_state_and_persists_new_playthrough():
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    original_game_id = service.game_state.game_id
     service.game_state.round_number = 3
     service.game_state.crisis_update = "Late-game crisis"
     service.submitted_actions["hannibal"] = make_action("hannibal")
@@ -456,7 +476,15 @@ def test_reset_restores_initial_state_and_clears_persistence():
     assert state.crisis_update == "Initial crisis"
     assert service.submitted_actions == {}
     assert service.is_game_over is False
-    assert repository.clear_calls == 1
+    assert state.game_id != original_game_id
+    assert repository.saved == state
+
+    resumed = make_service(repository)
+    assert resumed.try_resume() is True
+    assert resumed.game_state.game_id == state.game_id
+    next_game = asyncio.run(service.reset())
+    assert next_game.game_id not in {original_game_id, state.game_id}
+    assert repository.saved == next_game
 
 
 def test_reset_rejected_while_round_is_processing():
@@ -587,7 +615,7 @@ def test_reset_clears_player_binding():
 
 def test_failed_round_save_keeps_live_state_and_actions_for_retry(monkeypatch):
     repository = FakeStateRepository(saved=make_state())
-    service = make_service(repository)
+    service = make_service(repository, state=repository.saved.model_copy(deep=True))
     stub_round(service)
 
     async def judge(actions, characters):
@@ -651,10 +679,10 @@ def test_failed_reset_keeps_live_progress(monkeypatch):
     service.submit_player_action(make_action("hannibal"))
     initial = service.get_current_state()
 
-    def fail():
+    def fail(state):
         raise ConnectionFailure("offline")
 
-    monkeypatch.setattr(repository, "clear", fail)
+    monkeypatch.setattr(repository, "save", fail)
     with pytest.raises(ConnectionFailure):
         asyncio.run(service.reset())
     assert service.get_current_state() == initial

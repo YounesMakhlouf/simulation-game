@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 from pymongo.errors import ConnectionFailure
+from test_game_loop_service import make_state
 
 from philoagents.application.conversation_service import reset_conversation
 from philoagents.infrastructure.mongo.game_state_repository import GameStateRepository
@@ -22,8 +23,6 @@ def test_invalid_saved_state_is_not_treated_as_an_absent_save(document):
     [("save", "replace_one"), ("load", "find_one"), ("clear", "delete_one")],
 )
 def test_storage_errors_reach_callers(method, operation):
-    from test_game_loop_service import make_state
-
     repository = GameStateRepository.__new__(GameStateRepository)
     repository.collection = Mock()
     error = ConnectionFailure("database unavailable")
@@ -47,3 +46,30 @@ def test_reset_preserves_database_error_cause(monkeypatch):
     with pytest.raises(RuntimeError, match="Failed to reset") as raised:
         reset_conversation._reset_conversation_state()
     assert raised.value.__cause__ is error
+
+
+def test_game_id_survives_reloads():
+    state = make_state(round_number=3)
+    document = {"state": state.model_dump(mode="json")}
+    repository = GameStateRepository.__new__(GameStateRepository)
+    repository.collection = Mock()
+    repository.collection.find_one.side_effect = lambda query: document
+
+    loaded = repository.load()
+    reloaded = repository.load()
+    assert loaded.game_id == reloaded.game_id == document["state"]["game_id"]
+    assert loaded.round_number == state.round_number
+    assert loaded.characters == state.characters
+    repository.collection.replace_one.assert_not_called()
+    assert loaded.game_id == state.game_id
+
+
+def test_save_without_game_id_is_rejected_without_migration():
+    repository = GameStateRepository.__new__(GameStateRepository)
+    repository.collection = Mock()
+    repository.collection.find_one.return_value = {
+        "state": make_state().model_dump(mode="json", exclude={"game_id"})
+    }
+    with pytest.raises(ValueError, match="refusing to overwrite"):
+        repository.load()
+    repository.collection.replace_one.assert_not_called()

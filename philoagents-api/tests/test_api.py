@@ -22,6 +22,7 @@ def test_dependency_injection_and_chat(monkeypatch):
 
     async def respond(**kwargs):
         assert kwargs["receiver_character"].id == "hannibal"
+        assert kwargs["game_id"] == service.game_state.game_id
         return "Hello", None
 
     monkeypatch.setattr(api, "get_response", respond)
@@ -57,6 +58,39 @@ def game_client(monkeypatch):
     )
     with TestClient(api.app) as client:
         yield client, service
+
+
+def test_chat_uses_new_game_id_after_reset_on_existing_socket(game_client, monkeypatch):
+    client, service = game_client
+    factory = CharacterFactory([make_character("hannibal").model_dump()])
+    monkeypatch.setitem(
+        api.app.dependency_overrides, api.get_character_factory, lambda: factory
+    )
+    rest_ids, streaming_ids = [], []
+
+    async def respond(**kwargs):
+        rest_ids.append(kwargs["game_id"])
+        return "Hello", None
+
+    async def stream(**kwargs):
+        streaming_ids.append(kwargs["game_id"])
+        yield "Hello"
+
+    monkeypatch.setattr(api, "get_response", respond)
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    payload = {"message": "Hi", "sender_id": "player", "receiver_id": "hannibal"}
+    original_id = service.game_state.game_id
+    with client.websocket_connect("/ws/chat") as websocket:
+        for _ in range(2):
+            assert client.post("/chat", json=payload).status_code == 200
+            websocket.send_json(payload)
+            assert websocket.receive_json() == {"streaming": True}
+            assert websocket.receive_json() == {"chunk": "Hello"}
+            assert websocket.receive_json() == {"response": "Hello", "streaming": False}
+            if len(rest_ids) == 1:
+                assert client.post("/game/reset").status_code == 200
+    assert original_id != service.game_state.game_id
+    assert rest_ids == streaming_ids == [original_id, service.game_state.game_id]
 
 
 def test_failed_round_is_reported_and_retries_original_action(game_client):

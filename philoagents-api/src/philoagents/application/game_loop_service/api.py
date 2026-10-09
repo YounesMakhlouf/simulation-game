@@ -234,7 +234,7 @@ async def retry_round(
 @router.post("/reset")
 async def reset_game(service: Annotated[GameLoopService, Depends(get_game_service)]):
     """
-    Resets the game to the initial scenario state and clears any persisted progress.
+    Replaces saved progress with a new playthrough of the initial scenario.
     """
     try:
         await service.reset()

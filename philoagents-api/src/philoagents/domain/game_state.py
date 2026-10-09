@@ -9,6 +9,10 @@ class GameState(BaseModel):
     This is the central object that gets saved to and loaded from the database.
     """
 
+    game_id: str = Field(
+        min_length=1,
+        description="The unique playthrough ID used to isolate conversation history.",
+    )
     round_number: int = Field(
         default=1, description="The current round number of the simulation."
     )
@@ -22,8 +26,7 @@ class GameState(BaseModel):
         default=None,
         description=(
             "The character the human player controls, bound when the game "
-            "starts. None until a character is chosen (or for saves predating "
-            "this field)."
+            "starts. None until a character is chosen."
         ),
     )
     last_round_actions: list[Action] | None = Field(default=None, description="...")

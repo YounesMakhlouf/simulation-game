@@ -1,4 +1,5 @@
 import asyncio
+from uuid import uuid4
 
 from loguru import logger
 from opik.integrations.langchain import OpikTracer
@@ -54,7 +55,7 @@ class GameLoopService:
 
     def try_resume(self) -> bool:
         """
-        Restores the last persisted game state, if any.
+        Restores the saved game, or persists a fresh game before it is used.
 
         Returns:
             True when a saved game was loaded, False when starting fresh.
@@ -64,6 +65,7 @@ class GameLoopService:
 
         saved_state = self.state_repository.load()
         if saved_state is None:
+            self.state_repository.save(self.game_state)
             return False
 
         self.game_state = saved_state
@@ -76,15 +78,17 @@ class GameLoopService:
 
     async def reset(self) -> GameState:
         """
-        Resets the game to the initial scenario state and clears any persisted progress.
+        Persists a new playthrough of the initial scenario before switching to it.
         """
         if self.is_processing_round:
             raise RuntimeError("Cannot reset the game while a round is being resolved.")
 
         async with self._round_lock:
+            next_state = self._initial_state.model_copy(deep=True)
+            next_state.game_id = str(uuid4())
             if self.state_repository is not None:
-                await self._persist(self.state_repository.clear)
-            self.game_state = self._initial_state.model_copy(deep=True)
+                await self._persist(self.state_repository.save, next_state)
+            self.game_state = next_state
             self.submitted_actions = {}
             self.is_game_over = False
             self.round_error = None
@@ -137,7 +141,7 @@ class GameLoopService:
     def _ensure_player_is(self, character_id: str):
         """
         Raises ValueError when the game is bound to a different character.
-        Unbound games (saves predating the binding) accept any character.
+        Games awaiting character selection accept any character.
         """
         bound = self.game_state.player_character_id
         if bound is not None and character_id != bound:
@@ -463,6 +467,7 @@ class GameLoopService:
         # so past reports are excluded too.
         current_state_json_str = state_for_judge.model_dump_json(
             exclude={
+                "game_id": True,
                 "last_round_actions": True,
                 "player_undergame_guess": True,
                 "ai_undergame_guesses": True,

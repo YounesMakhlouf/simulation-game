@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from uuid import uuid4
 
 from loguru import logger
 
@@ -73,6 +74,7 @@ class ScenarioLoader:
         initial_characters = {char.id: char for char in factory.get_all_characters()}
 
         return GameState(
+            game_id=str(uuid4()),
             round_number=self.initial_state_data["round_number"],
             crisis_update=self.initial_state_data["crisis_update"],
             characters=initial_characters,

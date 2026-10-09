@@ -12,5 +12,9 @@
         "notebook.source.fixAll": true,
         "notebook.source.organizeImports": true
     },
-    "python.defaultInterpreterPath": "philoagents-api/.venv/bin/python"
+    "python.defaultInterpreterPath": "philoagents-api/.venv/bin/python",
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportDeprecated": "warning"
+    }
 }

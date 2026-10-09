@@ -1,7 +1,7 @@
 import asyncio
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
@@ -84,3 +84,64 @@ def test_state_description_uses_text():
     description = state_to_str({"messages": [AIMessage(content=BLOCKS)]})
     assert "Ai: Hello world" in description
     assert "private reasoning" not in description
+
+
+def test_conversation_history_is_shared_within_a_game_and_isolated_between_games(
+    monkeypatch,
+):
+    histories = {}
+
+    async def invoke(input, config):
+        history = histories.setdefault(config["configurable"]["thread_id"], [])
+        response = history[0].text if history else "Fresh conversation"
+        history.extend(input["messages"])
+        history.append(AIMessage(content=response))
+        return {**input, "messages": list(history)}
+
+    async def stream(input, config, stream_mode):
+        result = await invoke(input, config)
+        yield (
+            AIMessageChunk(content=result["messages"][-1].text),
+            {"langgraph_node": "conversation_node"},
+        )
+
+    graph = SimpleNamespace(ainvoke=invoke, astream=stream, get_graph=Mock())
+    builder = Mock()
+    builder.compile.return_value = graph
+    monkeypatch.setattr(generate_response, "create_workflow_graph", lambda: builder)
+    monkeypatch.setattr(generate_response, "OpikTracer", Mock())
+    monkeypatch.setattr(
+        generate_response.MongoDBSaver,
+        "from_conn_string",
+        lambda **kwargs: nullcontext(Mock()),
+    )
+    hannibal, scipio = make_character("hannibal"), make_character("scipio")
+
+    async def scenario():
+        response, _ = await generate_response.get_response(
+            "Old negotiation", hannibal.id, scipio, game_id="first-game"
+        )
+        assert response == "Fresh conversation"
+        for game_id, expected in [
+            ("first-game", "Old negotiation"),
+            ("second-game", "Fresh conversation"),
+        ]:
+            chunks = [
+                chunk
+                async for chunk in generate_response.get_streaming_response(
+                    "Continue", scipio.id, hannibal, game_id=game_id
+                )
+            ]
+            assert "".join(chunks) == expected
+        for _ in range(2):
+            response, _ = await generate_response.get_response(
+                "Independent conversation",
+                hannibal.id,
+                scipio,
+                new_thread=True,
+                game_id="first-game",
+            )
+            assert response == "Fresh conversation"
+        assert len(histories) == 4
+
+    asyncio.run(scenario())

@@ -26,6 +26,7 @@ from philoagents.application.conversation_service.reset_conversation import (
     reset_conversation_state,
 )
 from philoagents.application.game_loop_service.api import router as game_loop_router
+from philoagents.application.game_loop_service.service import GameLoopService
 from philoagents.config import settings
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure.dependencies import (
@@ -89,6 +90,7 @@ class ChatMessage(BaseModel):
 async def chat(
     chat_message: ChatMessage,
     factory: Annotated[CharacterFactory, Depends(get_character_factory)],
+    service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     try:
         receiver_character = factory.get_character(chat_message.receiver_id)
@@ -96,6 +98,7 @@ async def chat(
             messages=chat_message.message,
             sender_id=chat_message.sender_id,
             receiver_character=receiver_character,
+            game_id=service.game_state.game_id,
         )
         return {"response": response}
 
@@ -111,6 +114,7 @@ async def chat(
 async def websocket_chat(
     websocket: WebSocket,
     character_factory: Annotated[CharacterFactory, Depends(get_character_factory)],
+    service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     await websocket.accept()
 
@@ -180,6 +184,7 @@ async def websocket_chat(
                     messages=data["message"],
                     sender_id=data["sender_id"],
                     receiver_character=receiver_character,
+                    game_id=service.game_state.game_id,
                 )
 
                 # Send initial message to indicate streaming has started

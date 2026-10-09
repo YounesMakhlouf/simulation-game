@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import AsyncGenerator, Iterator
+from collections.abc import AsyncGenerator, Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -18,7 +18,7 @@ from philoagents.domain import Character
 
 
 def __get_conversation_thread_id(
-    sender_id: str, receiver_id: str, new_thread: bool
+    sender_id: str, receiver_id: str, new_thread: bool, game_id: str | None
 ) -> str:
     """
     Generates a unique and consistent thread ID for a conversation between two characters.
@@ -26,6 +26,8 @@ def __get_conversation_thread_id(
     """
     sorted_ids = sorted([sender_id, receiver_id])
     base_thread_id = f"conv-{sorted_ids[0]}-{sorted_ids[1]}"
+    if game_id is not None:
+        base_thread_id = f"{game_id}-{base_thread_id}"
 
     if new_thread:
         return f"{base_thread_id}-{uuid.uuid4()}"
@@ -38,7 +40,8 @@ def __compiled_graph(
     sender_id: str,
     receiver_character: Character,
     new_thread: bool,
-) -> Iterator[tuple[Any, dict, dict]]:
+    game_id: str | None,
+) -> Generator[tuple[Any, dict, dict], None, None]:
     """
     Shared setup for a conversation turn: opens the MongoDB checkpointer and
     yields the compiled graph, run config, and initial state. The graph is only
@@ -57,7 +60,7 @@ def __compiled_graph(
             graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
         )
         thread_id = __get_conversation_thread_id(
-            sender_id, receiver_character.id, new_thread
+            sender_id, receiver_character.id, new_thread, game_id
         )
         config = {
             "configurable": {"thread_id": thread_id},
@@ -78,6 +81,7 @@ async def get_response(
     sender_id: str,
     receiver_character: Character,
     new_thread: bool = False,
+    game_id: str | None = None,
 ) -> tuple[str, ConversationState]:
     """
     Runs a single turn of a conversation through the graph for a non-streaming response.
@@ -88,13 +92,16 @@ async def get_response(
         receiver_character: The fully instantiated Character object that is receiving
                             the message and will generate the response.
         new_thread: If True, creates a new, unique conversation thread.
+        game_id: Persisted playthrough ID; omitted for standalone CLI/evaluation chats.
 
     Returns:
         A tuple containing the string content of the final response and the
         final state of the conversation.
     """
     try:
-        with __compiled_graph(messages, sender_id, receiver_character, new_thread) as (
+        with __compiled_graph(
+            messages, sender_id, receiver_character, new_thread, game_id
+        ) as (
             graph,
             config,
             initial_state,
@@ -114,6 +121,7 @@ async def get_streaming_response(
     sender_id: str,
     receiver_character: Character,
     new_thread: bool = False,
+    game_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Runs a conversation through the graph with a streaming response.
@@ -123,12 +131,15 @@ async def get_streaming_response(
         sender_id: The ID of the character sending the message.
         receiver_character: The Character object that will generate the response.
         new_thread: If True, creates a new, unique conversation thread.
+        game_id: Persisted playthrough ID; omitted for standalone CLI/evaluation chats.
 
     Yields:
         Chunks of the response content as they become available.
     """
     try:
-        with __compiled_graph(messages, sender_id, receiver_character, new_thread) as (
+        with __compiled_graph(
+            messages, sender_id, receiver_character, new_thread, game_id
+        ) as (
             graph,
             config,
             initial_state,
