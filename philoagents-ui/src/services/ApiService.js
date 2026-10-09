@@ -5,13 +5,13 @@ class ApiService {
         this.apiUrl = getApiBaseUrl();
     }
 
-    async request(endpoint, method, data) {
+    async request(endpoint, method, data, timeoutMs = REQUEST_TIMEOUT_MS) {
         const url = `${this.apiUrl}${endpoint}`;
         const options = {
             method, headers: {
                 'Content-Type': 'application/json',
             }, body: data ? JSON.stringify(data) : undefined,
-            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+            signal: AbortSignal.timeout(timeoutMs),
         };
 
         let response;
@@ -19,7 +19,7 @@ class ApiService {
             response = await fetch(url, options);
         } catch (error) {
             if (error.name === 'TimeoutError') {
-                throw new Error(`Request to ${endpoint} timed out after ${REQUEST_TIMEOUT_MS}ms`);
+                throw new Error(`Request to ${endpoint} timed out after ${timeoutMs}ms`);
             }
             throw error;
         }
@@ -62,7 +62,7 @@ class ApiService {
     /**
      * Fetches the current session: which character (if any) the saved game
      * is bound to.
-     * @returns {Promise<object>} { player_character_id, player_character_name }
+     * @returns {Promise<object>} { player_character_id, player_character_name, scoring_timeout_ms }
      */
     async getSession() {
         return this.request('/game/session', 'GET');
@@ -123,10 +123,14 @@ class ApiService {
      */
     async submitGuessAndGetScores(characterId, guess) {
         try {
+            const { scoring_timeout_ms: timeoutMs } = await this.getSession();
+            if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
+                throw new Error('Server returned an invalid scoring timeout.');
+            }
             return await this.request('/game/end', 'POST', {
                 player_character_id: characterId,
                 undergame_guess: guess,
-            });
+            }, timeoutMs);
         } catch (error) {
             console.error('Error submitting final guess:', error);
             throw error;

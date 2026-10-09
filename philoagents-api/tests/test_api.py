@@ -15,6 +15,7 @@ from test_game_loop_service import (
 )
 
 from philoagents.application.conversation_service import negotiation
+from philoagents.application.game_loop_service import api as game_api
 from philoagents.application.game_loop_service import service as game_service_module
 from philoagents.application.game_loop_service.workflow import nodes as action_nodes
 from philoagents.domain.character_factory import CharacterFactory
@@ -74,6 +75,117 @@ def game_client(monkeypatch):
     )
     with TestClient(api.app) as client:
         yield client, service
+
+
+@pytest.mark.parametrize("invalid", ["too_long", "wrong_type", "missing_id", "array"])
+def test_chat_validation_is_shared_and_rejected_turns_do_not_reach_models(
+    game_client, monkeypatch, negotiation_chain, invalid
+):
+    client, service = game_client
+    payload = {"message": "Hi", "sender_id": "scipio", "receiver_id": "hannibal"}
+    if invalid == "too_long":
+        payload["message"] = "x" * (api.settings.MAX_CHAT_MESSAGE_CHARS + 1)
+    elif invalid == "wrong_type":
+        payload["message"] = 123
+    elif invalid == "missing_id":
+        del payload["receiver_id"]
+    else:
+        payload = []
+    respond = AsyncMock(return_value=("Hello", None))
+    streaming_messages = []
+
+    async def stream(**kwargs):
+        streaming_messages.append(kwargs["messages"])
+        yield "Hello"
+
+    monkeypatch.setattr(api, "get_response", respond)
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    assert client.post("/chat", json=payload).status_code == 422
+    with client.websocket_connect("/ws/chat") as websocket:
+        websocket.send_json(payload)
+        assert "error" in websocket.receive_json()
+        respond.assert_not_awaited()
+        assert streaming_messages == []
+        negotiation_chain.ainvoke.assert_not_awaited()
+        assert service.state_repository.save_calls == 0
+
+        websocket.send_json(
+            {"message": "Hi", "sender_id": "scipio", "receiver_id": "hannibal"}
+        )
+        assert websocket.receive_json() == {"streaming": True}
+        assert websocket.receive_json() == {"chunk": "Hello"}
+        assert websocket.receive_json() == {"response": "Hello", "streaming": False}
+    assert streaming_messages == ["Hi"]
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+def test_chat_accepts_text_at_the_configured_limit(game_client, monkeypatch, streaming):
+    client, _service = game_client
+    text = "x" * api.settings.MAX_CHAT_MESSAGE_CHARS
+    payload = {"message": text, "sender_id": "scipio", "receiver_id": "hannibal"}
+    received = []
+
+    async def respond(**kwargs):
+        received.append(kwargs["messages"])
+        return "Hello", None
+
+    async def stream(**kwargs):
+        received.append(kwargs["messages"])
+        yield "Hello"
+
+    monkeypatch.setattr(api, "get_response", respond)
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    if streaming:
+        with client.websocket_connect("/ws/chat") as websocket:
+            websocket.send_json(payload)
+            assert websocket.receive_json() == {"streaming": True}
+            assert websocket.receive_json() == {"chunk": "Hello"}
+            assert websocket.receive_json()["response"] == "Hello"
+    else:
+        assert client.post("/chat", json=payload).status_code == 200
+    assert received == [text]
+
+
+@pytest.mark.parametrize("endpoint", ["/game/action", "/game/end"])
+@pytest.mark.parametrize("extra_chars", [0, 1])
+def test_player_text_limits_are_checked_before_actions_or_scoring(
+    game_client, monkeypatch, endpoint, extra_chars
+):
+    client, service = game_client
+    text = "x" * (api.settings.MAX_CHAT_MESSAGE_CHARS + extra_chars)
+    advance = AsyncMock()
+    monkeypatch.setattr(service, "advance_round", advance)
+    if endpoint == "/game/action":
+        field = "action_details"
+        payload = make_action("hannibal").model_dump(mode="json")
+        handler = Mock()
+        monkeypatch.setattr(service, "submit_player_action", handler)
+        success_status = 202
+    else:
+        field = "undergame_guess"
+        payload = {"player_character_id": "hannibal"}
+        handler = AsyncMock(return_value=({}, "The secret plot."))
+        monkeypatch.setattr(service, "finalize_scores", handler)
+        success_status = 200
+    payload[field] = text
+
+    response = client.post(endpoint, json=payload)
+    if extra_chars:
+        assert response.status_code == 422
+        error = response.json()["detail"][0]
+        assert error["loc"] == ["body", field]
+        assert error["type"] == "string_too_long"
+        handler.assert_not_called()
+        advance.assert_not_awaited()
+        assert not service.is_processing_round
+        assert service.state_repository.save_calls == 0
+    else:
+        assert response.status_code == success_status
+        handler.assert_called_once()
+        if endpoint == "/game/action":
+            assert handler.call_args.args[0].action_details == text
+        else:
+            assert handler.call_args.kwargs["undergame_guess"] == text
 
 
 def test_chat_uses_new_game_id_after_reset_on_existing_socket(game_client, monkeypatch):
@@ -137,6 +249,17 @@ def test_retry_rejects_processing_round(game_client):
     service.submitted_actions["hannibal"] = make_action("hannibal")
     service.is_processing_round = True
     assert client.post("/game/retry").status_code == 409
+
+
+@pytest.mark.parametrize("ai_timeout", [30, 120, 240])
+def test_session_exposes_configured_scoring_timeout(
+    game_client, monkeypatch, ai_timeout
+):
+    client, _service = game_client
+    monkeypatch.setattr(game_api.settings, "AI_ACTION_TIMEOUT_SECONDS", ai_timeout)
+    response = client.get("/game/session")
+    assert response.status_code == 200
+    assert response.json()["scoring_timeout_ms"] == (ai_timeout + 30) * 1000
 
 
 def test_failed_game_write_returns_503_and_keeps_state(game_client, monkeypatch):

@@ -2,9 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from philoagents.application.game_loop_service.service import GameLoopService
+from philoagents.config import settings
 from philoagents.domain import Action, Character, CharacterFactory
 from philoagents.infrastructure.dependencies import (
     get_character_factory,
@@ -46,7 +47,14 @@ class CharacterListResponse(BaseModel):
 
 class EndGameRequest(BaseModel):
     player_character_id: str
-    undergame_guess: str
+    undergame_guess: str = Field(max_length=settings.MAX_CHAT_MESSAGE_CHARS)
+
+
+class ActionRequest(Action):
+    action_details: str = Field(
+        max_length=settings.MAX_CHAT_MESSAGE_CHARS,
+        description="A clear, specific description of the action being taken.",
+    )
 
 
 class SessionResponse(BaseModel):
@@ -54,6 +62,7 @@ class SessionResponse(BaseModel):
 
     player_character_id: str | None
     player_character_name: str | None
+    scoring_timeout_ms: int = Field(gt=0)
 
 
 class StartGameRequest(BaseModel):
@@ -86,6 +95,8 @@ async def get_session(service: Annotated[GameLoopService, Depends(get_game_servi
     return SessionResponse(
         player_character_id=player_id,
         player_character_name=state.characters[player_id].name if player_id else None,
+        # Allow saving and embedding inference after the AI guess deadline.
+        scoring_timeout_ms=(settings.AI_ACTION_TIMEOUT_SECONDS + 30) * 1000,
     )
 
 
@@ -181,7 +192,7 @@ async def get_all_characters(
 
 @router.post("/action", status_code=202)
 async def submit_action(
-    action: Action,
+    action: ActionRequest,
     background_tasks: BackgroundTasks,
     service: Annotated[GameLoopService, Depends(get_game_service)],
 ):

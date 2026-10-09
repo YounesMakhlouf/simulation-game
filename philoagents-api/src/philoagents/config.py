@@ -72,7 +72,7 @@ class Settings(BaseSettings):
     )
     MAX_CHAT_MESSAGE_CHARS: int = Field(
         default=4_000,
-        description="Maximum length of a chat message's text content.",
+        description="Maximum length of player chat, action and final-guess text.",
     )
 
     @field_validator("CORS_ALLOW_ORIGINS")

@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
@@ -8,6 +8,7 @@ from pymongo.errors import ConnectionFailure
 
 from philoagents.application.game_loop_service import service as service_module
 from philoagents.application.game_loop_service.service import GameLoopService
+from philoagents.application.game_loop_service.workflow import nodes as action_nodes
 from philoagents.domain import Action, Character
 from philoagents.domain.action import ActionType
 from philoagents.domain.game_state import GameState
@@ -361,7 +362,67 @@ def test_vp_awards_are_clamped_to_the_per_round_cap():
     assert service.game_state.characters["scipio"].victory_points == 0
 
 
+@pytest.mark.parametrize(
+    ("awards", "expected_points"),
+    [([20, 20], 20), ([12, 15], 20), ([20, -10, 20], 20), ([-10, 8, 7], 15)],
+)
+def test_vp_cap_counts_all_awards_per_character_and_resets_each_round(
+    monkeypatch, awards, expected_points
+):
+    monkeypatch.setattr(service_module.settings, "MAX_VP_AWARD_PER_ROUND", 20)
+    service = make_service()
+    characters = service.game_state.characters
+    characters["hannibal"].victory_points = 7
+    characters["scipio"].victory_points = 11
+    vp_awards = [
+        VictoryPointAward(character_id="hannibal", points_awarded=points, reason="Move")
+        for points in awards
+    ]
+    vp_awards.insert(
+        1, VictoryPointAward(character_id="scipio", points_awarded=13, reason="Move")
+    )
+    vp_awards.append(
+        VictoryPointAward(character_id="scipio", points_awarded=9, reason="Move")
+    )
+
+    service._apply_victory_points(vp_awards, characters)
+
+    assert characters["hannibal"].victory_points == 7 + expected_points
+    assert characters["scipio"].victory_points == 11 + 20
+
+    service._apply_victory_points(
+        [VictoryPointAward(character_id="hannibal", points_awarded=20, reason="Next")],
+        characters,
+    )
+    assert characters["hannibal"].victory_points == 7 + expected_points + 20
+
+
 # --- AI delegate timeout and fallback ---
+
+
+@pytest.mark.parametrize("generated_id", ["hannibal", "HANNIBAL", "HaNnIbAl", "scipio"])
+def test_ai_action_uses_originating_id_and_pays_costs(monkeypatch, generated_id):
+    service = make_service()
+    chain = Mock(ainvoke=AsyncMock(return_value=make_action(generated_id, {"Gold": 4})))
+    monkeypatch.setattr(action_nodes, "get_character_action_chain", lambda: chain)
+
+    result = asyncio.run(
+        action_nodes.action_decision_node(
+            {
+                "character": service.game_state.characters["hannibal"],
+                "crisis_update": "Initial crisis",
+                "other_players_dossier": "Scipio is present.",
+                "negotiation_summaries": {},
+            }
+        )
+    )
+    action = result["action"]
+    assert action.character_id == "hannibal"
+
+    settled = service._charge_action_costs([action])
+    assert settled["hannibal"].resources["Gold"] == 6
+    assert settled["scipio"].resources["Gold"] == 10
+    assert service.game_state.characters["hannibal"].resources["Gold"] == 10
 
 
 class FakeGraphBuilder:
@@ -599,6 +660,108 @@ def test_finalize_scores_is_single_shot_ignoring_later_guesses(monkeypatch):
     assert service.game_state.player_undergame_guess == "first guess"
     assert repository.save_calls == 1
     assert first == second
+
+
+def test_overlapping_finalizations_publish_one_complete_guess_set(monkeypatch):
+    async def scenario():
+        repository = FakeStateRepository()
+        service = make_service(repository)
+        service.game_state.round_number = 5
+        service.is_game_over = True
+        _stub_scoring(service, monkeypatch)
+        entered, release = asyncio.Event(), asyncio.Event()
+        calls = []
+
+        async def generate(player):
+            calls.append(player)
+            entered.set()
+            await release.wait()
+            return {"scipio": "AI theory"}
+
+        service._generate_ai_guesses = generate
+        first = asyncio.create_task(service.finalize_scores("hannibal", "first guess"))
+        await entered.wait()
+        second = asyncio.create_task(
+            service.finalize_scores("hannibal", "second guess")
+        )
+        await asyncio.sleep(0)
+        assert not second.done()
+        assert service.game_state.player_undergame_guess is None
+        assert service.game_state.ai_undergame_guesses is None
+        assert repository.save_calls == 0
+        release.set()
+        results = await asyncio.gather(first, second)
+        assert results[0] == results[1]
+        assert results[0][0]["scipio"]["undergame_score"] == 20
+        assert calls == ["hannibal"]
+        assert repository.save_calls == 1
+        assert repository.saved.player_undergame_guess == "first guess"
+        assert repository.saved.ai_undergame_guesses == {"scipio": "AI theory"}
+
+        resumed = make_service(repository)
+        assert resumed.try_resume()
+        _stub_scoring(resumed, monkeypatch)
+        resumed._generate_ai_guesses = None
+        assert await resumed.finalize_scores("hannibal", "retry guess") == results[0]
+
+    asyncio.run(scenario())
+
+
+def test_reset_serializes_with_finalization_and_keeps_scoring_snapshot(monkeypatch):
+    scoring_started, scoring_release = threading.Event(), threading.Event()
+    calculate = service_module.ScoringService.calculate_final_scores
+
+    def slow_calculate(self, **kwargs):
+        scoring_started.set()
+        assert scoring_release.wait(5)
+        return calculate(self, **kwargs)
+
+    monkeypatch.setattr(
+        service_module.ScoringService, "calculate_final_scores", slow_calculate
+    )
+
+    async def scenario():
+        repository = FakeStateRepository()
+        service = make_service(repository)
+        service.game_state.round_number = 5
+        service.game_state.characters["scipio"].victory_points = 4
+        service.is_game_over = True
+        _stub_scoring(service, monkeypatch)
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def generate(player):
+            entered.set()
+            await release.wait()
+            return {"scipio": "AI theory"}
+
+        service._generate_ai_guesses = generate
+        first = asyncio.create_task(service.finalize_scores("hannibal", "first guess"))
+        await entered.wait()
+        reset = asyncio.create_task(service.reset())
+        await asyncio.sleep(0)
+        second = asyncio.create_task(
+            service.finalize_scores("hannibal", "second guess")
+        )
+        await asyncio.sleep(0)
+        assert not reset.done()
+        assert not second.done()
+        release.set()
+        try:
+            await reset
+            with pytest.raises(ValueError, match="not over"):
+                await second
+            assert await asyncio.to_thread(scoring_started.wait, 5)
+            assert service.game_state.player_undergame_guess is None
+            assert service.game_state.ai_undergame_guesses is None
+            assert repository.saved == service.game_state
+        finally:
+            scoring_release.set()
+        result, _ = await first
+        assert result["scipio"]["total_score"] == 100
+        assert service.game_state.characters["scipio"].victory_points == 0
+        assert repository.save_calls == 2
+
+    asyncio.run(scenario())
 
 
 # --- player character binding ---

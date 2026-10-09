@@ -1,5 +1,4 @@
 import inspect
-import json
 from contextlib import asynccontextmanager
 from typing import Annotated
 
@@ -15,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from loguru import logger
 from opik.integrations.langchain import OpikTracer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from pymongo.errors import PyMongoError
 
 from philoagents.application.conversation_service.generate_response import (
@@ -80,7 +79,10 @@ class ChatMessage(BaseModel):
     Defines the payload for initiating a conversation turn.
     """
 
-    message: str = Field(description="The content of the message being sent.")
+    message: str = Field(
+        max_length=settings.MAX_CHAT_MESSAGE_CHARS,
+        description="The content of the message being sent.",
+    )
     sender_id: str = Field(description="The ID of the character sending the message.")
     receiver_id: str = Field(
         description="The ID of the character receiving the message."
@@ -163,31 +165,13 @@ async def websocket_chat(
                 continue
 
             try:
-                data = json.loads(raw)
-            except json.JSONDecodeError:
-                await websocket.send_json({"error": "Message must be valid JSON."})
-                continue
-
-            if not isinstance(data, dict) or not all(
-                isinstance(data.get(field), str)
-                for field in ("message", "sender_id", "receiver_id")
-            ):
+                chat_message = ChatMessage.model_validate_json(raw)
+            except ValidationError as error:
                 await websocket.send_json(
                     {
                         "error": (
-                            "Invalid message format. Required string fields: "
-                            "'message', 'sender_id', 'receiver_id'."
-                        )
-                    }
-                )
-                continue
-
-            if len(data["message"]) > settings.MAX_CHAT_MESSAGE_CHARS:
-                await websocket.send_json(
-                    {
-                        "error": (
-                            "Chat message too long. Limit is "
-                            f"{settings.MAX_CHAT_MESSAGE_CHARS} characters."
+                            "Invalid chat message: "
+                            f"{error.errors(include_input=False)[0]['msg']}"
                         )
                     }
                 )
@@ -195,16 +179,16 @@ async def websocket_chat(
 
             try:
                 async with service.negotiation_turn(
-                    data["sender_id"], data["receiver_id"]
+                    chat_message.sender_id, chat_message.receiver_id
                 ) as state:
                     response_stream = get_streaming_response(
-                        messages=data["message"],
-                        sender_id=data["sender_id"],
-                        receiver_character=state.characters[data["receiver_id"]],
+                        messages=chat_message.message,
+                        sender_id=chat_message.sender_id,
+                        receiver_character=state.characters[chat_message.receiver_id],
                         game_id=state.game_id,
                         crisis_update=f"Round {state.round_number}: {state.crisis_update}",
                         negotiation_summaries=state.negotiation_summaries.get(
-                            data["receiver_id"], {}
+                            chat_message.receiver_id, {}
                         ),
                     )
                     await websocket.send_json({"streaming": True})
@@ -215,9 +199,9 @@ async def websocket_chat(
                         await websocket.send_json({"chunk": chunk})
                     await summarize_negotiation(
                         state,
-                        data["sender_id"],
-                        data["receiver_id"],
-                        data["message"],
+                        chat_message.sender_id,
+                        chat_message.receiver_id,
+                        chat_message.message,
                         full_response,
                     )
 

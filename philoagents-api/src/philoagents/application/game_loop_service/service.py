@@ -379,13 +379,17 @@ class GameLoopService:
     ):
         if not vp_awards:
             return
+        awarded_this_round: dict[str, int] = {}
         for award in vp_awards:
             if award.character_id not in characters:
                 logger.warning(
                     f"Ignoring VP award for unknown character '{award.character_id}'."
                 )
                 continue
-            points = max(0, min(award.points_awarded, settings.MAX_VP_AWARD_PER_ROUND))
+            awarded = awarded_this_round.get(award.character_id, 0)
+            remaining = settings.MAX_VP_AWARD_PER_ROUND - awarded
+            points = max(0, min(award.points_awarded, remaining))
+            awarded_this_round[award.character_id] = awarded + points
             if points != award.points_awarded:
                 logger.warning(
                     f"Judge awarded {award.points_awarded} VP to "

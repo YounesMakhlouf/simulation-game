@@ -43,12 +43,12 @@ async def action_decision_node(state: ActionState) -> dict:
             "negotiation_summaries": state["negotiation_summaries"],
         }
     )
-    if action_response.character_id.lower() != character.id.lower():
+    if action_response.character_id != character.id:
         logger.warning(
             f"Agent hallucinated character ID! Expected '{character.id}', got "
             f"'{action_response.character_id}'. Overwriting for consistency."
         )
-        action_response.character_id = character.id
+    action_response.character_id = character.id
 
     logger.info(
         f"Action decided by {character.name}: {action_response.action_type} - "
