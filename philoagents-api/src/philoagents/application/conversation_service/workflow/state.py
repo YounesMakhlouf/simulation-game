@@ -26,9 +26,16 @@ class ConversationState(TypedDict):
 
     messages: Annotated[list[AnyMessage], add_messages]
     character_id: str
+    sender_id: str
     character_name: str
     character_perspective: str
     character_style: str
+    character_goals: str
+    character_resources: dict[str, int]
+    character_statuses: dict[str, str | int | bool]
+    known_intel: list[str]
+    crisis_update: str
+    negotiation_summaries: dict[str, str]
     retrieved_context: str | None
     summary: str | None
 

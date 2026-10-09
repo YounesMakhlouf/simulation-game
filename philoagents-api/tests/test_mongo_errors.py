@@ -64,11 +64,12 @@ def test_game_id_survives_reloads():
     assert loaded.game_id == state.game_id
 
 
-def test_save_without_game_id_is_rejected_without_migration():
+@pytest.mark.parametrize("field", ["game_id", "negotiation_summaries"])
+def test_save_missing_required_field_is_rejected_without_migration(field):
     repository = GameStateRepository.__new__(GameStateRepository)
     repository.collection = Mock()
     repository.collection.find_one.return_value = {
-        "state": make_state().model_dump(mode="json", exclude={"game_id"})
+        "state": make_state().model_dump(mode="json", exclude={field})
     }
     with pytest.raises(ValueError, match="refusing to overwrite"):
         repository.load()

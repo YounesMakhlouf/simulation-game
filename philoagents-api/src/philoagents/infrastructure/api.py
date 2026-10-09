@@ -22,15 +22,16 @@ from philoagents.application.conversation_service.generate_response import (
     get_response,
     get_streaming_response,
 )
+from philoagents.application.conversation_service.negotiation import (
+    summarize_negotiation,
+)
 from philoagents.application.conversation_service.reset_conversation import (
     reset_conversation_state,
 )
 from philoagents.application.game_loop_service.api import router as game_loop_router
 from philoagents.application.game_loop_service.service import GameLoopService
 from philoagents.config import settings
-from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure.dependencies import (
-    get_character_factory,
     get_game_service,
 )
 
@@ -89,31 +90,49 @@ class ChatMessage(BaseModel):
 @app.post("/chat")
 async def chat(
     chat_message: ChatMessage,
-    factory: Annotated[CharacterFactory, Depends(get_character_factory)],
     service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     try:
-        receiver_character = factory.get_character(chat_message.receiver_id)
-        response, _ = await get_response(
-            messages=chat_message.message,
-            sender_id=chat_message.sender_id,
-            receiver_character=receiver_character,
-            game_id=service.game_state.game_id,
-        )
+        async with service.negotiation_turn(
+            chat_message.sender_id, chat_message.receiver_id
+        ) as state:
+            response, _ = await get_response(
+                messages=chat_message.message,
+                sender_id=chat_message.sender_id,
+                receiver_character=state.characters[chat_message.receiver_id],
+                game_id=state.game_id,
+                crisis_update=f"Round {state.round_number}: {state.crisis_update}",
+                negotiation_summaries=state.negotiation_summaries.get(
+                    chat_message.receiver_id, {}
+                ),
+            )
+            await summarize_negotiation(
+                state,
+                chat_message.sender_id,
+                chat_message.receiver_id,
+                chat_message.message,
+                response,
+            )
         return {"response": response}
 
+    except PyMongoError:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.exception("Chat request failed.")
         opik_tracer = OpikTracer()
         opik_tracer.flush()
 
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail="Conversation could not be completed or saved. Please try again.",
+        ) from e
 
 
 @app.websocket("/ws/chat")
 async def websocket_chat(
     websocket: WebSocket,
-    character_factory: Annotated[CharacterFactory, Depends(get_character_factory)],
     service: Annotated[GameLoopService, Depends(get_game_service)],
 ):
     await websocket.accept()
@@ -175,26 +194,32 @@ async def websocket_chat(
                 continue
 
             try:
-                receiver_character = character_factory.get_character(
-                    data["receiver_id"]
-                )
+                async with service.negotiation_turn(
+                    data["sender_id"], data["receiver_id"]
+                ) as state:
+                    response_stream = get_streaming_response(
+                        messages=data["message"],
+                        sender_id=data["sender_id"],
+                        receiver_character=state.characters[data["receiver_id"]],
+                        game_id=state.game_id,
+                        crisis_update=f"Round {state.round_number}: {state.crisis_update}",
+                        negotiation_summaries=state.negotiation_summaries.get(
+                            data["receiver_id"], {}
+                        ),
+                    )
+                    await websocket.send_json({"streaming": True})
 
-                # Use streaming response instead of get_response
-                response_stream = get_streaming_response(
-                    messages=data["message"],
-                    sender_id=data["sender_id"],
-                    receiver_character=receiver_character,
-                    game_id=service.game_state.game_id,
-                )
-
-                # Send initial message to indicate streaming has started
-                await websocket.send_json({"streaming": True})
-
-                # Stream each chunk of the response
-                full_response = ""
-                async for chunk in response_stream:
-                    full_response += chunk
-                    await websocket.send_json({"chunk": chunk})
+                    full_response = ""
+                    async for chunk in response_stream:
+                        full_response += chunk
+                        await websocket.send_json({"chunk": chunk})
+                    await summarize_negotiation(
+                        state,
+                        data["sender_id"],
+                        data["receiver_id"],
+                        data["message"],
+                        full_response,
+                    )
 
                 await websocket.send_json(
                     {"response": full_response, "streaming": False}
@@ -205,7 +230,15 @@ async def websocket_chat(
                 opik_tracer = OpikTracer()
                 opik_tracer.flush()
 
-                await websocket.send_json({"error": str(e)})
+                await websocket.send_json(
+                    {
+                        "error": (
+                            "Game storage is unavailable. Please try again."
+                            if isinstance(e, PyMongoError)
+                            else "Conversation could not be completed or saved. Please try again."
+                        )
+                    }
+                )
 
     except WebSocketDisconnect:
         pass

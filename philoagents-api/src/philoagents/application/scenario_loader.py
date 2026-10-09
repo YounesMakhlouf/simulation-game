@@ -78,4 +78,5 @@ class ScenarioLoader:
             round_number=self.initial_state_data["round_number"],
             crisis_update=self.initial_state_data["crisis_update"],
             characters=initial_characters,
+            negotiation_summaries={},
         )

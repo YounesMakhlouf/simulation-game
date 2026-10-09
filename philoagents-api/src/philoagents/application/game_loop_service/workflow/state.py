@@ -22,6 +22,7 @@ class ActionState(TypedDict):
     character: Character
     crisis_update: str
     other_players_dossier: str
+    negotiation_summaries: dict[str, str]
     action: Action | None
 
 

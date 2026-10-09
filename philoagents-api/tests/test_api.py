@@ -1,7 +1,9 @@
-from unittest.mock import Mock
+import asyncio
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
+from langchain_core.callbacks import BaseCallbackHandler
 from pymongo.errors import ConnectionFailure
 from test_game_loop_service import (
     FakeStateRepository,
@@ -12,8 +14,22 @@ from test_game_loop_service import (
     stub_round,
 )
 
+from philoagents.application.conversation_service import negotiation
+from philoagents.application.game_loop_service import service as game_service_module
+from philoagents.application.game_loop_service.workflow import nodes as action_nodes
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure import api
+from philoagents.infrastructure.dependencies import get_character_factory
+
+
+@pytest.fixture(autouse=True)
+def negotiation_chain(monkeypatch):
+    chain = Mock()
+    chain.ainvoke = AsyncMock(
+        return_value="Round 1: Scipio proposed peace; Hannibal agreed."
+    )
+    monkeypatch.setattr(negotiation, "get_negotiation_summary_chain", lambda: chain)
+    return chain
 
 
 def test_dependency_injection_and_chat(monkeypatch):
@@ -30,7 +46,7 @@ def test_dependency_injection_and_chat(monkeypatch):
         api.app.dependency_overrides, api.get_game_service, lambda: service
     )
     monkeypatch.setitem(
-        api.app.dependency_overrides, api.get_character_factory, lambda: factory
+        api.app.dependency_overrides, get_character_factory, lambda: factory
     )
     with TestClient(api.app) as client:
         assert client.get("/game/session").json()["player_character_id"] is None
@@ -39,7 +55,7 @@ def test_dependency_injection_and_chat(monkeypatch):
         )
         response = client.post(
             "/chat",
-            json={"message": "Hi", "sender_id": "player", "receiver_id": "hannibal"},
+            json={"message": "Hi", "sender_id": "scipio", "receiver_id": "hannibal"},
         )
         assert response.status_code == 200
         assert response.json() == {"response": "Hello"}
@@ -62,10 +78,6 @@ def game_client(monkeypatch):
 
 def test_chat_uses_new_game_id_after_reset_on_existing_socket(game_client, monkeypatch):
     client, service = game_client
-    factory = CharacterFactory([make_character("hannibal").model_dump()])
-    monkeypatch.setitem(
-        api.app.dependency_overrides, api.get_character_factory, lambda: factory
-    )
     rest_ids, streaming_ids = [], []
 
     async def respond(**kwargs):
@@ -78,7 +90,7 @@ def test_chat_uses_new_game_id_after_reset_on_existing_socket(game_client, monke
 
     monkeypatch.setattr(api, "get_response", respond)
     monkeypatch.setattr(api, "get_streaming_response", stream)
-    payload = {"message": "Hi", "sender_id": "player", "receiver_id": "hannibal"}
+    payload = {"message": "Hi", "sender_id": "scipio", "receiver_id": "hannibal"}
     original_id = service.game_state.game_id
     with client.websocket_connect("/ws/chat") as websocket:
         for _ in range(2):
@@ -150,3 +162,166 @@ def test_storage_failure_aborts_startup(monkeypatch):
     )
     with pytest.raises(ConnectionFailure), TestClient(api.app):
         pass
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+def test_negotiations_use_live_state_and_reach_only_participants_actions(
+    game_client, monkeypatch, negotiation_chain, streaming
+):
+    client, service = game_client
+    assert (
+        client.post("/game/start", json={"character_id": "scipio"}).status_code == 200
+    )
+    service.game_state.round_number = 2
+    service.game_state.crisis_update = "Rome is under siege."
+    receiver = service.game_state.characters["hannibal"]
+    receiver.resources = {"Gold": 2}
+    receiver.statuses = {"Morale": "Low"}
+    receiver.known_intel = ["Private report for Hannibal"]
+    service.game_state.characters["hanno"] = make_character("hanno")
+    service.game_state.characters["scipio"].known_intel = ["Scipio's secret"]
+    previous = "Round 1: Scipio offered a truce; no agreement yet."
+    service.game_state.negotiation_summaries = {
+        "hannibal": {"scipio": previous},
+        "scipio": {"hannibal": previous, "hanno": "A separate private bargain"},
+        "hanno": {"scipio": "A separate private bargain"},
+    }
+    summary = "Round 2: Scipio offered a truce; Hannibal accepted."
+    negotiation_chain.ainvoke.return_value = summary
+
+    def check_context(kwargs):
+        assert kwargs["receiver_character"] == receiver
+        assert kwargs["crisis_update"] == "Round 2: Rome is under siege."
+        assert kwargs["negotiation_summaries"] == {"scipio": previous}
+
+    async def respond(**kwargs):
+        check_context(kwargs)
+        return "I accept your truce.", None
+
+    async def stream(**kwargs):
+        check_context(kwargs)
+        yield "I accept your truce."
+
+    monkeypatch.setattr(api, "get_response", respond)
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    payload = {
+        "message": "Let us agree a truce.",
+        "sender_id": "scipio",
+        "receiver_id": "hannibal",
+    }
+    if streaming:
+        with client.websocket_connect("/ws/chat") as websocket:
+            websocket.send_json(payload)
+            assert websocket.receive_json() == {"streaming": True}
+            assert websocket.receive_json() == {"chunk": "I accept your truce."}
+            assert websocket.receive_json()["streaming"] is False
+    else:
+        assert client.post("/chat", json=payload).json() == {
+            "response": "I accept your truce."
+        }
+
+    negotiation_chain.ainvoke.assert_awaited_once_with(
+        {
+            "sender_name": "Scipio",
+            "receiver_name": "Hannibal",
+            "round_number": 2,
+            "previous_summary": previous,
+            "message": payload["message"],
+            "response": "I accept your truce.",
+        }
+    )
+    assert service.game_state.negotiation_summaries["hannibal"] == {"scipio": summary}
+    assert service.game_state.negotiation_summaries["scipio"]["hannibal"] == summary
+    assert service.game_state.negotiation_summaries["hanno"] == {
+        "scipio": "A separate private bargain"
+    }
+    assert service.state_repository.saved == service.game_state
+
+    resumed = make_service(service.state_repository)
+    assert resumed.try_resume()
+    captured = {}
+
+    async def decide(inputs):
+        captured[inputs["character_id"]] = inputs
+        return make_action(inputs["character_id"])
+
+    chain = Mock(ainvoke=AsyncMock(side_effect=decide))
+    monkeypatch.setattr(action_nodes, "get_character_action_chain", lambda: chain)
+    monkeypatch.setattr(
+        game_service_module, "OpikTracer", lambda **kwargs: BaseCallbackHandler()
+    )
+    resumed.submit_player_action(make_action("scipio"))
+    asyncio.run(resumed._run_ai_delegate_turns())
+    assert captured["hannibal"]["negotiation_summaries"] == {"scipio": summary}
+    assert captured["hanno"]["negotiation_summaries"] == {
+        "scipio": "A separate private bargain"
+    }
+    assert captured["hannibal"]["character_resources"] == {"Gold": 2}
+    assert captured["hannibal"]["crisis_update"] == "Round 2: Rome is under siege."
+    assert captured["hannibal"]["known_intel"] == "Private report for Hannibal"
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+@pytest.mark.parametrize("failure", ["summary", "save"])
+def test_failed_negotiation_is_reported_without_publishing_unsaved_memory(
+    game_client, monkeypatch, negotiation_chain, streaming, failure
+):
+    client, service = game_client
+    client.post("/game/start", json={"character_id": "scipio"})
+    initial = service.get_current_state()
+    monkeypatch.setattr(api, "get_response", AsyncMock(return_value=("I agree.", None)))
+
+    async def stream(**kwargs):
+        yield "I agree."
+
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    if failure == "summary":
+        negotiation_chain.ainvoke.side_effect = RuntimeError("private provider details")
+    else:
+        monkeypatch.setattr(
+            service.state_repository,
+            "save",
+            Mock(side_effect=ConnectionFailure("private host details")),
+        )
+    payload = {"message": "Agree?", "sender_id": "scipio", "receiver_id": "hannibal"}
+    if streaming:
+        with client.websocket_connect("/ws/chat") as websocket:
+            websocket.send_json(payload)
+            assert websocket.receive_json() == {"streaming": True}
+            assert websocket.receive_json() == {"chunk": "I agree."}
+            error = websocket.receive_json()
+            assert "error" in error
+            assert "private" not in error["error"]
+    else:
+        response = client.post("/chat", json=payload)
+        assert response.status_code == (503 if failure == "save" else 500)
+        assert "private" not in response.json()["detail"]
+    assert service.get_current_state() == initial
+    assert service.state_repository.saved == initial
+    assert not service._round_lock.locked()
+
+
+@pytest.mark.parametrize(
+    "blocked", ["unknown", "wrong_player", "processing", "pending"]
+)
+def test_invalid_or_late_negotiation_never_calls_the_model(
+    game_client, monkeypatch, blocked
+):
+    client, service = game_client
+    client.post("/game/start", json={"character_id": "scipio"})
+    sender = "scipio"
+    if blocked == "unknown":
+        sender = "unknown"
+    elif blocked == "wrong_player":
+        sender = "hannibal"
+    elif blocked == "processing":
+        service.is_processing_round = True
+    else:
+        service.submitted_actions["scipio"] = make_action("scipio")
+    respond = AsyncMock()
+    monkeypatch.setattr(api, "get_response", respond)
+    response = client.post(
+        "/chat", json={"message": "Hi", "sender_id": sender, "receiver_id": "hannibal"}
+    )
+    assert response.status_code == 400
+    respond.assert_not_awaited()

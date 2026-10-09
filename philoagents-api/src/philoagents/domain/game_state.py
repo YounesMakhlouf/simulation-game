@@ -22,6 +22,9 @@ class GameState(BaseModel):
     characters: dict[str, Character] = Field(
         description="A dictionary mapping character_id to their full Character object."
     )
+    negotiation_summaries: dict[str, dict[str, str]] = Field(
+        description="Private negotiation summaries keyed by participant, then counterparty."
+    )
     player_character_id: str | None = Field(
         default=None,
         description=(

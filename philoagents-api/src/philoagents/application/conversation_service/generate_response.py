@@ -41,6 +41,8 @@ def __compiled_graph(
     receiver_character: Character,
     new_thread: bool,
     game_id: str | None,
+    crisis_update: str,
+    negotiation_summaries: dict[str, str],
 ) -> Generator[tuple[Any, dict, dict], None, None]:
     """
     Shared setup for a conversation turn: opens the MongoDB checkpointer and
@@ -69,9 +71,16 @@ def __compiled_graph(
         initial_state = {
             "messages": __format_messages(messages),
             "character_id": receiver_character.id,
+            "sender_id": sender_id,
             "character_name": receiver_character.name,
             "character_perspective": receiver_character.perspective,
             "character_style": receiver_character.style,
+            "character_goals": receiver_character.goals,
+            "character_resources": receiver_character.resources,
+            "character_statuses": receiver_character.statuses,
+            "known_intel": receiver_character.known_intel,
+            "crisis_update": crisis_update,
+            "negotiation_summaries": negotiation_summaries,
         }
         yield graph, config, initial_state
 
@@ -80,6 +89,8 @@ async def get_response(
     messages: str | list[dict],
     sender_id: str,
     receiver_character: Character,
+    crisis_update: str,
+    negotiation_summaries: dict[str, str],
     new_thread: bool = False,
     game_id: str | None = None,
 ) -> tuple[str, ConversationState]:
@@ -92,6 +103,8 @@ async def get_response(
         receiver_character: The fully instantiated Character object that is receiving
                             the message and will generate the response.
         new_thread: If True, creates a new, unique conversation thread.
+        crisis_update: The current public crisis, or standalone conversation context.
+        negotiation_summaries: Only the receiver's private negotiations.
         game_id: Persisted playthrough ID; omitted for standalone CLI/evaluation chats.
 
     Returns:
@@ -100,7 +113,13 @@ async def get_response(
     """
     try:
         with __compiled_graph(
-            messages, sender_id, receiver_character, new_thread, game_id
+            messages,
+            sender_id,
+            receiver_character,
+            new_thread,
+            game_id,
+            crisis_update,
+            negotiation_summaries,
         ) as (
             graph,
             config,
@@ -120,6 +139,8 @@ async def get_streaming_response(
     messages: str | list[dict],
     sender_id: str,
     receiver_character: Character,
+    crisis_update: str,
+    negotiation_summaries: dict[str, str],
     new_thread: bool = False,
     game_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
@@ -131,6 +152,8 @@ async def get_streaming_response(
         sender_id: The ID of the character sending the message.
         receiver_character: The Character object that will generate the response.
         new_thread: If True, creates a new, unique conversation thread.
+        crisis_update: The current public crisis, or standalone conversation context.
+        negotiation_summaries: Only the receiver's private negotiations.
         game_id: Persisted playthrough ID; omitted for standalone CLI/evaluation chats.
 
     Yields:
@@ -138,7 +161,13 @@ async def get_streaming_response(
     """
     try:
         with __compiled_graph(
-            messages, sender_id, receiver_character, new_thread, game_id
+            messages,
+            sender_id,
+            receiver_character,
+            new_thread,
+            game_id,
+            crisis_update,
+            negotiation_summaries,
         ) as (
             graph,
             config,

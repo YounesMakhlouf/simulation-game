@@ -27,10 +27,17 @@ async def conversation_node(state: ConversationState, config: RunnableConfig):
     response = await conversation_chain.ainvoke(
         {
             "messages": state["messages"],
+            "sender_id": state["sender_id"],
             "retrieved_context": state.get("retrieved_context", ""),
             "character_name": state["character_name"],
             "character_perspective": state["character_perspective"],
             "character_style": state["character_style"],
+            "character_goals": state["character_goals"],
+            "character_resources": state["character_resources"],
+            "character_statuses": state["character_statuses"],
+            "known_intel": "\n".join(state["known_intel"]) or "None.",
+            "crisis_update": state["crisis_update"],
+            "negotiation_summaries": state["negotiation_summaries"],
             "summary": summary,
         },
         config,

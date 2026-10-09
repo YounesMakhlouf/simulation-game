@@ -51,6 +51,7 @@ def make_state(round_number: int = 1) -> GameState:
         game_id=str(uuid4()),
         round_number=round_number,
         crisis_update="Initial crisis",
+        negotiation_summaries={},
         characters={
             "hannibal": make_character("hannibal"),
             "scipio": make_character("scipio"),
@@ -459,6 +460,45 @@ def test_fresh_game_cannot_start_if_its_id_cannot_be_persisted(monkeypatch):
     with pytest.raises(ConnectionFailure):
         service.try_resume()
     assert repository.saved is None
+
+
+def test_negotiation_commits_before_reset_and_blocks_round_submission():
+    async def scenario():
+        repository = FakeStateRepository()
+        service = make_service(repository)
+        original_id = service.game_state.game_id
+        async with service.negotiation_turn("scipio", "hannibal") as proposed:
+            proposed.negotiation_summaries = {"hannibal": {"scipio": "A truce."}}
+            assert service.game_state.negotiation_summaries == {}
+            with pytest.raises(ValueError, match="busy"):
+                service.submit_player_action(make_action("scipio"))
+            reset = asyncio.create_task(service.reset())
+            await asyncio.sleep(0)
+            assert not reset.done()
+        assert repository.saved.negotiation_summaries == proposed.negotiation_summaries
+        await reset
+        assert service.game_state.game_id != original_id
+        assert service.game_state.negotiation_summaries == {}
+        assert repository.saved == service.game_state
+
+    asyncio.run(scenario())
+
+
+def test_negotiation_timeout_discards_proposed_memory_and_releases_lock(monkeypatch):
+    repository = FakeStateRepository()
+    service = make_service(repository)
+    monkeypatch.setattr(service_module.settings, "AI_ACTION_TIMEOUT_SECONDS", 0.01)
+
+    async def scenario():
+        with pytest.raises(TimeoutError):
+            async with service.negotiation_turn("scipio", "hannibal") as proposed:
+                proposed.negotiation_summaries = {"hannibal": {"scipio": "A truce."}}
+                await asyncio.sleep(1)
+
+    asyncio.run(scenario())
+    assert service.game_state.negotiation_summaries == {}
+    assert repository.save_calls == 0
+    assert not service._round_lock.locked()
 
 
 def test_reset_restores_initial_state_and_persists_new_playthrough():

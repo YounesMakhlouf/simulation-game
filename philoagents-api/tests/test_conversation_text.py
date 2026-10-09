@@ -4,7 +4,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
+from langgraph.checkpoint.memory import InMemorySaver
 from test_game_loop_service import make_character
 
 from philoagents.application.conversation_service import generate_response
@@ -29,7 +31,13 @@ def test_response_extracts_text_and_preserves_message(monkeypatch, content):
 
     monkeypatch.setattr(generate_response, "__compiled_graph", compiled)
     response, state = asyncio.run(
-        generate_response.get_response("Hi", "player", make_character("hannibal"))
+        generate_response.get_response(
+            "Hi",
+            "player",
+            make_character("hannibal"),
+            crisis_update="Current crisis",
+            negotiation_summaries={},
+        )
     )
     assert response == "Hello world"
     assert state["messages"][0].content == content
@@ -58,7 +66,11 @@ def test_stream_extracts_text_and_filters_other_nodes(monkeypatch):
         return [
             chunk
             async for chunk in generate_response.get_streaming_response(
-                "Hi", "player", make_character("hannibal")
+                "Hi",
+                "player",
+                make_character("hannibal"),
+                crisis_update="Current crisis",
+                negotiation_summaries={},
             )
         ]
 
@@ -119,7 +131,12 @@ def test_conversation_history_is_shared_within_a_game_and_isolated_between_games
 
     async def scenario():
         response, _ = await generate_response.get_response(
-            "Old negotiation", hannibal.id, scipio, game_id="first-game"
+            "Old negotiation",
+            hannibal.id,
+            scipio,
+            game_id="first-game",
+            crisis_update="Current crisis",
+            negotiation_summaries={},
         )
         assert response == "Fresh conversation"
         for game_id, expected in [
@@ -129,7 +146,12 @@ def test_conversation_history_is_shared_within_a_game_and_isolated_between_games
             chunks = [
                 chunk
                 async for chunk in generate_response.get_streaming_response(
-                    "Continue", scipio.id, hannibal, game_id=game_id
+                    "Continue",
+                    scipio.id,
+                    hannibal,
+                    game_id=game_id,
+                    crisis_update="Current crisis",
+                    negotiation_summaries={},
                 )
             ]
             assert "".join(chunks) == expected
@@ -140,8 +162,56 @@ def test_conversation_history_is_shared_within_a_game_and_isolated_between_games
                 scipio,
                 new_thread=True,
                 game_id="first-game",
+                crisis_update="Current crisis",
+                negotiation_summaries={},
             )
             assert response == "Fresh conversation"
         assert len(histories) == 4
 
     asyncio.run(scenario())
+
+
+def test_chat_graph_refreshes_live_context_on_every_turn(monkeypatch):
+    chain = SimpleNamespace(ainvoke=AsyncMock(return_value=AIMessage(content="Reply")))
+    monkeypatch.setattr(nodes, "get_character_response_chain", lambda: chain)
+    monkeypatch.setattr(
+        generate_response, "OpikTracer", lambda **kwargs: BaseCallbackHandler()
+    )
+    checkpointer = InMemorySaver()
+    monkeypatch.setattr(
+        generate_response.MongoDBSaver,
+        "from_conn_string",
+        lambda **kwargs: nullcontext(checkpointer),
+    )
+    character = make_character("hannibal")
+
+    async def scenario():
+        await generate_response.get_response(
+            "First offer",
+            "scipio",
+            character,
+            crisis_update="Initial crisis",
+            negotiation_summaries={},
+            game_id="game",
+        )
+        character.resources = {"Gold": 2}
+        character.statuses = {"Morale": "Low"}
+        character.known_intel = ["New private report"]
+        await generate_response.get_response(
+            "Second offer",
+            "scipio",
+            character,
+            crisis_update="Updated crisis",
+            negotiation_summaries={"scipio": "A truce was proposed."},
+            game_id="game",
+        )
+
+    asyncio.run(scenario())
+    assert chain.ainvoke.await_count == 2
+    inputs = chain.ainvoke.await_args_list[-1].args[0]
+    assert inputs["sender_id"] == "scipio"
+    assert inputs["character_resources"] == {"Gold": 2}
+    assert inputs["character_statuses"] == {"Morale": "Low"}
+    assert inputs["known_intel"] == "New private report"
+    assert inputs["crisis_update"] == "Updated crisis"
+    assert inputs["negotiation_summaries"] == {"scipio": "A truce was proposed."}

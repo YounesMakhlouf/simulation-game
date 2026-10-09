@@ -1,3 +1,4 @@
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 
@@ -7,6 +8,7 @@ from philoagents.domain.prompts import (
     CONTEXT_SUMMARY_PROMPT,
     DELEGATE_CONVERSATIONAL_PROMPT,
     EXTEND_SUMMARY_PROMPT,
+    NEGOTIATION_SUMMARY_PROMPT,
     SUMMARY_PROMPT,
 )
 
@@ -69,3 +71,13 @@ def get_context_summary_chain():
     )
 
     return prompt | model
+
+
+def get_negotiation_summary_chain():
+    model = get_chat_model(
+        temperature=0, model_name=settings.GROQ_LLM_MODEL_SUMMARY
+    ).bind(max_tokens=256)
+    prompt = ChatPromptTemplate.from_messages(
+        [("human", NEGOTIATION_SUMMARY_PROMPT.prompt)], template_format="jinja2"
+    )
+    return prompt | model | StrOutputParser()

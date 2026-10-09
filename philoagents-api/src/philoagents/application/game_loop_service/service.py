@@ -1,4 +1,6 @@
 import asyncio
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from loguru import logger
@@ -98,6 +100,33 @@ class GameLoopService:
     def get_current_state(self) -> GameState:
         """Returns a copy of the current game state."""
         return self.game_state.model_copy(deep=True)
+
+    @asynccontextmanager
+    async def negotiation_turn(
+        self, sender_id: str, receiver_id: str
+    ) -> AsyncGenerator[GameState, None]:
+        """Stages a negotiation under the round lock and commits it after saving."""
+        if self.is_processing_round or self.submitted_actions:
+            raise ValueError(
+                "Cannot negotiate once this round's actions are submitted."
+            )
+        async with self._round_lock:
+            if self.is_processing_round or self.submitted_actions:
+                raise ValueError(
+                    "Cannot negotiate once this round's actions are submitted."
+                )
+            if (
+                sender_id not in self.game_state.characters
+                or receiver_id not in self.game_state.characters
+            ):
+                raise ValueError("Unknown negotiation participant.")
+            self._ensure_player_is(sender_id)
+            next_state = self.get_current_state()
+            async with asyncio.timeout(settings.AI_ACTION_TIMEOUT_SECONDS):
+                yield next_state
+            if self.state_repository is not None:
+                await self._persist(self.state_repository.save, next_state)
+            self.game_state = next_state
 
     @staticmethod
     async def _persist(repository_call, *args):
@@ -249,7 +278,7 @@ class GameLoopService:
                 "The current round is being resolved. Please wait for the next round."
             )
         if self._round_lock.locked():
-            raise ValueError("Game state is being saved. Please try again.")
+            raise ValueError("Game state is busy. Please try again.")
         if action.character_id not in self.game_state.characters:
             raise ValueError(
                 f"Character with ID '{action.character_id}' does not exist."
@@ -413,8 +442,13 @@ class GameLoopService:
             other_players_dossier = "\n".join(dossier_entries)
             initial_state = {
                 "character": character,
-                "crisis_update": self.game_state.crisis_update,
+                "crisis_update": (
+                    f"Round {self.game_state.round_number}: {self.game_state.crisis_update}"
+                ),
                 "other_players_dossier": other_players_dossier,
+                "negotiation_summaries": self.game_state.negotiation_summaries.get(
+                    character.id, {}
+                ),
             }
             result = await graph.ainvoke(input=initial_state, config=config)
             return result["action"]
@@ -468,6 +502,7 @@ class GameLoopService:
         current_state_json_str = state_for_judge.model_dump_json(
             exclude={
                 "game_id": True,
+                "negotiation_summaries": True,
                 "last_round_actions": True,
                 "player_undergame_guess": True,
                 "ai_undergame_guesses": True,

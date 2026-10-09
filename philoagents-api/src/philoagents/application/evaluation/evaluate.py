@@ -44,6 +44,8 @@ async def evaluation_task(x: dict) -> dict:
         messages=input_messages,
         sender_id=character.id,
         receiver_character=character,
+        crisis_update="Standalone conversation; no active simulation.",
+        negotiation_summaries={},
         new_thread=True,
     )
     context = state_to_str(latest_state)

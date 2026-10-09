@@ -40,6 +40,7 @@ async def action_decision_node(state: ActionState) -> dict:
             "known_intel": "\n".join(character.known_intel) or "None.",
             "other_players_dossier": state["other_players_dossier"],
             "crisis_update": state["crisis_update"],
+            "negotiation_summaries": state["negotiation_summaries"],
         }
     )
     if action_response.character_id.lower() != character.id.lower():

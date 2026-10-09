@@ -77,6 +77,8 @@ async def main(scenario_path: Path, receiver_id: str, query: str) -> None:
         messages=query,
         sender_id=sender_id,
         receiver_character=receiver_character,
+        crisis_update=loader.initial_state_data["crisis_update"],
+        negotiation_summaries={},
     ):
         print(f"\033[33m{chunk}\033[0m", end="", flush=True)
 
