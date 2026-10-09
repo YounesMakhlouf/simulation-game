@@ -1,4 +1,3 @@
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
 const webpack = require("webpack");
@@ -9,7 +8,8 @@ module.exports = {
     entry: "./src/main.js",
     output: {
         path: path.resolve(process.cwd(), 'dist'),
-        filename: "bundle.min.js"
+        filename: "bundle.min.js",
+        clean: true
     },
     module: {
         rules: [
@@ -31,9 +31,6 @@ module.exports = {
         ]
     },
     plugins: [
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: [path.join(__dirname, "dist/**/*")]
-        }),
         new webpack.DefinePlugin({
             "typeof CANVAS_RENDERER": JSON.stringify(true),
             "typeof WEBGL_RENDERER": JSON.stringify(true),

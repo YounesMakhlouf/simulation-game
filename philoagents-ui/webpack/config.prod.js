@@ -1,4 +1,3 @@
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
@@ -14,7 +13,8 @@ module.exports = {
     entry: "./src/main.js",
     output: {
         path: path.resolve(process.cwd(), 'dist'),
-        filename: "./bundle.min.js"
+        filename: "./bundle.min.js",
+        clean: true
     },
     devtool: false,
     performance: {
@@ -52,7 +52,6 @@ module.exports = {
         ]
     },
     plugins: [
-        new CleanWebpackPlugin(),
         new webpack.DefinePlugin({
             "typeof CANVAS_RENDERER": JSON.stringify(true),
             "typeof WEBGL_RENDERER": JSON.stringify(true),

@@ -43,7 +43,7 @@ def get_retriever(
     return MongoDBAtlasHybridSearchRetriever(
         vectorstore=vectorstore,
         search_index_name="hybrid_search_index",
-        top_k=k,
+        k=k,
         vector_penalty=50,
         fulltext_penalty=50,
     )

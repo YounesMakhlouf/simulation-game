@@ -58,7 +58,7 @@ async def summarize_conversation_node(state: ConversationState):
         RemoveMessage(id=m.id)
         for m in state["messages"][: -settings.TOTAL_MESSAGES_AFTER_SUMMARY]
     ]
-    return {"summary": response.content, "messages": delete_messages}
+    return {"summary": response.text, "messages": delete_messages}
 
 
 async def summarize_context_node(state: ConversationState):
@@ -71,10 +71,10 @@ async def summarize_context_node(state: ConversationState):
 
     response = await context_summary_chain.ainvoke(
         {
-            "context": tool_output_message.content,
+            "context": tool_output_message.text,
         }
     )
-    tool_output_message.content = response.content
+    tool_output_message.content = response.text
 
     return {}
 

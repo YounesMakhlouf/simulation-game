@@ -104,7 +104,7 @@ async def get_response(
                 config=config,
             )
         last_message = output_state["messages"][-1]
-        return last_message.content, ConversationState(**output_state)
+        return last_message.text, ConversationState(**output_state)
     except Exception as e:
         raise RuntimeError(f"Error running conversation workflow: {e!s}") from e
 
@@ -141,7 +141,7 @@ async def get_streaming_response(
                 if chunk[1]["langgraph_node"] == "conversation_node" and isinstance(
                     chunk[0], AIMessageChunk
                 ):
-                    yield chunk[0].content
+                    yield chunk[0].text
 
     except Exception as e:
         raise RuntimeError(

@@ -44,7 +44,7 @@ def state_to_str(state: ConversationState) -> str:
     elif state.get("messages"):
         # Format messages for readability
         formatted_messages = "\n  ".join(
-            [f"{m.type.capitalize()}: {m.content}" for m in state["messages"]]
+            [f"{m.type.capitalize()}: {m.text}" for m in state["messages"]]
         )
         conversation_history = f"Messages:\n  {formatted_messages}"
     else:
