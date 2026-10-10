@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -87,6 +88,24 @@ class ChatMessage(BaseModel):
     receiver_id: str = Field(
         description="The ID of the character receiving the message."
     )
+
+
+_CHAT_HEARTBEAT_SECONDS = 10
+
+
+@asynccontextmanager
+async def _chat_keepalive(websocket: WebSocket):
+    async def heartbeat():
+        while True:
+            await asyncio.sleep(_CHAT_HEARTBEAT_SECONDS)
+            await websocket.send_json({"streaming": True})
+
+    task = asyncio.create_task(heartbeat())
+    try:
+        yield
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
 
 
 @app.post("/chat")
@@ -182,9 +201,12 @@ async def websocket_chat(
                 continue
 
             try:
-                async with service.negotiation_turn(
-                    chat_message.sender_id, chat_message.receiver_id
-                ) as state:
+                async with (
+                    _chat_keepalive(websocket),
+                    service.negotiation_turn(
+                        chat_message.sender_id, chat_message.receiver_id
+                    ) as state,
+                ):
                     response_stream = get_streaming_response(
                         messages=chat_message.message,
                         sender_id=chat_message.sender_id,

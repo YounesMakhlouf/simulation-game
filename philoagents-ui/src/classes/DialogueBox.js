@@ -65,18 +65,13 @@ class DialogueBox {
     }
 
     show(message) {
-        if (this.enableScrolling && this.shouldUseScrolling(message)) {
+        if (this.enableScrolling) {
             this.showWithScrolling(message);
         } else {
             this.showWithPhaser(message);
         }
 
         this.container.setVisible(true);
-    }
-
-    shouldUseScrolling(message) {
-        // Simple heuristic: if message is long or contains many line breaks
-        return message.length > 500 || (message.match(/\n/g) || []).length > 5;
     }
 
     showWithPhaser(message) {
@@ -91,7 +86,9 @@ class DialogueBox {
         this.text.setVisible(false);
 
         if (this.domElement) {
-            this.domElement.destroy();
+            this.domElement.node.firstElementChild.textContent = message;
+            this.domElement.setVisible(true);
+            return;
         }
 
         // Create scrollable DOM element
@@ -109,10 +106,6 @@ class DialogueBox {
                 white-space: pre-wrap;
                 padding: 0;
                 margin: 0;
-                inline-size: 100%;
-                block-size: 100%;
-                overflow-y: auto;
-                overflow-x: hidden;
                 box-sizing: border-box;
                 background: transparent;
             ">${escapeHtml(message)}</div>
@@ -125,6 +118,8 @@ class DialogueBox {
 
         this.domElement.node.style.inlineSize = `${contentWidth / 16}rem`;
         this.domElement.node.style.blockSize = `${contentHeight / 16}rem`;
+        this.domElement.node.style.overflowY = "auto";
+        this.domElement.node.style.overflowX = "hidden";
 
         // Add to container if possible
         this.container.add(this.domElement);

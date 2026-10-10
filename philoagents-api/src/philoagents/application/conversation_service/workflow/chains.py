@@ -1,4 +1,3 @@
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
 
@@ -21,6 +20,8 @@ def get_chat_model(
         # Qwen3 emits <think> blocks that would leak into the dialogue stream;
         # disable reasoning entirely (it also burns the token budget).
         kwargs["reasoning_effort"] = "none"
+        # Leave room under the free-tier 1,000 output-token/minute limit.
+        kwargs["max_tokens"] = 512
     return ChatGroq(
         api_key=settings.GROQ_API_KEY,
         model=model_name,
@@ -74,10 +75,10 @@ def get_context_summary_chain():
 
 
 def get_negotiation_summary_chain():
-    model = get_chat_model(
-        temperature=0, model_name=settings.GROQ_LLM_MODEL_SUMMARY
-    )
+    model = get_chat_model(temperature=0, model_name=settings.GROQ_LLM_MODEL_SUMMARY)
+    if settings.GROQ_LLM_MODEL_SUMMARY.startswith("openai/gpt-oss-"):
+        model = model.bind(reasoning_effort="low")
     prompt = ChatPromptTemplate.from_messages(
         [("human", NEGOTIATION_SUMMARY_PROMPT.prompt)], template_format="jinja2"
     )
-    return prompt | model | StrOutputParser()
+    return prompt | model

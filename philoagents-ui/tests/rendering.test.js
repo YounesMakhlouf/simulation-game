@@ -12,7 +12,7 @@ import DialogueBox from '../src/classes/DialogueBox';
 const payload = '<img src=x onerror="alert(1)">&\n</div><script>alert(2)</script>';
 
 function captureDom() {
-    const element = { node: { style: {} }, setOrigin() { return this; }, setDepth() { return this; } };
+    const element = { node: { style: {}, firstElementChild: { textContent: '' } }, setOrigin() { return this; }, setDepth() { return this; }, setVisible() { return this; } };
     let html;
     return {
         element,
@@ -74,5 +74,12 @@ describe('untrusted display text', () => {
         Object.assign(box, { x: 0, y: 0, width: 824, height: 200, text: { setVisible() {} }, container: { add() {} }, scene: { add: { dom: () => ({ createFromHTML: dom.create }) } } });
         box.showWithScrolling(payload);
         dom.check();
+        expect(dom.element.node.style.overflowY).toBe('auto');
+        expect(dom.element.node.style.blockSize).toBe('10rem');
+        dom.element.node.scrollTop = 40;
+        box.showWithScrolling(payload + ' more text');
+        expect(box.domElement).toBe(dom.element);
+        expect(dom.element.node.firstElementChild.textContent).toBe(payload + ' more text');
+        expect(dom.element.node.scrollTop).toBe(40);
     });
 });

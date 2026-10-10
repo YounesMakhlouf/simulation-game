@@ -73,8 +73,11 @@ async def summarize_context_node(state: ConversationState):
     Summarizes the factual context retrieved from the RAG tool. This is useful
     if the retrieved documents are very long.
     """
-    context_summary_chain = get_context_summary_chain()
     tool_output_message = state["messages"][-1]
+    if not tool_output_message.text.strip():
+        tool_output_message.content = "No relevant historical facts were found."
+        return {}
+    context_summary_chain = get_context_summary_chain()
 
     response = await context_summary_chain.ainvoke(
         {

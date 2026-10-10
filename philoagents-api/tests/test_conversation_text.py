@@ -5,12 +5,13 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from test_game_loop_service import make_character
 
 from philoagents.application.conversation_service import generate_response
-from philoagents.application.conversation_service.workflow import nodes
+from philoagents.application.conversation_service.workflow import chains, nodes, tools
 from philoagents.application.conversation_service.workflow.state import state_to_str
 
 BLOCKS = [
@@ -96,6 +97,44 @@ def test_state_description_uses_text():
     description = state_to_str({"messages": [AIMessage(content=BLOCKS)]})
     assert "Ai: Hello world" in description
     assert "private reasoning" not in description
+
+
+@pytest.mark.parametrize(
+    "documents",
+    [[], [Document(page_content="First fact"), Document(page_content="Second fact")]],
+)
+def test_retrieval_returns_document_text(monkeypatch, documents):
+    retriever = Mock()
+    retriever.invoke.return_value = documents
+    monkeypatch.setattr(tools, "_retriever", lambda: retriever)
+    assert tools.retrieve_character_context.invoke("Hanno") == "\n\n".join(
+        doc.page_content for doc in documents
+    )
+
+
+def test_empty_retrieval_skips_summary_model(monkeypatch):
+    chain = Mock()
+    monkeypatch.setattr(nodes, "get_context_summary_chain", chain)
+    message = ToolMessage(content=[], tool_call_id="search")
+    asyncio.run(nodes.summarize_context_node({"messages": [message]}))
+    assert message.text == "No relevant historical facts were found."
+    chain.assert_not_called()
+
+
+def test_qwen_request_fits_observed_output_limit():
+    model = chains.get_chat_model(model_name="qwen/qwen3.8-27b")
+    assert model.max_tokens == 512
+    assert model.reasoning_effort == "none"
+
+
+@pytest.mark.parametrize("model_name", ["openai/gpt-oss-20b", "qwen/qwen3.8-27b"])
+def test_negotiation_summary_uses_supported_reasoning_setting(monkeypatch, model_name):
+    monkeypatch.setattr(chains.settings, "GROQ_LLM_MODEL_SUMMARY", model_name)
+    model = chains.get_negotiation_summary_chain().steps[1]
+    if model_name.startswith("openai/gpt-oss-"):
+        assert model.kwargs == {"reasoning_effort": "low"}
+    else:
+        assert model.reasoning_effort == "none"
 
 
 def test_conversation_history_is_shared_within_a_game_and_isolated_between_games(

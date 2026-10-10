@@ -182,6 +182,21 @@ it("falls back after a silent stream", async () => {
     expect(box.show).toHaveBeenLastCalledWith("Hello", true);
 });
 
+it("keeps a slow exchange alive while receiving server keepalives", async () => {
+    const pending = manager.handleEnterKey();
+    await vi.advanceTimersByTimeAsync(0);
+    for (let i = 0; i < 5; i++) {
+        await vi.advanceTimersByTimeAsync(10000);
+        exchanges[0].onStreamingStart();
+    }
+    exchanges[0].onChunk("Hello");
+    exchanges[0].onStreamingEnd();
+    await pending;
+    expect(ApiService.sendMessage).not.toHaveBeenCalled();
+    expect(box.show).toHaveBeenLastCalledWith("Hello", true);
+    expect(vi.getTimerCount()).toBe(0);
+});
+
 it.each(["server error", "timeout"])("marks a streamed reply incomplete after %s without resending", async (failure) => {
     const pending = manager.handleEnterKey();
     await vi.advanceTimersByTimeAsync(0);

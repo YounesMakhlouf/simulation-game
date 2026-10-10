@@ -22,10 +22,10 @@ def _retriever():
 def retrieve_character_context(query: str):
     """Search and return information about a specific character.
 
-    Always use this tool when the user asks you about a character,
-    their works, ideas or historical context.
+    Use when historical facts needed for the reply are missing from your profile.
+    Greetings and personal opinions do not need a search.
     """
-    return _retriever().invoke(query)
+    return "\n\n".join(doc.page_content for doc in _retriever().invoke(query))
 
 
 tools = [retrieve_character_context]

@@ -1,10 +1,11 @@
 import asyncio
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import ANY, AsyncMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models.fake_chat_models import FakeListChatModel
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableLambda
 from pymongo.errors import ConnectionFailure
 from starlette.websockets import WebSocketDisconnect
@@ -34,9 +35,14 @@ from philoagents.infrastructure.dependencies import get_character_factory
 def negotiation_chain(monkeypatch):
     chain = Mock()
     chain.ainvoke = AsyncMock(
-        return_value="Round 1: Scipio proposed peace; Hannibal agreed."
+        return_value=AIMessage(
+            content="Round 1: Scipio proposed peace; Hannibal agreed."
+        )
     )
     monkeypatch.setattr(negotiation, "get_negotiation_summary_chain", lambda: chain)
+    monkeypatch.setattr(
+        negotiation, "OpikTracer", lambda **kwargs: BaseCallbackHandler()
+    )
     return chain
 
 
@@ -321,11 +327,16 @@ def test_session_exposes_configured_scoring_timeout(
 def test_session_reports_the_saved_delegate_and_current_round(game_client):
     client, service = game_client
     assert client.get("/game/session").json()["player_character_id"] is None
-    assert client.post("/game/start", json={"character_id": "hannibal"}).status_code == 200
+    assert (
+        client.post("/game/start", json={"character_id": "hannibal"}).status_code == 200
+    )
     service.game_state.round_number = 4
     session = client.get("/game/session").json()
     assert session["player_character_id"] == "hannibal"
-    assert session["player_character_name"] == service.game_state.characters["hannibal"].name
+    assert (
+        session["player_character_name"]
+        == service.game_state.characters["hannibal"].name
+    )
     assert session["round_number"] == 4
 
 
@@ -402,7 +413,7 @@ def test_negotiations_use_live_state_and_reach_only_participants_actions(
         "hanno": {"scipio": "A separate private bargain"},
     }
     summary = "Round 2: Scipio offered a truce; Hannibal accepted."
-    negotiation_chain.ainvoke.return_value = summary
+    negotiation_chain.ainvoke.return_value = AIMessage(content=summary)
 
     def check_context(kwargs):
         assert kwargs["receiver_character"] == receiver
@@ -445,7 +456,8 @@ def test_negotiations_use_live_state_and_reach_only_participants_actions(
             "previous_summary": previous,
             "message": payload["message"],
             "response": "I accept your truce.",
-        }
+        },
+        config=ANY,
     )
     assert service.game_state.negotiation_summaries["hannibal"] == {"scipio": summary}
     assert service.game_state.negotiation_summaries["scipio"]["hannibal"] == summary
@@ -479,7 +491,7 @@ def test_negotiations_use_live_state_and_reach_only_participants_actions(
 
 
 @pytest.mark.parametrize("streaming", [False, True])
-@pytest.mark.parametrize("failure", ["summary", "save"])
+@pytest.mark.parametrize("failure", ["summary", "empty_summary", "save"])
 def test_failed_negotiation_is_reported_without_publishing_unsaved_memory(
     game_client, monkeypatch, negotiation_chain, streaming, failure
 ):
@@ -494,6 +506,10 @@ def test_failed_negotiation_is_reported_without_publishing_unsaved_memory(
     monkeypatch.setattr(api, "get_streaming_response", stream)
     if failure == "summary":
         negotiation_chain.ainvoke.side_effect = RuntimeError("private provider details")
+    elif failure == "empty_summary":
+        negotiation_chain.ainvoke.return_value = AIMessage(
+            content="", response_metadata={"finish_reason": "length"}
+        )
     else:
         monkeypatch.setattr(
             service.state_repository,
@@ -518,6 +534,48 @@ def test_failed_negotiation_is_reported_without_publishing_unsaved_memory(
     assert service.get_current_state() == initial
     assert service.state_repository.saved == initial
     assert not service._round_lock.locked()
+
+
+def test_chat_keepalives_cover_generation_and_summary(
+    game_client, monkeypatch, negotiation_chain
+):
+    client, service = game_client
+    client.post("/game/start", json={"character_id": "scipio"})
+    monkeypatch.setattr(api, "_CHAT_HEARTBEAT_SECONDS", 0.01)
+
+    async def stream(**kwargs):
+        await asyncio.sleep(0.04)
+        yield "Reply"
+
+    async def summarize(*args, **kwargs):
+        await asyncio.sleep(0.04)
+        return AIMessage(content="No relevant negotiations.")
+
+    monkeypatch.setattr(api, "get_streaming_response", stream)
+    negotiation_chain.ainvoke.side_effect = summarize
+    with client.websocket_connect(
+        "/ws/chat", headers={"origin": api.settings.CORS_ALLOW_ORIGINS[0]}
+    ) as websocket:
+        websocket.send_json(
+            {"message": "Hi", "sender_id": "scipio", "receiver_id": "hannibal"}
+        )
+        assert websocket.receive_json() == {"streaming": True}
+        frames = []
+        while True:
+            frame = websocket.receive_json()
+            frames.append(frame)
+            if frame.get("streaming") is False:
+                break
+        chunk_index = frames.index({"chunk": "Reply"})
+        assert {"streaming": True} in frames[:chunk_index]
+        assert {"streaming": True} in frames[chunk_index + 1 : -1]
+        assert frames[-1] == {"response": "Reply", "streaming": False}
+        websocket.send_json({"invalid": "message"})
+        assert "error" in websocket.receive_json()
+    assert (
+        service.game_state.negotiation_summaries["hannibal"]["scipio"]
+        == "No relevant negotiations."
+    )
 
 
 @pytest.mark.parametrize(
