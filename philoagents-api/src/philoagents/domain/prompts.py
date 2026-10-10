@@ -5,9 +5,11 @@ from loguru import logger
 class Prompt:
     def __init__(self, name: str, prompt: str) -> None:
         self.name = name
+        self.__version = None
 
         try:
-            self.__prompt = opik.Opik().create_prompt(name=name, prompt=prompt).prompt
+            self.__version = opik.Opik().create_prompt(name=name, prompt=prompt)
+            self.__prompt = self.__version.prompt
         except Exception:
             logger.exception(
                 "Can't use Opik to version the prompt (probably due to missing or invalid credentials). Falling back to local prompt. The prompt is not versioned, but it's still usable."
@@ -17,6 +19,9 @@ class Prompt:
 
     @property
     def prompt(self) -> str:
+        if self.__version is not None:
+            opik.opik_context.attach_prompt_to_current_trace(self.__version)
+            opik.opik_context.attach_prompt_to_current_span(self.__version)
         return self.__prompt
 
     def __str__(self) -> str:

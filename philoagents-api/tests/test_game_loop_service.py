@@ -447,7 +447,59 @@ def _patch_graph(monkeypatch, graph):
     monkeypatch.setattr(
         service_module, "create_action_graph", lambda: FakeGraphBuilder(graph)
     )
-    monkeypatch.setattr(service_module, "OpikTracer", lambda graph=None: object())
+    monkeypatch.setattr(service_module, "OpikTracer", lambda **kwargs: object())
+
+
+def test_game_traces_are_isolated_and_include_round_and_characters(monkeypatch):
+    configs = []
+
+    class RecordingGraph:
+        def get_graph(self, xray=True):
+            return None
+
+        async def ainvoke(self, input, config):
+            configs.append(config)
+            if "character" in input:
+                return {"action": make_action(input["character"].id)}
+            return {
+                "crisis_update": "Resolved",
+                "updated_characters": input["characters"],
+            }
+
+    graph = RecordingGraph()
+    for name in ["create_action_graph", "create_judge_graph"]:
+        monkeypatch.setattr(service_module, name, lambda: FakeGraphBuilder(graph))
+    tracer = Mock(return_value=object())
+    monkeypatch.setattr(service_module, "OpikTracer", tracer)
+
+    async def scenario():
+        for game_id in ["first-game", "second-game"]:
+            state = make_state(round_number=3)
+            state.game_id = game_id
+            service = make_service(state=state)
+            actions = await service._run_ai_delegate_turns()
+            await service._run_judge_turn(actions, state.characters)
+
+    asyncio.run(scenario())
+
+    assert len(configs) == 6
+    assert len({config["configurable"]["thread_id"] for config in configs}) == 6
+    for config, tracer_call in zip(configs, tracer.call_args_list, strict=True):
+        metadata = config["metadata"]
+        game_id = metadata["game_id"]
+        assert game_id in {"first-game", "second-game"}
+        assert metadata["round_number"] == 3
+        if config["run_name"] == "delegate_action":
+            character_id = metadata["character_id"]
+            assert character_id in {"hannibal", "scipio"}
+            assert metadata["character_ids"] == [character_id]
+            expected_thread = f"{game_id}-{character_id}-action-round-3"
+        else:
+            assert config["run_name"] == "judge_resolution"
+            assert metadata["character_ids"] == ["hannibal", "scipio"]
+            expected_thread = f"{game_id}-judge-resolution-round-3"
+        assert config["configurable"]["thread_id"] == expected_thread
+        assert tracer_call.kwargs["thread_id"] == expected_thread
 
 
 def test_ai_delegate_error_falls_back_to_safe_action(monkeypatch):

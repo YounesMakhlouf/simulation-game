@@ -437,13 +437,25 @@ class GameLoopService:
         async def get_single_action(character: Character) -> Action:
             graph_builder = create_action_graph()
             graph = graph_builder.compile()
-            opik_tracer = OpikTracer(
-                graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+            thread_id = (
+                f"{self.game_state.game_id}-{character.id}"
+                f"-action-round-{self.game_state.round_number}"
             )
-            thread_id = f"{character.id}-action-round-{self.game_state.round_number}"
+            opik_tracer = OpikTracer(
+                graph=graph.get_graph(xray=True),
+                project_name=settings.COMET_PROJECT,
+                thread_id=thread_id,
+            )
             config = {
                 "configurable": {"thread_id": thread_id},
                 "callbacks": [opik_tracer],
+                "run_name": "delegate_action",
+                "metadata": {
+                    "game_id": self.game_state.game_id,
+                    "round_number": self.game_state.round_number,
+                    "character_id": character.id,
+                    "character_ids": [character.id],
+                },
             }
 
             dossier_entries = []
@@ -501,11 +513,25 @@ class GameLoopService:
         """
         graph_builder = create_judge_graph()
         graph = graph_builder.compile()
-        opik_tracer = OpikTracer(
-            graph=graph.get_graph(xray=True), project_name=settings.COMET_PROJECT
+        thread_id = (
+            f"{self.game_state.game_id}-judge-resolution"
+            f"-round-{self.game_state.round_number}"
         )
-        thread_id = f"judge-resolution-round-{self.game_state.round_number}"
-        config = {"configurable": {"thread_id": thread_id}, "callbacks": [opik_tracer]}
+        opik_tracer = OpikTracer(
+            graph=graph.get_graph(xray=True),
+            project_name=settings.COMET_PROJECT,
+            thread_id=thread_id,
+        )
+        config = {
+            "configurable": {"thread_id": thread_id},
+            "callbacks": [opik_tracer],
+            "run_name": "judge_resolution",
+            "metadata": {
+                "game_id": self.game_state.game_id,
+                "round_number": self.game_state.round_number,
+                "character_ids": sorted(characters),
+            },
+        }
         state_for_judge = self.game_state.model_copy(deep=True)
         state_for_judge.characters = characters
         # Keep the judge's input lean: last_round_actions duplicates what the
