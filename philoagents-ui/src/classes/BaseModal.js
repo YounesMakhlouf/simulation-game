@@ -1,3 +1,5 @@
+import { createReadablePanel } from "./ReadablePanel";
+import { addKeyboardButton } from "./KeyboardButton";
 import Phaser, { Scene } from "phaser";
 import { createUIButton } from "./ButtonFactory";
 import { COLORS, FONTS } from "../configs/Theme";
@@ -57,6 +59,7 @@ export class BaseModal extends Scene {
     }
 
     create() {
+        this.readablePanel = null;
         this.createOverlay();
         this.createPanel();
         this.createTitle();
@@ -175,6 +178,14 @@ export class BaseModal extends Scene {
     }
 
     createCloseButton() {
+        if (this.readablePanel) {
+            const button = document.createElement('button');
+            button.textContent = this.options.closeButtonText;
+            button.className = 'base-modal-close';
+            button.addEventListener('click', () => this.closeModal());
+            this.readablePanel.append(button);
+            return;
+        }
         const y = this.panelY + this.panelHeight - this.options.padding - 8;
 
         this.closeButton = this.add
@@ -187,6 +198,7 @@ export class BaseModal extends Scene {
         this.closeButton.on("pointerover", () => this.closeButton.setColor(this.options.closeButtonHoverColor));
         this.closeButton.on("pointerout", () => this.closeButton.setColor(this.options.closeButtonColor));
         this.closeButton.on("pointerdown", () => this.closeModal());
+        addKeyboardButton(this, this.closeButton, () => this.options.closeButtonText, "pointerdown");
     }
 
     setupKeyboardHandling() {
@@ -205,21 +217,15 @@ export class BaseModal extends Scene {
         if (typeof this.options.onClose === "function") this.options.onClose();
     }
 
-    // Optional helper to place a scrollable DOM container inside the content bounds
     addScrollableDom(html) {
-        const b = this.getContentBounds();
-        const dom = this.add.dom(b.x, b.y).createFromHTML(html).setOrigin(0, 0);
-        // Ensure it fits. Reserve some space for the close button if present to avoid overlap.
-        const reservedForCloseBtn = this.options.closeButtonText ? 56 : 0; // ~24px text + margins
-        const maxH = Math.max(0, Math.floor(b.height - reservedForCloseBtn));
-        dom.node.style.inlineSize = `${Math.floor(b.width) / 16}rem`;
-        dom.node.style.maxBlockSize = `${maxH / 16}rem`;
-        dom.node.style.marginBlockEnd = `${reservedForCloseBtn / 16}rem`;
-        dom.node.style.overflowY = "auto";
-        dom.node.style.overflowX = "hidden"; // <- prevent horizontal scroll
-        dom.node.style.boxSizing = "border-box";
-        dom.node.style.webkitOverflowScrolling = "touch";
-        return dom;
+        this.panel.setVisible(false);
+        this.title?.setVisible(false);
+        this.readablePanel = createReadablePanel(this, this.title?.text || this.options.titleText, html,
+            this.options.closeOnEsc ? () => this.closeModal() : null);
+        this.readablePanel.style.maxWidth = `${this.options.maxPanelWidth}px`;
+        this.readablePanel.style.backgroundColor = `#${this.options.panelColor.toString(16).padStart(6, '0')}`;
+        this.readablePanel.style.color = this.options.titleColor;
+        return this.readablePanel.querySelector('.readable-content');
     }
 
     createButton(x, y, text, onClick, opts = {}) {

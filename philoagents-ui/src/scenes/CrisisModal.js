@@ -21,7 +21,7 @@ export class CrisisModal extends BaseModal {
     }
 
     // Add crisis text as HTML instead of Phaser text
-    const crisisElement = this.addScrollableDom(`
+    this.addScrollableDom(`
         <div style="
             font-size: 1.25rem;
             color: ${COLORS.textCss};
@@ -38,6 +38,5 @@ export class CrisisModal extends BaseModal {
         </div>
     `);
 
-    crisisElement.setOrigin(0, 0);
   }
 }

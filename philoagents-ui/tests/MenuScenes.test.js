@@ -6,6 +6,7 @@ import ApiService from "../src/services/ApiService";
 import { createPresetButton } from "../src/classes/ButtonFactory";
 
 vi.mock("phaser", () => ({ Scene: class {} }));
+vi.mock("../src/classes/KeyboardButton", () => ({ addKeyboardButton: vi.fn() }));
 vi.mock("../src/classes/ButtonFactory", () => ({ createPresetButton: vi.fn() }));
 vi.mock("../src/services/ApiService", () => ({ default: { getSession: vi.fn(), request: vi.fn(), resetGame: vi.fn(), startGame: vi.fn() } }));
 

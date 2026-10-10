@@ -1,5 +1,6 @@
 import Phaser, { Scene, TintModes } from "phaser";
 import ApiService from "../services/ApiService";
+import { addKeyboardButton } from "../classes/KeyboardButton";
 import { createPresetButton } from "../classes/ButtonFactory";
 import { COLORS, FONTS } from "../configs/Theme";
 import { escapeHtml } from "../escapeHtml";
@@ -96,6 +97,7 @@ export class CharacterSelect extends Scene {
 
             portrait.setData("character", char);
             this.portraits.push(portrait);
+            addKeyboardButton(this, portrait, () => `Select ${char.name}`, "pointerdown");
 
             // Hover highlight: additive brighten (v4 tint mode), skipped while selected
             portrait.on("pointerover", () => {

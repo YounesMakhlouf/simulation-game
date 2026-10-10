@@ -10,7 +10,7 @@ function makeForm() {
         'action-details': { value: 'March on Rome', classList: { remove() {}, add() {} } },
         'action-type': { value: 'MILITARY' },
     };
-    return { fields, getChildByID: id => fields[id], node: { querySelectorAll: () => [] } };
+    return { fields, querySelector: selector => fields[selector.slice(1)], querySelectorAll: () => [] };
 }
 
 it('retains the form and permits another submission after rejection', async () => {

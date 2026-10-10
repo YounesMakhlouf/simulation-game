@@ -1,3 +1,4 @@
+import { addKeyboardButton } from "./KeyboardButton";
 import { COLORS, FONTS } from "../configs/Theme";
 
 const BUTTON_PRESETS = {
@@ -135,6 +136,7 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
     // Store label reference for easy text updates
     container.setData("label", label);
 
+    addKeyboardButton(scene, container, () => label.text);
     return { container, shadow, bg, label };
 }
 

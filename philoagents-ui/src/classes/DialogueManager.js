@@ -16,10 +16,6 @@ class DialogueManager {
         this.streamingText = '';
         this.exchangeController = null;
 
-        // Cursor properties
-        this.cursorBlinkEvent = null;
-        this.cursorVisible = true;
-
         this.hasSetupListeners = false;
     }
 
@@ -27,6 +23,7 @@ class DialogueManager {
 
     initialize(dialogueBox) {
         this.dialogueBox = dialogueBox;
+        dialogueBox.bind(this);
 
         if (!this.hasSetupListeners) {
             this.setupKeyboardListeners();
@@ -40,6 +37,7 @@ class DialogueManager {
     setupKeyboardListeners() {
         this.keyboard = this.scene.input.keyboard;
         this.keydownListener = (event) => {
+            if (event.target?.closest('button, input, textarea, select, dialog')) return;
             if (event.key === 'Escape' && this.isInDialogue()) {
                 this.closeDialogue();
                 return;
@@ -85,7 +83,7 @@ class DialogueManager {
             this.isTyping = false;
             this.dialogueBox.setSpeaker(this.activeDelegate.name);
             this.dialogueBox.show('...', true);
-            this.stopCursorBlink();
+            this.dialogueBox.setInputState('', false, true);
 
             try {
                 if (this.activeDelegate.defaultMessage) {
@@ -103,6 +101,7 @@ class DialogueManager {
                     WebSocketApiService.disconnect();
                     this.exchangeController = null;
                     this.isStreaming = false;
+                    this.dialogueBox.setInputState('', false);
                 }
             }
         } else if (!this.isTyping) {
@@ -195,40 +194,14 @@ class DialogueManager {
     // === UI Management ===
 
     updateDialogueText() {
-        const displayText = this.currentMessage + (this.cursorVisible ? '|' : '');
-        this.dialogueBox.show(displayText, true);
+        this.dialogueBox.setInputState(this.currentMessage, this.isTyping);
     }
 
     restartTypingPrompt() {
         this.currentMessage = '';
         this.dialogueBox.setSpeaker(this.playerName());
-        this.dialogueBox.show('|', true);
-
-        this.stopCursorBlink();
-        this.cursorVisible = true;
-        this.startCursorBlink();
-
+        this.dialogueBox.show('', true);
         this.updateDialogueText();
-    }
-
-    // === Cursor Management ===
-
-    startCursorBlink() {
-        this.cursorBlinkEvent = this.scene.time.addEvent({
-            delay: 300, callback: () => {
-                if (this.dialogueBox.isVisible() && this.isTyping) {
-                    this.cursorVisible = !this.cursorVisible;
-                    this.updateDialogueText();
-                }
-            }, loop: true
-        });
-    }
-
-    stopCursorBlink() {
-        if (this.cursorBlinkEvent) {
-            this.cursorBlinkEvent.remove();
-            this.cursorBlinkEvent = null;
-        }
     }
 
     // === Dialogue Flow Control ===
@@ -245,11 +218,8 @@ class DialogueManager {
         this.currentMessage = '';
 
         this.dialogueBox.setSpeaker(this.playerName());
-        this.dialogueBox.show('|', true);
-        this.stopCursorBlink();
-
-        this.cursorVisible = true;
-        this.startCursorBlink();
+        this.dialogueBox.show('', true);
+        this.dialogueBox.setInputState('', true);
     }
 
     closeDialogue() {
@@ -260,8 +230,6 @@ class DialogueManager {
         this.isTyping = false;
         this.currentMessage = '';
         this.isStreaming = false;
-
-        this.stopCursorBlink();
     }
 
     destroy() {
@@ -288,7 +256,6 @@ class DialogueManager {
         } else if (!this.isTyping) {
             this.isTyping = true;
             this.currentMessage = '';
-            this.dialogueBox.show('', false);
             this.restartTypingPrompt();
         }
     }
@@ -300,7 +267,6 @@ class DialogueManager {
         this.isStreaming = true;
         let displayedText = '';
 
-        this.stopCursorBlink();
 
         for (let i = 0; i < text.length; i++) {
             displayedText += text[i];

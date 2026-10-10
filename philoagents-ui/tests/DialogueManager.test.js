@@ -34,6 +34,8 @@ beforeEach(() => {
         show: vi.fn(() => { visible = true; }),
         hide: vi.fn(() => { visible = false; }),
         setSpeaker: vi.fn(),
+        bind: vi.fn(),
+        setInputState: vi.fn(),
         isVisible: () => visible,
     };
     exchanges = [];
@@ -215,4 +217,11 @@ it.each(["server error", "timeout"])("marks a streamed reply incomplete after %s
     const updates = box.show.mock.calls.length;
     exchanges[0].onStreamingEnd();
     expect(box.show).toHaveBeenCalledTimes(updates);
+});
+
+it('leaves Enter on native controls to the browser', async () => {
+    const enter = vi.spyOn(manager, 'handleEnterKey');
+    scene.input.keyboard.emit('keydown', { key: 'Enter', target: { closest: () => ({}) } });
+    expect(enter).not.toHaveBeenCalled();
+    expect(manager.currentMessage).toBe('Hi');
 });

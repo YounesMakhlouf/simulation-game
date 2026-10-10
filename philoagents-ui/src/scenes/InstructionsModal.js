@@ -1,5 +1,4 @@
 import { BaseModal } from '../classes/BaseModal.js';
-import { COLORS, FONTS } from '../configs/Theme';
 
 export class InstructionsModal extends BaseModal {
     constructor() {
@@ -11,15 +10,8 @@ export class InstructionsModal extends BaseModal {
     }
 
     createContent() {
-        const b = this.getContentBounds();
-
         const instructions = ['Arrow keys for moving', 'SPACE for talking to others', 'ESC for closing the dialogue', 'M for muting the sound', 'F for fullscreen','1. Read the Crisis Update each round.', '2. Submit your action (Diplomacy, Military, etc.).', '3. Negotiate privately with other delegates.', '4. Achieve your goals and deduce the secret plot.', 'Good luck, diplomat.'];
 
-        const style = {
-            fontSize: '20px', fontFamily: FONTS.body, color: COLORS.textCss, align: 'center', wordWrap: { width: b.width - 10 }
-        };
-
-        this.instructionsText = this.add.text(b.x + b.width / 2, b.y + b.height / 2, instructions.join('\n'), style)
-            .setOrigin(0.5, 0.5);
+        this.addScrollableDom(`<ul>${instructions.map(text => `<li>${text}</li>`).join('')}</ul>`);
     }
 }

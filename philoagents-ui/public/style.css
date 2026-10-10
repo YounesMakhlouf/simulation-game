@@ -224,14 +224,6 @@ button:active {
     }
 }
 
-/* Responsive adjustments */
-@media (width <= 64rem) {
-    .action-modal-form {
-        inline-size: 90%;
-        max-inline-size: 55rem;
-    }
-}
-
 /* EndGameModal Styles */
 .end-game-form {
     display: flex;
@@ -358,3 +350,83 @@ button:disabled {
     text-shadow: 0 0 0.5rem rgba(196, 166, 106, 0.4);
     transform: translateY(-0.125rem);
 }
+/* Readable UI sits outside the scaled game canvas. */
+.readable-panel {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    inline-size: calc(100vw - 2rem);
+    max-inline-size: 57.75rem;
+    max-block-size: calc(100dvh - 2rem);
+    padding: 1.25rem;
+    border: 1px solid var(--gold-color);
+    border-radius: 0.5rem;
+    background: var(--panel-color);
+    color: var(--primary-text-color);
+    font-size: 1rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+.readable-panel::backdrop { background: rgb(0 0 0 / 55%); }
+.readable-panel > h2 { font: bold 1.5rem var(--heading-font); margin-block-end: 1rem; }
+.readable-content { min-inline-size: 0; overflow-x: auto; }
+.readable-panel button { min-block-size: 2.75rem; }
+.readable-panel .base-modal-close { display: block; margin-inline: auto; background: var(--panel-color); }
+.action-modal-form { inline-size: 100%; }
+.dialogue-panel {
+    position: fixed;
+    z-index: 10;
+    inset-inline: 1rem;
+    inset-block-end: max(5rem, env(safe-area-inset-bottom));
+    max-inline-size: 51.5rem;
+    margin-inline: auto;
+    padding: 1rem;
+    border: 1px solid var(--gold-color);
+    background: var(--panel-color);
+    font-size: 1.125rem;
+}
+.dialogue-panel h2 { font-size: 1rem; color: var(--gold-color); margin-block-end: 0.5rem; }
+.dialogue-content {
+    max-block-size: min(35dvh, 15rem);
+    min-block-size: 3rem;
+    overflow: auto;
+    overscroll-behavior: contain;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.canvas-keyboard-button {
+    position: fixed;
+    z-index: 20;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: none;
+}
+.canvas-keyboard-button:focus-visible {
+    opacity: 1;
+    background: var(--panel-color);
+    color: var(--primary-text-color);
+    min-block-size: 2.75rem;
+    min-inline-size: 0;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+    padding-inline: 0.5rem;
+    outline: 3px solid var(--gold-color);
+    transform: none;
+}
+[hidden] { display: none !important; }
+@media (width <= 30rem) {
+    .readable-panel { inline-size: calc(100vw - 1rem); max-block-size: calc(100dvh - 1rem); padding: 0.75rem; }
+    .action-modal-form, .end-game-form { padding-inline: 0; }
+    .resource-item { align-items: stretch; flex-direction: column; }
+    .resource-input { max-inline-size: 100%; }
+    .dialogue-panel { inset-inline: 0.5rem; padding: 0.75rem; }
+    .scoreboard-table th, .scoreboard-table td { padding: 0.4rem; font-size: 1rem; }
+}
+.dialogue-panel { max-block-size: calc(100dvh - 6rem); overflow: auto; }
+.dialogue-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.dialogue-panel button { padding: 0.4rem 0.75rem; min-block-size: 2.75rem; background: var(--gold-color); }
+.dialogue-compose { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.dialogue-compose label { inline-size: 100%; }
+.dialogue-compose input { min-inline-size: 0; flex: 1; padding: 0.5rem; font-size: 1rem; color: var(--primary-text-color); background: var(--background-color); border: 1px solid var(--gold-color); }
+.dialogue-reply { margin-block-start: 0.75rem; }

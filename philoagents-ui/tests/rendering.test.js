@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { escapeHtml } from '../src/escapeHtml';
 
+vi.mock('../src/classes/ReadablePanel', () => ({ createReadablePanel: vi.fn() }));
+import { createReadablePanel } from '../src/classes/ReadablePanel';
+
 vi.mock('phaser', () => ({ Scene: class {} }));
 vi.mock('../src/classes/BaseModal', () => ({ BaseModal: class {} }));
 
@@ -59,7 +62,8 @@ describe('untrusted display text', () => {
         const scene = new ScoreboardScene();
         const dom = captureDom();
         const graphics = { fillStyle() { return this; }, fillRect() { return this; }, lineStyle() { return this; }, fillRoundedRect() { return this; }, strokeRoundedRect() { return this; } };
-        dom.element.getChildByID = () => ({ addEventListener() {} });
+        dom.element.querySelector = () => ({ addEventListener() {} });
+        createReadablePanel.mockImplementation((scene, title, html) => dom.create(html));
         scene.cameras = { main: { width: 1024, height: 768 } };
         scene.add = { graphics: () => graphics, dom: () => ({ createFromHTML: dom.create }) };
         scene.scores = { actual_undergame: payload, scores: { hannibal: { name: payload, faction_score: 80, undergame_score: 20, total_score: 100 } } };
@@ -69,17 +73,18 @@ describe('untrusted display text', () => {
     });
 
     it('escapes scrollable dialogue, including text entered by the player', () => {
-        const dom = captureDom();
         const box = Object.create(DialogueBox.prototype);
-        Object.assign(box, { x: 0, y: 0, width: 824, height: 200, text: { setVisible() {} }, container: { add() {} }, scene: { add: { dom: () => ({ createFromHTML: dom.create }) } } });
-        box.showWithScrolling(payload);
-        dom.check();
-        expect(dom.element.node.style.overflowY).toBe('auto');
-        expect(dom.element.node.style.blockSize).toBe('10rem');
-        dom.element.node.scrollTop = 40;
-        box.showWithScrolling(payload + ' more text');
-        expect(box.domElement).toBe(dom.element);
-        expect(dom.element.node.firstElementChild.textContent).toBe(payload + ' more text');
-        expect(dom.element.node.scrollTop).toBe(40);
+        box.panel = { hidden: true };
+        box.form = { hidden: true };
+        box.content = { textContent: '', scrollTop: 40 };
+        const content = box.content;
+        box.show(payload);
+        expect(content.textContent).toBe(payload);
+        expect(box.isVisible()).toBe(true);
+        box.show(payload + ' more text');
+        expect(box.content).toBe(content);
+        expect(content.scrollTop).toBe(40);
+        box.hide();
+        expect(box.isVisible()).toBe(false);
     });
 });

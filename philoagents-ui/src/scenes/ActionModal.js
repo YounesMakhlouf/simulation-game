@@ -16,7 +16,6 @@ export class ActionModal extends BaseModal {
 
     createContent() {
         const playerResources = this.gameManager.gameState.your_character.resources || {};
-        this.input.keyboard.disableGlobalCapture();
 
         const formElement = this.addScrollableDom(`
             <div class="action-modal-form"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
@@ -28,12 +27,12 @@ export class ActionModal extends BaseModal {
             <div id="resource-cost-container"></div>
             
             <button id="submit-button">Submit Final Action</button>
-            <p id="error-message">Please fill all required fields.</p>
+            <p id="error-message" role="alert">Please fill all required fields.</p>
             </div> `);
 
 
         // Populate resources
-        const resourceContainer = formElement.getChildByID('resource-cost-container');
+        const resourceContainer = formElement.querySelector('#resource-cost-container');
         Object.keys(playerResources).forEach((resourceName) => {
             const max = playerResources[resourceName] ?? 0;
             const resourceDiv = document.createElement('div');
@@ -62,31 +61,21 @@ export class ActionModal extends BaseModal {
         });
 
         // Submit
-        const submitButton = formElement.getChildByID('submit-button');
+        const submitButton = formElement.querySelector('#submit-button');
         submitButton.addEventListener('click', () => this.handleSubmit(formElement));
-
-        // Prevent Phaser keyboard capture when focusing inputs
-        const inputs = formElement.node.querySelectorAll('textarea, input, select');
-        inputs.forEach((el) => {
-            el.addEventListener('focus', () => this.input.keyboard.disableGlobalCapture());
-            el.addEventListener('blur', () => this.input.keyboard.enableGlobalCapture());
-        });
-
-        // Re-enable capture when shutting down
-        this.events.once('shutdown', () => this.input.keyboard.enableGlobalCapture());
     }
 
     async handleSubmit(form) {
-        const submitButton = form.getChildByID('submit-button');
+        const submitButton = form.querySelector('#submit-button');
         if (submitButton.disabled) return;
-        const errorMessageElement = form.getChildByID('error-message');
+        const errorMessageElement = form.querySelector('#error-message');
         errorMessageElement.style.visibility = 'hidden';
 
         const requiredFields = ['action-details'];
         let isValid = true;
 
         requiredFields.forEach((id) => {
-            const el = form.getChildByID(id);
+            const el = form.querySelector('#' + id);
             el.classList.remove('input-error');
             if (!el.value || el.value.trim() === '') {
                 el.classList.add('input-error');
@@ -102,7 +91,7 @@ export class ActionModal extends BaseModal {
 
         // Gather resource costs
         const resourceCost = {};
-        const resourceInputs = form.node.querySelectorAll('.resource-input');
+        const resourceInputs = form.querySelectorAll('.resource-input');
         resourceInputs.forEach((input) => {
             const value = Math.max(0, parseInt(input.value || '0', 10));
             const name = input.id.replace('resource-', '');
@@ -111,8 +100,8 @@ export class ActionModal extends BaseModal {
 
         const finalAction = {
             character_id: this.gameManager.playerCharacterId,
-            action_type: form.getChildByID('action-type').value,
-            action_details: form.getChildByID('action-details').value,
+            action_type: form.querySelector('#action-type').value,
+            action_details: form.querySelector('#action-details').value,
             resource_cost: resourceCost
         };
 

@@ -48,6 +48,6 @@ export class IntelModal extends BaseModal {
                 line-height: 1.4;
                 padding-inline: 0.625rem;
             ">${reportsHtml}</div>
-        `).setDepth(2);
+        `);
     }
 }

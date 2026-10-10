@@ -1,3 +1,4 @@
+import { createReadablePanel } from '../classes/ReadablePanel';
 import { Scene } from 'phaser';
 import { COLORS } from '../configs/Theme';
 import { escapeHtml } from '../escapeHtml';
@@ -29,7 +30,6 @@ export class ScoreboardScene extends Scene {
         // Create HTML content for the scoreboard
         const scoreboardHTML = `
             <div class="scoreboard-container">
-                <h1 class="scoreboard-title">Final Scores</h1>
                 <h2 class="scoreboard-subtitle">The Secret Undergame:</h2>
                 <p class="scoreboard-text">${escapeHtml(this.scores.actual_undergame)}</p>
                 
@@ -47,15 +47,15 @@ export class ScoreboardScene extends Scene {
                     </tbody>
                 </table>
                 
-                <div class="scoreboard-return" id="return-button">[ Return to Main Menu ]</div>
+                <button class="scoreboard-return" id="return-button">Return to Main Menu</button>
             </div>
         `;
 
         // Add the DOM element
-        const scoreboardElement = this.add.dom(512, 384).createFromHTML(scoreboardHTML).setOrigin(0.5);
+        const scoreboardElement = createReadablePanel(this, 'Final Scores', scoreboardHTML);
         
         // Add event listener to the return button
-        const returnButton = scoreboardElement.getChildByID('return-button');
+        const returnButton = scoreboardElement.querySelector('#return-button');
         returnButton.addEventListener('click', () => {
             this.scene.start('MainMenu');
         });

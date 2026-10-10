@@ -22,7 +22,7 @@ const config = {
     backgroundColor: COLORS.background,
     roundPixels: true,
     scale: {
-        mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH
+        mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, fullscreenTarget: document.body
     },
     dom: {
         createContainer: true
@@ -36,4 +36,8 @@ const config = {
 };
 const game = new Phaser.Game(config);
 game.audioManager = new AudioManager(game);
+// A key held while focus enters HTML must not keep moving the player.
+document.addEventListener('focusin', () => {
+    game.scene.getScenes(true).forEach(scene => scene.input.keyboard?.resetKeys());
+});
 export default game;
