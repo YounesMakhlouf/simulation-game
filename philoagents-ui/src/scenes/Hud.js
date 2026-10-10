@@ -133,7 +133,7 @@ export class HUDScene extends Scene {
         if (!this.phaseText || !newPhase) return;
         const [name, nextStep] = PHASE_GUIDANCE[newPhase];
         this.phaseText.textContent = name;
-        this.nextStepText.textContent = ` — ${nextStep}`;
+        this.nextStepText.textContent = ` : ${nextStep}`;
         this.endDiplomacyButton.textContent = newPhase === 'ROUND_FAILED' ? 'Retry round' : 'Choose action';
         this.endDiplomacyButton.hidden = newPhase !== 'DIPLOMACY' && newPhase !== 'ROUND_FAILED';
     }
