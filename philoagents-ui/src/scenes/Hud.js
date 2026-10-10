@@ -1,18 +1,18 @@
 import Phaser, { Scene } from "phaser";
-import { createPresetButton } from "../classes/ButtonFactory";
-import { COLORS, FONTS } from "../configs/Theme";
+import { COLORS } from "../configs/Theme";
+
+const PHASE_GUIDANCE = {
+    INITIALIZING: ['Preparing the round', 'wait for the situation report.'],
+    DIPLOMACY: ['Diplomacy', 'negotiate with delegates, then choose your action.'],
+    ACTION: ['Action', 'describe your plan, assign resources, then submit your action.'],
+    WAITING_FOR_JUDGE: ['Resolving the round', 'wait for the results of everyone’s actions.'],
+    ROUND_FAILED: ['Round interrupted', 'retry the round to continue.'],
+};
 
 export class HUDScene extends Scene {
     constructor() {
-        super("HUDScene");
-
+        super('HUDScene');
         this.gameManager = null;
-        this.intelButton = null;
-        this.roundText = null;
-        this.phaseText = null;
-        this.resourceTexts = {};
-        this.resourceValues = {};
-        this.endDiplomacyButton = null;
     }
 
     init(data) {
@@ -20,177 +20,121 @@ export class HUDScene extends Scene {
     }
 
     create() {
-        // Scene instances are reused across restarts; drop stale state
-        this.resourceTexts = {};
+        this.resourceRows = {};
         this.resourceValues = {};
-
-        // Dark top bar behind the HUD text for legibility over the busy tilemap.
-        const screenWidth = this.cameras.main.width;
-        const barHeight = 120;
-        if (this.sys.game.renderer.type === Phaser.WEBGL) {
-            const panelColor = Phaser.Display.Color.IntegerToColor(COLORS.panel);
-            this.add
-                .gradient(
-                    {
-                        shapeMode: 0, // LINEAR
-                        start: { x: 0, y: 0 },
-                        shape: { x: 0, y: 1 },
-                        bands: [
-                            {
-                                start: 0,
-                                end: 1,
-                                colorStart: [panelColor.redGL, panelColor.greenGL, panelColor.blueGL, 0.9],
-                                colorEnd: [panelColor.redGL, panelColor.greenGL, panelColor.blueGL, 0],
-                                interpolation: 0,
-                            },
-                        ],
-                    },
-                    screenWidth / 2,
-                    60,
-                    screenWidth,
-                    barHeight
-                )
-                .setDepth(-1);
-        } else {
-            this.add
-                .graphics()
-                .fillStyle(COLORS.panel, 0.9)
-                .fillRect(0, 0, screenWidth, barHeight)
-                .setDepth(-1);
-        }
-
-        this.roundText = this.add.text(20, 20, "Round: 1", {
-            fontSize: "24px", fontFamily: FONTS.heading, color: COLORS.textCss, stroke: COLORS.backgroundCss, strokeThickness: 4,
+        this.panel = document.createElement('aside');
+        this.panel.className = 'game-hud';
+        this.panel.setAttribute('aria-label', 'Round status and resources');
+        this.panel.innerHTML = `
+            <section class="hud-overview hud-card" aria-label="Current round">
+                <div class="hud-overview-top">
+                    <p class="hud-round"></p>
+                    <button class="hud-intel" type="button">View intel (0)</button>
+                </div>
+                <p class="hud-phase"><strong></strong><span></span></p>
+            </section>
+            <section class="hud-resources hud-card" aria-label="Your resources">
+                <h2>Resources</h2>
+                <dl></dl>
+            </section>
+            <div class="hud-actions"><button type="button" hidden>Choose action</button></div>`;
+        this.roundText = this.panel.querySelector('.hud-round');
+        this.phaseText = this.panel.querySelector('.hud-phase strong');
+        this.nextStepText = this.panel.querySelector('.hud-phase span');
+        this.resourceList = this.panel.querySelector('dl');
+        this.intelButton = this.panel.querySelector('.hud-intel');
+        this.endDiplomacyButton = this.panel.querySelector('.hud-actions button');
+        this.intelButton.addEventListener('click', () => {
+            const reports = this.gameManager.gameState.your_character?.known_intel || [];
+            if (reports.length) this.scene.get('Game').showIntelModal(reports);
         });
-        this.phaseText = this.add
-            .text(this.cameras.main.width - 20, 20, "Phase: INITIALIZING", {
-                fontSize: "24px", fontFamily: FONTS.heading, color: COLORS.textCss, stroke: COLORS.backgroundCss, strokeThickness: 4,
-            })
-            .setOrigin(1, 0);
-        this.createEndDiplomacyButton();
-        this.createIntelButton();
-
-        this.gameManager.events.on("stateUpdated", this.updateHUD, this);
-        this.gameManager.events.on("phaseChanged", this.updatePhase, this);
-
-        // Detach listeners when this scene shuts down or is destroyed to avoid updates on dead objects
-        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.detachGameManagerEvents());
-        this.events.once(Phaser.Scenes.Events.DESTROY, () => this.detachGameManagerEvents());
-
-        this.updateHUD(this.gameManager.gameState);
-        this.updatePhase(this.gameManager.gamePhase);
-    }
-
-    detachGameManagerEvents() {
-        if (this.gameManager && this.gameManager.events) {
-            this.gameManager.events.off("stateUpdated", this.updateHUD, this);
-            this.gameManager.events.off("phaseChanged", this.updatePhase, this);
-        }
-    }
-
-    createIntelButton() {
-        const buttonX = this.cameras.main.width - 90;
-        const buttonY = 80;
-
-        const { container, label } = createPresetButton(this, "info", buttonX, buttonY, "View Intel (0)", () => {
-            if (this.gameManager.gameState.your_character?.known_intel?.length > 0) {
-                const intelReports = this.gameManager.gameState.your_character.known_intel;
-                this.scene.get("Game").showIntelModal(intelReports);
-            }
-        }, { alpha: 0.8 });
-
-        this.intelButton = container;
-        this.intelButton.setData("label", label);
-    }
-
-    createEndDiplomacyButton() {
-        const buttonX = this.cameras.main.width / 2;
-        const buttonY = this.cameras.main.height - 40;
-
-        const { container } = createPresetButton(this, "action", buttonX, buttonY, "Proceed to Action Phase", () => {
-            if (this.gameManager.gamePhase === "ROUND_FAILED") {
+        this.endDiplomacyButton.addEventListener('click', () => {
+            if (this.gameManager.gamePhase === 'ROUND_FAILED') {
                 this.gameManager.retryRound();
             } else {
                 this.gameManager.startActionPhase();
             }
         });
+        this.panel.addEventListener('keydown', event => event.stopPropagation());
+        this.panel.addEventListener('keyup', event => event.stopPropagation());
+        document.body.append(this.panel);
 
-        this.endDiplomacyButton = container;
-        this.endDiplomacyButton.setVisible(false);
+        const syncVisibility = () => {
+            this.panel.hidden = !this.scene.isActive() || this.scene.manager.getScenes(true).some(scene => scene.overlay);
+        };
+        this.game.events.on('poststep', syncVisibility);
+        this.gameManager.events.on('stateUpdated', this.updateHUD, this);
+        this.gameManager.events.on('phaseChanged', this.updatePhase, this);
+        const cleanup = () => {
+            this.panel.remove();
+            this.game.events.off('poststep', syncVisibility);
+            this.detachGameManagerEvents();
+            this.events.off(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+            this.events.off(Phaser.Scenes.Events.DESTROY, cleanup);
+        };
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, cleanup);
+        this.events.once(Phaser.Scenes.Events.DESTROY, cleanup);
+        this.updateHUD(this.gameManager.gameState);
+        this.updatePhase(this.gameManager.gamePhase);
+        syncVisibility();
+    }
+
+    detachGameManagerEvents() {
+        this.gameManager.events.off('stateUpdated', this.updateHUD, this);
+        this.gameManager.events.off('phaseChanged', this.updatePhase, this);
     }
 
     updateHUD(gameState) {
-        if (!gameState || !gameState.your_character) return;
-
-        // Update Round Number
-        this.roundText.setText(`Round: ${gameState.round_number}`);
-
-        // Dynamically display resources; Text objects are expensive, so create
-        // one per resource and just setText on subsequent updates.
+        if (!gameState?.your_character) return;
+        this.roundText.textContent = `Round ${gameState.round_number}`;
         const resources = gameState.your_character.resources;
-        let yPos = 60;
+        for (const key of Object.keys(this.resourceRows)) {
+            if (!(key in resources)) {
+                this.resourceRows[key].row.remove();
+                delete this.resourceRows[key];
+                delete this.resourceValues[key];
+            }
+        }
         for (const [key, value] of Object.entries(resources)) {
-            if (!this.resourceTexts[key]) {
-                this.resourceTexts[key] = this.add.text(20, yPos, "", {
-                    fontSize: "18px", fontFamily: FONTS.body, color: COLORS.textCss,
-                });
+            if (!this.resourceRows[key]) {
+                const row = document.createElement('div');
+                const label = document.createElement('dt');
+                const name = key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').toLowerCase();
+                label.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                const amount = document.createElement('dd');
+                const number = document.createElement('span');
+                amount.append(number);
+                row.append(label, amount);
+                this.resourceList.append(row);
+                this.resourceRows[key] = { row, amount, number };
             }
-            const text = this.resourceTexts[key];
-            text.setText(`${key}: ${value}`);
-
-            const prev = this.resourceValues[key];
-            if (prev !== undefined && value !== prev) {
-                this.showResourceDelta(text, value - prev);
-            }
+            const { number, amount } = this.resourceRows[key];
+            number.textContent = value.toLocaleString('en-US');
+            const previous = this.resourceValues[key];
+            if (previous !== undefined && value !== previous) this.showResourceDelta(amount, value - previous);
             this.resourceValues[key] = value;
-            yPos += 25;
         }
-
         const intelCount = gameState.your_character.known_intel?.length || 0;
-        const buttonLabel = this.intelButton.getData("label");
-        if (buttonLabel) buttonLabel.setText(`View Intel (${intelCount})`);
-
-        // Disable the button visually if there is no intel
-        if (this.intelButton && !this.intelButton.destroyed) {
-            if (intelCount === 0) {
-                this.intelButton.setAlpha(0.5).disableInteractive();
-            } else {
-                this.intelButton.setAlpha(1).setInteractive({ useHandCursor: true });
-            }
-        }
+        this.intelButton.textContent = `View intel (${intelCount})`;
+        this.intelButton.disabled = intelCount === 0;
     }
 
-    // Floating +N/-N next to a resource line that rises and fades out
     showResourceDelta(anchor, delta) {
-        const floater = this.add.text(anchor.x + anchor.width + 8, anchor.y, `${delta > 0 ? "+" : ""}${delta}`, {
-            fontSize: "18px",
-            fontFamily: FONTS.body,
-            fontStyle: "bold",
-            color: delta > 0 ? COLORS.positiveCss : COLORS.negativeCss,
-            stroke: COLORS.backgroundCss,
-            strokeThickness: 3,
-        });
-        this.tweens.add({
-            targets: floater,
-            y: floater.y - 18,
-            alpha: 0,
-            duration: 1500,
-            ease: "Cubic.easeOut",
-            onComplete: () => floater.destroy(),
-        });
+        anchor.querySelector('.hud-resource-delta')?.remove();
+        const floater = document.createElement('span');
+        floater.className = 'hud-resource-delta';
+        floater.textContent = `${delta > 0 ? '+' : ''}${delta.toLocaleString('en-US')}`;
+        floater.style.color = delta > 0 ? COLORS.positiveCss : COLORS.negativeCss;
+        anchor.append(floater);
+        floater.addEventListener('animationend', () => floater.remove(), { once: true });
     }
 
     updatePhase(newPhase) {
-        // If UI not yet created (early call), safely ignore
-        if (!this.phaseText || !this.endDiplomacyButton || !newPhase) {
-            return;
-        }
-
-        const phaseName = newPhase.replace("_", " ").toUpperCase();
-        this.phaseText.setText(`Phase: ${phaseName}`);
-        this.endDiplomacyButton.getData("label").setText(
-            newPhase === "ROUND_FAILED" ? "Retry Round" : "Proceed to Action Phase"
-        );
-        this.endDiplomacyButton.setVisible(newPhase === "DIPLOMACY" || newPhase === "ROUND_FAILED");
+        if (!this.phaseText || !newPhase) return;
+        const [name, nextStep] = PHASE_GUIDANCE[newPhase];
+        this.phaseText.textContent = name;
+        this.nextStepText.textContent = ` — ${nextStep}`;
+        this.endDiplomacyButton.textContent = newPhase === 'ROUND_FAILED' ? 'Retry round' : 'Choose action';
+        this.endDiplomacyButton.hidden = newPhase !== 'DIPLOMACY' && newPhase !== 'ROUND_FAILED';
     }
 }
