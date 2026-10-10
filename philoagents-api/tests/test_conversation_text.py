@@ -3,6 +3,7 @@ from contextlib import contextmanager, nullcontext
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
+import opik
 import pytest
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.documents import Document
@@ -117,6 +118,32 @@ def test_retrieval_returns_document_text(monkeypatch, documents):
     )
     assert message.content == "\n\n".join(doc.page_content for doc in documents)
     assert message.artifact == [doc.page_content for doc in documents]
+
+
+def test_retrieval_caches_initialization_but_searches_each_time(monkeypatch):
+    retriever = Mock()
+    retriever.invoke.return_value = [Document(page_content="Retrieved fact")]
+    initialize = Mock(return_value=retriever)
+    monkeypatch.setattr(tools, "get_retriever", initialize)
+    tools._retriever.cache_clear()
+    opik.set_tracing_active(False)
+    try:
+        for _ in range(2):
+            message = tools.retrieve_character_context.invoke(
+                {
+                    "name": "retrieve_character_context",
+                    "args": {"query": "Hanno"},
+                    "id": "search",
+                    "type": "tool_call",
+                },
+            )
+            assert message.artifact == ["Retrieved fact"]
+        initialize.assert_called_once()
+        assert retriever.invoke.call_count == 2
+        retriever.invoke.assert_called_with("Hanno")
+    finally:
+        tools._retriever.cache_clear()
+        opik.reset_tracing_to_config_default()
 
 
 def test_empty_retrieval_skips_summary_model(monkeypatch):
