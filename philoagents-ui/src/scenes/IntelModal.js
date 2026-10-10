@@ -37,16 +37,16 @@ export class IntelModal extends BaseModal {
         const reportsHtml = this.intelReports.length === 0
             ? '<p>No intelligence reports available.</p>'
             : this.intelReports
-                .map((report, index) => `<h3 style="margin: 0 0 4px; font-family: ${FONTS.heading};">Report #${index + 1}</h3><p style="margin: 0 0 16px; white-space: pre-wrap;">${escapeHtml(report)}</p>`)
+                .map((report, index) => `<h3 style="margin-block-end: 0.25rem; font-family: ${FONTS.heading};">Report #${index + 1}</h3><p style="margin-block-end: 1rem; white-space: pre-wrap;">${escapeHtml(report)}</p>`)
                 .join('');
 
         this.addScrollableDom(`
             <div style="
                 font-family: ${FONTS.body};
-                font-size: 18px;
+                font-size: 1.125rem;
                 color: ${COLORS.inkCss};
                 line-height: 1.4;
-                padding: 0 10px;
+                padding-inline: 0.625rem;
             ">${reportsHtml}</div>
         `).setDepth(2);
     }

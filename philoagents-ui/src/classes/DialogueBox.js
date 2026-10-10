@@ -101,16 +101,16 @@ class DialogueBox {
 
         const html = `
             <div style="
-                font-size: 24px;
+                font-size: 1.5rem;
                 color: ${COLORS.textCss};
                 font-family: ${FONTS.body};
                 line-height: 1.4;
-                word-wrap: break-word;
+                overflow-wrap: break-word;
                 white-space: pre-wrap;
                 padding: 0;
                 margin: 0;
-                width: 100%;
-                height: 100%;
+                inline-size: 100%;
+                block-size: 100%;
                 overflow-y: auto;
                 overflow-x: hidden;
                 box-sizing: border-box;
@@ -123,8 +123,8 @@ class DialogueBox {
             .createFromHTML(html)
             .setOrigin(0, 0);
 
-        this.domElement.node.style.width = `${contentWidth}px`;
-        this.domElement.node.style.height = `${contentHeight}px`;
+        this.domElement.node.style.inlineSize = `${contentWidth / 16}rem`;
+        this.domElement.node.style.blockSize = `${contentHeight / 16}rem`;
 
         // Add to container if possible
         this.container.add(this.domElement);

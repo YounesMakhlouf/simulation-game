@@ -24,6 +24,7 @@ from philoagents.application.conversation_service.workflow import (
 from philoagents.application.game_loop_service import api as game_api
 from philoagents.application.game_loop_service import service as game_service_module
 from philoagents.application.game_loop_service.workflow import nodes as action_nodes
+from philoagents.application.scenario_loader import ScenarioLoader
 from philoagents.domain.character_factory import CharacterFactory
 from philoagents.infrastructure import api
 from philoagents.infrastructure.dependencies import get_character_factory
@@ -41,7 +42,14 @@ def negotiation_chain(monkeypatch):
 
 def test_dependency_injection_and_chat(monkeypatch):
     service = make_service()
-    factory = CharacterFactory([make_character("hannibal").model_dump()])
+    character = make_character("hannibal").model_dump()
+    character["ui_profile"] = {
+        "title": "General",
+        "strengths": "Veteran troops",
+        "objectives": "Secure a supply port",
+        "portrait_key": "hannibal_barca_portrait",
+    }
+    factory = CharacterFactory([character])
 
     async def respond(**kwargs):
         assert kwargs["receiver_character"].id == "hannibal"
@@ -308,6 +316,42 @@ def test_session_exposes_configured_scoring_timeout(
     response = client.get("/game/session")
     assert response.status_code == 200
     assert response.json()["scoring_timeout_ms"] == (ai_timeout + 30) * 1000
+
+
+def test_session_reports_the_saved_delegate_and_current_round(game_client):
+    client, service = game_client
+    assert client.get("/game/session").json()["player_character_id"] is None
+    assert client.post("/game/start", json={"character_id": "hannibal"}).status_code == 200
+    service.game_state.round_number = 4
+    session = client.get("/game/session").json()
+    assert session["player_character_id"] == "hannibal"
+    assert session["player_character_name"] == service.game_state.characters["hannibal"].name
+    assert session["round_number"] == 4
+
+
+def test_selection_profiles_expose_public_strengths_and_objectives(
+    game_client, monkeypatch
+):
+    client, _ = game_client
+    loader = ScenarioLoader("scenarios/a_clash_of_titans_216bce")
+    monkeypatch.setitem(
+        api.app.dependency_overrides,
+        get_character_factory,
+        loader.create_character_factory,
+    )
+    response = client.get("/game/characters")
+    assert response.status_code == 200
+    profiles = response.json()["characters"]
+    assert len(profiles) == 4
+    for profile, character in zip(profiles, loader.character_data, strict=True):
+        assert profile == {
+            "id": character["id"],
+            "name": character["name"],
+            **character["ui_profile"],
+        }
+        assert profile["strengths"]
+        assert profile["objectives"]
+        assert "known_intel" not in profile
 
 
 def test_failed_game_write_returns_503_and_keeps_state(game_client, monkeypatch):

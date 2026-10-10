@@ -19,7 +19,7 @@ export class ActionModal extends BaseModal {
         this.input.keyboard.disableGlobalCapture();
 
         const formElement = this.addScrollableDom(`
-            <div class="action-modal-form" style="box-sizing:border-box; padding:12px 16px 16px;"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
+            <div class="action-modal-form"> <h2>Final Action</h2> <div id="final-action-container"> <label for="action-type">Action Type:</label> <select id="action-type"> <option value="DIPLOMACY">DIPLOMACY</option> <option value="MILITARY">MILITARY</option> <option value="ECONOMIC">ECONOMIC</option> <option value="ESPIONAGE">ESPIONAGE</option> </select>
               <label for="action-details">Action Details:</label>
               <textarea id="action-details" placeholder="Specific details of your chosen action..."></textarea>
             </div>

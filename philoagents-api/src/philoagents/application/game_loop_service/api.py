@@ -37,7 +37,8 @@ class CharacterProfile(BaseModel):
     id: str
     name: str
     title: str
-    description: str
+    strengths: str
+    objectives: str
     portrait_key: str
 
 
@@ -62,6 +63,7 @@ class SessionResponse(BaseModel):
 
     player_character_id: str | None
     player_character_name: str | None
+    round_number: int
     scoring_timeout_ms: int = Field(gt=0)
 
 
@@ -87,14 +89,14 @@ class ScoreboardResponse(BaseModel):
 @router.get("/session", response_model=SessionResponse)
 async def get_session(service: Annotated[GameLoopService, Depends(get_game_service)]):
     """
-    Returns which character the current saved game is bound to, so the UI can
-    offer "Continue as X" instead of a fresh character selection.
+    Returns the saved delegate and current round for the menu's Continue option.
     """
     state = service.get_current_state()
     player_id = state.player_character_id
     return SessionResponse(
         player_character_id=player_id,
         player_character_name=state.characters[player_id].name if player_id else None,
+        round_number=state.round_number,
         # Allow saving and embedding inference after the AI guess deadline.
         scoring_timeout_ms=(settings.AI_ACTION_TIMEOUT_SECONDS + 30) * 1000,
     )
@@ -173,17 +175,16 @@ async def get_all_characters(
     for char_id in character_ids:
         # Get the original, raw dictionary for this character
         raw_data = factory.get_character_raw_data(char_id)
-        ui_profile_data = raw_data.get("ui_profile", {})
+        ui_profile_data = raw_data["ui_profile"]
 
         profiles.append(
             CharacterProfile(
                 id=char_id,
                 name=raw_data["name"],
-                title=ui_profile_data.get("title", "No Title Available"),
-                description=ui_profile_data.get(
-                    "description", "No Description Available"
-                ),
-                portrait_key=ui_profile_data.get("portrait_key", "default_portrait"),
+                title=ui_profile_data["title"],
+                strengths=ui_profile_data["strengths"],
+                objectives=ui_profile_data["objectives"],
+                portrait_key=ui_profile_data["portrait_key"],
             )
         )
 

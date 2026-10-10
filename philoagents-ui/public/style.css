@@ -14,7 +14,7 @@
 
 img, picture, video, canvas, svg {
     display: block;
-    max-width: 100%;
+    max-inline-size: 100%;
 }
 
 input, button, textarea, select {
@@ -60,8 +60,8 @@ body {
 }
 
 #app {
-    width: 100%;
-    height: 100vh;
+    inline-size: 100%;
+    block-size: 100dvb;
     overflow: hidden;
     display: flex;
     justify-content: center;
@@ -69,39 +69,58 @@ body {
     background: radial-gradient(circle at center, var(--panel-color) 0%, var(--background-color) 100%);
 }
 
+.delegate-strategy {
+    font-family: var(--body-font);
+    font-size: 1.125rem;
+    line-height: 1.4;
+    color: var(--primary-text-color);
+    inline-size: 47.5rem;
+    max-block-size: 7.5rem;
+    overflow: auto;
+
+    & p + p {
+        margin-block-start: 0.625rem;
+    }
+
+    & strong {
+        color: var(--gold-color);
+    }
+}
+
 /* Styling for the Action Modal Form */
 .action-modal-form {
     color: var(--primary-text-color);
-    padding: 1.5rem;
+    padding-block: 0.75rem 1rem;
+    padding-inline: 1rem;
     display: flex;
     flex-direction: column;
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.4);
 }
 
 .action-modal-form h2 {
     font-family: var(--heading-font);
     color: var(--gold-color);
-    border-bottom: 1px solid var(--gold-color);
-    padding-bottom: 8px;
-    margin-top: 12px;
-    margin-bottom: 16px;
+    border-block-end: 0.0625rem solid var(--gold-color);
+    padding-block-end: 0.5rem;
+    margin-block-start: 0.75rem;
+    margin-block-end: 1rem;
     font-weight: 700;
-    letter-spacing: 1px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.0625rem;
+    text-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.5);
 }
 
 textarea,
 select,
 .resource-input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 1rem;
+    inline-size: 100%;
+    padding: 0.75rem;
+    margin-block-end: 1rem;
     background-color: var(--background-color);
-    border: 1px solid var(--input-border-color);
+    border: 0.0625rem solid var(--input-border-color);
     color: var(--primary-text-color);
-    border-radius: 6px;
-    resize: vertical;
+    border-radius: 0.375rem;
+    resize: block;
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
@@ -109,8 +128,8 @@ textarea:focus,
 select:focus,
 .resource-input:focus {
     border-color: var(--gold-color);
-    outline: 2px solid var(--gold-color);
-    outline-offset: 2px;
+    outline: 0.125rem solid var(--gold-color);
+    outline-offset: 0.125rem;
 }
 
 textarea::placeholder {
@@ -119,25 +138,25 @@ textarea::placeholder {
 }
 
 label {
-    margin-bottom: 0.4rem;
+    margin-block-end: 0.4rem;
     font-weight: 600;
 }
 
 #final-action-container {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin-block-end: 1.25rem;
 }
 
 button {
     font-weight: bold;
     padding: 1rem;
     font-size: 1.125rem;
-    border: 1px solid var(--input-border-color);
-    border-radius: 8px;
+    border: 0.0625rem solid var(--input-border-color);
+    border-radius: 0.5rem;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0.25rem 0.375rem rgba(0, 0, 0, 0.2);
 }
 
 #submit-button,
@@ -147,8 +166,8 @@ button {
 }
 
 button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-0.125rem);
+    box-shadow: 0 0.375rem 0.5rem rgba(0, 0, 0, 0.3);
 }
 
 #submit-button:hover,
@@ -157,21 +176,21 @@ button:hover {
 }
 
 button:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: translateY(0.0625rem);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
 }
 
 /* For validation feedback */
 .input-error {
     border-color: var(--error-color) !important;
     background-color: rgba(233, 154, 145, 0.05) !important;
-    box-shadow: 0 0 0 1px var(--error-color) !important;
+    box-shadow: 0 0 0 0.0625rem var(--error-color) !important;
 }
 
 #error-message {
     color: var(--error-color);
     font-size: 0.95rem;
-    margin-top: 0.5rem;
+    margin-block-start: 0.5rem;
     text-align: center;
     font-weight: 500;
     visibility: hidden;
@@ -181,35 +200,35 @@ button:active {
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: center;
-    margin-top: 24px;
+    margin-block-start: 1.5rem;
     color: var(--gold-color);
     font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.3);
 }
 
 .base-modal-close:hover {
     color: var(--primary-text-color);
-    text-shadow: 0 0 8px rgba(196, 166, 106, 0.4);
+    text-shadow: 0 0 0.5rem rgba(196, 166, 106, 0.4);
 }
 
 /* Accessibility and Focus Styles */
 :focus {
-    outline: 2px solid var(--gold-color);
-    outline-offset: 2px;
+    outline: 0.125rem solid var(--gold-color);
+    outline-offset: 0.125rem;
 }
 
 /* High contrast mode support */
 @media (forced-colors: active) {
     button {
-        border: 2px solid currentColor;
+        border: 0.125rem solid currentColor;
     }
 }
 
 /* Responsive adjustments */
-@media (max-width: 1024px) {
+@media (width <= 64rem) {
     .action-modal-form {
-        width: 90%;
-        max-width: 880px;
+        inline-size: 90%;
+        max-inline-size: 55rem;
     }
 }
 
@@ -218,33 +237,35 @@ button:active {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
+    inline-size: 100%;
+    max-inline-size: 37.5rem;
+    margin-block: 0;
+    margin-inline: auto;
+    padding: 1.25rem;
 }
 
 #resource-cost-container {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin-block-end: 1.25rem;
 }
 
 .resource-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-block-end: 0.625rem;
 }
 
 .resource-input {
-    max-width: 40%;
+    max-inline-size: 40%;
 }
 
 .end-game-form .error-text {
     color: var(--error-color);
-    font-size: 14px;
-    margin: 8px 0;
+    font-size: 0.875rem;
+    margin-block: 0.5rem;
+    margin-inline: 0;
     text-align: center;
     font-weight: 500;
 }
@@ -266,52 +287,53 @@ button:disabled {
 
 .scoreboard-title {
     font-family: var(--heading-font);
-    font-size: 48px;
+    font-size: 3rem;
     color: var(--gold-color);
-    margin-bottom: 24px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    margin-block-end: 1.5rem;
+    text-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.5);
 }
 
 .scoreboard-subtitle {
     font-family: var(--heading-font);
     font-size: 1.5rem;
     color: var(--gold-color);
-    margin-bottom: 1rem;
+    margin-block-end: 1rem;
     font-weight: bold;
 }
 
 .scoreboard-text {
     font-family: var(--body-font);
-    font-size: 18px;
+    font-size: 1.125rem;
     color: var(--secondary-text-color);
-    margin-bottom: 2rem;
-    max-width: 700px;
+    margin-block-end: 2rem;
+    max-inline-size: 43.75rem;
     margin-inline: auto;
 }
 
 .scoreboard-table {
-    width: 100%;
-    max-width: 700px;
-    margin: 0 auto 32px auto;
+    inline-size: 100%;
+    max-inline-size: 43.75rem;
+    margin-block: 0 2rem;
+    margin-inline: auto;
     border-collapse: separate;
-    border-spacing: 0 8px;
+    border-spacing: 0 0.5rem;
 }
 
 .scoreboard-table th {
     font-family: var(--heading-font);
-    font-size: 22px;
+    font-size: 1.375rem;
     color: var(--primary-text-color);
     font-weight: bold;
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--gold-color);
+    padding: 0.75rem;
+    text-align: start;
+    border-block-end: 0.0625rem solid var(--gold-color);
 }
 
 .scoreboard-table td {
     font-family: var(--body-font);
-    font-size: 20px;
-    padding: 12px;
-    text-align: left;
+    font-size: 1.25rem;
+    padding: 0.75rem;
+    text-align: start;
 }
 
 .scoreboard-winner {
@@ -321,18 +343,18 @@ button:disabled {
 
 .scoreboard-return {
     font-family: var(--body-font);
-    font-size: 24px;
+    font-size: 1.5rem;
     color: var(--gold-color);
     cursor: pointer;
     transition: all 0.3s ease;
     display: inline-block;
-    margin-top: 24px;
+    margin-block-start: 1.5rem;
     font-weight: bold;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.3);
 }
 
 .scoreboard-return:hover {
     color: var(--primary-text-color);
-    text-shadow: 0 0 8px rgba(196, 166, 106, 0.4);
-    transform: translateY(-2px);
+    text-shadow: 0 0 0.5rem rgba(196, 166, 106, 0.4);
+    transform: translateY(-0.125rem);
 }

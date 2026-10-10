@@ -212,9 +212,9 @@ export class BaseModal extends Scene {
         // Ensure it fits. Reserve some space for the close button if present to avoid overlap.
         const reservedForCloseBtn = this.options.closeButtonText ? 56 : 0; // ~24px text + margins
         const maxH = Math.max(0, Math.floor(b.height - reservedForCloseBtn));
-        dom.node.style.width = `${Math.floor(b.width)}px`;
-        dom.node.style.maxHeight = `${maxH}px`;
-        dom.node.style.marginBottom = `${reservedForCloseBtn}px`;
+        dom.node.style.inlineSize = `${Math.floor(b.width) / 16}rem`;
+        dom.node.style.maxBlockSize = `${maxH / 16}rem`;
+        dom.node.style.marginBlockEnd = `${reservedForCloseBtn / 16}rem`;
         dom.node.style.overflowY = "auto";
         dom.node.style.overflowX = "hidden"; // <- prevent horizontal scroll
         dom.node.style.boxSizing = "border-box";

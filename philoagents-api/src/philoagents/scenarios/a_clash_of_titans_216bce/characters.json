@@ -4,7 +4,8 @@
     "name": "Hannibal Barca",
     "ui_profile": {
       "title": "The Mastermind of Carthage",
-      "description": "A peerless military genius operating deep in enemy territory. Ideal for players who favor audacious tactics and high-risk, high-reward strategies.",
+      "strengths": "Elite veterans, loyal troops and cavalry. Best for bold military tactics behind enemy lines.",
+      "objectives": "Turn Rome's Italian allies, secure a supply port and preserve your army to force a punishing peace.",
       "portrait_key": "hannibal_barca_portrait"
     },
     "faction": "Carthage",
@@ -32,7 +33,8 @@
     "name": "Scipio Africanus",
     "ui_profile": {
       "title": "The Hope of Rome",
-      "description": "A young and ambitious general fighting to reclaim Spain. Suited for players who want to build a new kind of army and take the fight directly to the enemy's heartland.",
+      "strengths": "Fresh legions, a strong treasury and naval transports. Best for building an army and launching offensives.",
+      "objectives": "Retake Spain, cut Hannibal's supplies and win political support for an invasion of Africa.",
       "portrait_key": "scipio_africanus_portrait"
     },
     "faction": "Rome",
@@ -60,7 +62,8 @@
     "name": "Hanno the Great",
     "ui_profile": {
       "title": "The Shadow of Carthage",
-      "description": "A master politician who wields the state treasury as a weapon. For players who prefer economic warfare, political sabotage, and undermining rivals from within.",
+      "strengths": "A vast state treasury, trade fleets and Senate influence. Best for economic pressure and political deals.",
+      "objectives": "Protect trade, limit Hannibal's war spending and negotiate peace while defending valuable territories.",
       "portrait_key": "hanno_the_great_portrait"
     },
     "faction": "Carthage",
@@ -87,7 +90,8 @@
     "name": "Philip V of Macedon",
     "ui_profile": {
       "title": "The Wild Card of Macedon",
-      "description": "An opportunistic king playing Rome and Carthage against each other. Perfect for players who enjoy diplomacy, betrayal, and building a third power bloc while the titans clash.",
+      "strengths": "A powerful phalanx, a navy and flexible alliances. Best for opportunistic diplomacy and expansion.",
+      "objectives": "Take Illyrian ports, dominate nearby seas and weaken both rivals without risking your army in Italy.",
       "portrait_key": "philip_v_of_macedon_portrait"
     },
     "faction": "Macedon",

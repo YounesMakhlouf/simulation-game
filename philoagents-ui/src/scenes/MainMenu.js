@@ -1,6 +1,7 @@
 import {Scene} from "phaser";
 import {createPresetButton} from "../classes/ButtonFactory";
 import ApiService from "../services/ApiService";
+import { COLORS, FONTS } from "../configs/Theme";
 
 export class MainMenu extends Scene {
     constructor() {
@@ -13,12 +14,23 @@ export class MainMenu extends Scene {
         const centerX = this.cameras.main.width / 2;
         this.startY = 524;
         this.buttonSpacing = 70;
+        this.playButtons = [];
+        this.loadingSession = false;
+        this.isStarting = false;
+        this.input.enabled = true;
+        const controller = new AbortController();
+        this.abortController = controller;
+        this.events.once("shutdown", () => controller.abort());
 
-        // Play buttons depend on whether a saved game is bound to a character;
-        // fall back to a fresh start when the backend is unreachable.
-        ApiService.getSession()
-            .then((session) => this.createPlayButtons(centerX, session))
-            .catch(() => this.createPlayButtons(centerX, null));
+        this.statusText = this.add.text(centerX, this.startY - this.buttonSpacing - 42, "", {
+            fontSize: "18px", fontFamily: FONTS.body, color: COLORS.textCss,
+            backgroundColor: COLORS.panelCss, padding: { x: 16, y: 12 },
+            align: "center", wordWrap: { width: 620 },
+        }).setOrigin(0.5, 1);
+        this.retryButton = createPresetButton(this, "menu", centerX, this.startY - this.buttonSpacing, "Retry Connection", () => {
+            this.loadSession();
+        }).container.setVisible(false);
+        this.loadSession();
 
         createPresetButton(this, "menu", centerX, this.startY + this.buttonSpacing, "Instructions", () => {
             this.scene.launch("InstructionsModal");
@@ -36,25 +48,61 @@ export class MainMenu extends Scene {
         this.input.keyboard.on("keydown-F", () => this.scale.toggleFullscreen());
     }
 
+    async loadSession() {
+        if (this.loadingSession) return;
+        this.loadingSession = true;
+        const signal = this.abortController.signal;
+        this.retryButton.setVisible(false);
+        this.statusText.setText("Loading saved game...").setColor(COLORS.textCss);
+        try {
+            const session = await ApiService.getSession(signal);
+            if (signal.aborted) return;
+            this.statusText.setText(session.player_character_id
+                ? `Saved game: ${session.player_character_name} · Round ${session.round_number}`
+                : "No saved game. Choose a delegate to begin.");
+            this.createPlayButtons(this.cameras.main.width / 2, session);
+        } catch (error) {
+            if (signal.aborted) return;
+            this.statusText.setText("Could not check your saved game.\nRetry to reconnect.").setColor(COLORS.negativeCss);
+            this.retryButton.setVisible(true);
+        }
+        if (!signal.aborted) this.loadingSession = false;
+    }
+
     createPlayButtons(centerX, session) {
         if (!this.scene.isActive()) return;
 
-        if (session && session.player_character_id) {
-            createPresetButton(this, "primary", centerX, this.startY, `Continue as ${session.player_character_name}`, () => {
+        if (session.player_character_id) {
+            const continueButton = createPresetButton(this, "primary", centerX, this.startY - this.buttonSpacing, "Continue", () => {
                 this.scene.start("Game", { characterId: session.player_character_id });
-            });
-            createPresetButton(this, "danger", centerX, this.startY - this.buttonSpacing, "New Game", async () => {
+            }).container;
+            const newGameButton = createPresetButton(this, "danger", centerX, this.startY, "New Game", async () => {
+                if (this.isStarting) return;
+                this.isStarting = true;
+                this.input.enabled = false;
+                this.playButtons.forEach(button => button.disableInteractive().setAlpha(0.6));
+                newGameButton.label.setText("Starting new game...");
+                this.statusText.setText("Replacing saved progress with a new game...").setColor(COLORS.textCss);
+                const signal = this.abortController.signal;
                 try {
-                    await ApiService.resetGame();
+                    await ApiService.resetGame(signal);
+                    if (signal.aborted) return;
                     this.scene.start("CharacterSelect");
                 } catch (error) {
-                    console.error("Failed to reset game:", error);
+                    if (signal.aborted) return;
+                    this.isStarting = false;
+                    this.input.enabled = true;
+                    this.playButtons.forEach(button => button.destroy());
+                    this.playButtons = [];
+                    this.statusText.setText("Could not confirm the new game.\nRetry to check your saved progress.").setColor(COLORS.negativeCss);
+                    this.retryButton.setVisible(true);
                 }
             });
+            this.playButtons = [continueButton, newGameButton.container];
         } else {
-            createPresetButton(this, "primary", centerX, this.startY, "Let's Play!", () => {
+            this.playButtons = [createPresetButton(this, "primary", centerX, this.startY - this.buttonSpacing, "New Game", () => {
                 this.scene.start("CharacterSelect");
-            });
+            }).container];
         }
     }
 }

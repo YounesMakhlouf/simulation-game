@@ -2,6 +2,7 @@ import Phaser, { Scene, TintModes } from "phaser";
 import ApiService from "../services/ApiService";
 import { createPresetButton } from "../classes/ButtonFactory";
 import { COLORS, FONTS } from "../configs/Theme";
+import { escapeHtml } from "../escapeHtml";
 
 export class CharacterSelect extends Scene {
     constructor() {
@@ -19,6 +20,13 @@ export class CharacterSelect extends Scene {
         this.portraits = [];
         this.infoPanel = {};
         this.selectionBorder = null;
+        this.errorText = null;
+        this.isStarting = false;
+        this.loadingCharacters = false;
+        this.input.enabled = true;
+        const controller = new AbortController();
+        this.abortController = controller;
+        this.events.once("shutdown", () => controller.abort());
 
         const { width, height } = this.scale;
         const centerX = width / 2;
@@ -33,28 +41,42 @@ export class CharacterSelect extends Scene {
             })
             .setOrigin(0.5);
 
-        const loadingText = this.add
+        createPresetButton(this, "menu", 110, 30, "Main Menu", () => {
+            this.scene.start("MainMenu");
+        }, { width: 180, height: 40, maxFontSize: 18 });
+
+        this.statusText = this.add
             .text(centerX, height / 2, "Loading delegates...", {
                 fontSize: "24px", fontFamily: FONTS.body, color: COLORS.textCss, align: "center",
             })
             .setOrigin(0.5);
+        this.retryButton = createPresetButton(this, "menu", centerX, height / 2 + 70, "Retry Connection", () => {
+            this.loadCharacters();
+        }).container.setVisible(false);
+        this.loadCharacters();
+    }
 
-        ApiService.request("/game/characters", "GET")
-            .then((data) => {
-                if (!this.scene.isActive()) return;
-                loadingText.destroy();
-                this.characters = data.characters;
-                this.createInfoPanel();
-                this.createCharacterPortraits();
-                this.createSelectButton();
-            })
-            .catch((error) => {
-                console.error("Failed to fetch character data:", error);
-                if (!this.scene.isActive()) return;
-                loadingText
-                    .setText("Error: Could not connect to the server.\nPlease ensure the backend is running.")
-                    .setColor(COLORS.negativeCss);
-            });
+    async loadCharacters() {
+        if (this.loadingCharacters) return;
+        this.loadingCharacters = true;
+        const signal = this.abortController.signal;
+        this.retryButton.setVisible(false);
+        this.statusText.setText("Loading delegates...").setColor(COLORS.textCss);
+        try {
+            const data = await ApiService.request("/game/characters", "GET", undefined, undefined, signal);
+            if (signal.aborted) return;
+            if (data.characters.length === 0) throw new Error("No delegates are available.");
+            this.characters = data.characters;
+            this.createInfoPanel();
+            this.createCharacterPortraits();
+            this.createSelectButton();
+            this.statusText.setVisible(false);
+        } catch (error) {
+            if (signal.aborted) return;
+            this.statusText.setText("Could not load delegates.\nRetry to reconnect.").setColor(COLORS.negativeCss);
+            this.retryButton.setVisible(true);
+        }
+        if (!signal.aborted) this.loadingCharacters = false;
     }
 
     createCharacterPortraits() {
@@ -97,6 +119,7 @@ export class CharacterSelect extends Scene {
     }
 
     selectCharacter(selectedPortrait) {
+        if (this.isStarting) return;
         // Clear hover tint and any existing glow from all portraits
         this.portraits.forEach((portrait) => {
             portrait.clearTint();
@@ -127,7 +150,7 @@ export class CharacterSelect extends Scene {
 
     createInfoPanel() {
         const panelX = this.scale.width / 2;
-        const panelY = 550;
+        const panelY = 515;
         const panelWidth = 800;
         const panelHeight = 250;
 
@@ -149,42 +172,59 @@ export class CharacterSelect extends Scene {
             })
             .setOrigin(0.5);
 
-        this.infoPanel.description = this.add
-            .text(panelX, panelY + 25, "", {
-                fontSize: "20px",
-                fontFamily: FONTS.body,
-                color: COLORS.textCss,
-                wordWrap: { width: panelWidth - 40 },
-                align: "center",
-            })
-            .setOrigin(0.5);
+        this.infoPanel.strategy = this.add.dom(panelX - panelWidth / 2 + 20, panelY - 15)
+            .createElement("div")
+            .setOrigin(0, 0);
+        this.infoPanel.strategy.node.className = "delegate-strategy";
+        this.infoPanel.strategy.node.tabIndex = 0;
+        this.infoPanel.strategy.node.setAttribute("aria-label", "Delegate strengths and objectives");
     }
 
     updateInfoPanel() {
         if (this.selectedCharacter) {
             this.infoPanel.name.setText(this.selectedCharacter.name);
             this.infoPanel.title.setText(this.selectedCharacter.title);
-            this.infoPanel.description.setText(this.selectedCharacter.description);
+            this.infoPanel.strategy.node.innerHTML = `
+                <p><strong>Strengths:</strong> ${escapeHtml(this.selectedCharacter.strengths)}</p>
+                <p><strong>Objectives:</strong> ${escapeHtml(this.selectedCharacter.objectives)}</p>
+            `;
         }
     }
 
     createSelectButton() {
-        createPresetButton(this, "confirm", this.scale.width / 2, this.scale.height - 48, "Confirm Delegate", async () => {
-            if (!this.selectedCharacter) return;
-            try {
-                await ApiService.startGame(this.selectedCharacter.id);
-                this.scene.start("Game", { characterId: this.selectedCharacter.id });
-            } catch (error) {
-                console.error("Failed to start game:", error);
-                this.showError("Could not start the game. A saved game may be in progress — use 'New Game' from the main menu.");
-            }
+        this.selectButton = createPresetButton(this, "confirm", this.scale.width / 2, this.scale.height - 48, "Confirm Delegate", () => {
+            this.startSelectedGame();
         });
+    }
+
+    async startSelectedGame() {
+        if (this.isStarting || !this.selectedCharacter) return;
+        this.isStarting = true;
+        this.input.enabled = false;
+        this.selectButton.container.disableInteractive().setAlpha(0.6);
+        this.selectButton.label.setText("Starting game...");
+        if (this.errorText) this.errorText.destroy();
+        this.errorText = null;
+        const characterId = this.selectedCharacter.id;
+        const signal = this.abortController.signal;
+        try {
+            await ApiService.startGame(characterId, signal);
+            if (signal.aborted) return;
+            this.scene.start("Game", { characterId });
+        } catch (error) {
+            if (signal.aborted) return;
+            this.isStarting = false;
+            this.input.enabled = true;
+            this.selectButton.container.setInteractive({ useHandCursor: true }).setAlpha(1);
+            this.selectButton.label.setText("Retry Start");
+            this.showError("Could not start this delegate. Retry, or check your saved game from the main menu.");
+        }
     }
 
     showError(message) {
         if (this.errorText) this.errorText.destroy();
         this.errorText = this.add
-            .text(this.scale.width / 2, this.scale.height - 100, message, {
+            .text(this.scale.width / 2, this.scale.height - 104, message, {
                 fontSize: "18px", fontFamily: FONTS.body, color: COLORS.negativeCss,
                 align: "center", wordWrap: { width: this.scale.width - 200 },
             })

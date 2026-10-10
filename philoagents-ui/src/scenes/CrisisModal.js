@@ -20,20 +20,18 @@ export class CrisisModal extends BaseModal {
       this.title.setText(`Round ${this.roundNumber} - Situation Report`);
     }
 
-    const b = this.getContentBounds();
-
     // Add crisis text as HTML instead of Phaser text
     const crisisElement = this.addScrollableDom(`
         <div style="
-            font-size: 20px;
+            font-size: 1.25rem;
             color: ${COLORS.textCss};
-            width: ${b.width}px;
+            inline-size: 100%;
             line-height: 1.4;
-            word-wrap: break-word;
+            overflow-wrap: break-word;
             white-space: pre-wrap;
             font-family: ${FONTS.body};
-            text-align: left;
-            padding: 10px;
+            text-align: start;
+            padding: 0.625rem;
             margin-block-end: 1rem;
         ">
             ${escapeHtml(this.crisisText)}
