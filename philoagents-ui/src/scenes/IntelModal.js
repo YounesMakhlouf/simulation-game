@@ -1,19 +1,20 @@
 import { BaseModal } from '../classes/BaseModal';
-import { FONTS } from '../configs/Theme';
+import { COLORS, FONTS } from '../configs/Theme';
 import { escapeHtml } from '../escapeHtml';
 
 export class IntelModal extends BaseModal {
     constructor() {
         super('IntelModal', {
             titleText: 'Intelligence Briefing',
-            titleColor: '#5a2d0c',
-            panelColor: 0xfdf5e6, // Old paper color
-            panelBorderColor: 0x5a2d0c, // Dark brown border
+            titleColor: COLORS.inkCss,
+            panelColor: COLORS.parchment,
+            panelAlpha: 1,
+            panelBorderColor: COLORS.ink,
             maxPanelWidth: 800,
             maxPanelHeight: 500,
             closeButtonText: '[ Close Dossier ]',
-            closeButtonColor: '#a0885f',
-            closeButtonHoverColor: '#d4b47a',
+            closeButtonColor: COLORS.inkCss,
+            closeButtonHoverColor: COLORS.backgroundCss,
         });
         this.intelReports = [];
     }
@@ -36,14 +37,14 @@ export class IntelModal extends BaseModal {
         const reportsHtml = this.intelReports.length === 0
             ? '<p>No intelligence reports available.</p>'
             : this.intelReports
-                .map((report, index) => `<h3 style="margin: 0 0 4px;">Report #${index + 1}</h3><p style="margin: 0 0 16px; white-space: pre-wrap;">${escapeHtml(report)}</p>`)
+                .map((report, index) => `<h3 style="margin: 0 0 4px; font-family: ${FONTS.heading};">Report #${index + 1}</h3><p style="margin: 0 0 16px; white-space: pre-wrap;">${escapeHtml(report)}</p>`)
                 .join('');
 
         this.addScrollableDom(`
             <div style="
-                font-family: ${FONTS.heading};
+                font-family: ${FONTS.body};
                 font-size: 18px;
-                color: #5a2d0c;
+                color: ${COLORS.inkCss};
                 line-height: 1.4;
                 padding: 0 10px;
             ">${reportsHtml}</div>

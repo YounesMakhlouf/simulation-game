@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { FONTS } from "../configs/Theme";
+import { COLORS, FONTS } from "../configs/Theme";
 
 class Character {
   constructor(scene, config) {
@@ -245,9 +245,10 @@ class Character {
 
   createNameLabel() {
     this.nameLabel = this.scene.add.text(0, 0, this.name, {
-      font: `14px ${FONTS.body}`,
-      fill: "#ffffff",
-      backgroundColor: "#000000",
+      fontSize: "14px",
+      fontFamily: FONTS.body,
+      fill: COLORS.textCss,
+      backgroundColor: COLORS.panelCss,
       padding: { x: 4, y: 2 },
       align: "center"
     });

@@ -12,12 +12,14 @@ import { EndGameModal } from "./scenes/EndGameModal";
 import { InstructionsModal } from "./scenes/InstructionsModal";
 import { ScoreboardScene } from "./scenes/ScoreboardScene";
 import { AudioManager } from "./classes/AudioManager";
+import { COLORS } from "./configs/Theme";
 
 const config = {
     type: Phaser.AUTO,
     width: 1024,
     height: 768,
     parent: 'game-container',
+    backgroundColor: COLORS.background,
     roundPixels: true,
     scale: {
         mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH

@@ -21,10 +21,10 @@ export class ScoreboardScene extends Scene {
 
         // Main panel
         this.add.graphics()
-            .fillStyle(0x111111, 0.95)
-            .lineStyle(2, COLORS.gold, 1)
-            .fillRoundedRect(100, 100, 824, 568, 15)
-            .strokeRoundedRect(100, 100, 824, 568, 15);
+            .fillStyle(COLORS.panel, 0.98)
+            .lineStyle(1, COLORS.border, 1)
+            .fillRoundedRect(100, 100, 824, 568, 8)
+            .strokeRoundedRect(100, 100, 824, 568, 8);
 
         // Create HTML content for the scoreboard
         const scoreboardHTML = `

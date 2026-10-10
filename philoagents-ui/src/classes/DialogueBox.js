@@ -11,13 +11,14 @@ class DialogueBox {
             y = 500,
             width = 824,
             height = 200,
-            backgroundColor = 0x000000,
-            backgroundAlpha = 0.7,
-            borderColor = 0xffffff,
-            borderWidth = 2,
+            backgroundColor = COLORS.panel,
+            backgroundAlpha = 0.98,
+            borderColor = COLORS.border,
+            borderWidth = 1,
             textConfig = {
-                font: `24px ${FONTS.body}`,
-                fill: '#ffffff',
+                fontSize: "24px",
+                fontFamily: FONTS.body,
+                fill: COLORS.textCss,
                 wordWrap: { width: 784 }
             },
             depth = 30,
@@ -47,9 +48,11 @@ class DialogueBox {
         // Speaker name tab sitting on the box's top border
         this.nameTab = scene.add
             .text(x + 16, y, "", {
-                font: `bold 18px ${FONTS.body}`,
+                fontSize: "18px",
+                fontFamily: FONTS.body,
+                fontStyle: "bold",
                 fill: COLORS.goldCss,
-                backgroundColor: "#000000",
+                backgroundColor: COLORS.panelCss,
                 padding: { x: 8, y: 4 },
             })
             .setOrigin(0, 1)
@@ -99,8 +102,8 @@ class DialogueBox {
         const html = `
             <div style="
                 font-size: 24px;
-                color: #ffffff;
-                font-family: ${FONTS.body}, sans-serif;
+                color: ${COLORS.textCss};
+                font-family: ${FONTS.body};
                 line-height: 1.4;
                 word-wrap: break-word;
                 white-space: pre-wrap;

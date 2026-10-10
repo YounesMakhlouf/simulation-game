@@ -58,7 +58,7 @@ export class Game extends Scene {
                 fontSize: "14px",
                 fontFamily: FONTS.body,
                 color: COLORS.goldCss,
-                backgroundColor: "rgba(0,0,0,0.7)",
+                backgroundColor: COLORS.panelCss,
                 padding: { x: 6, y: 3 },
             })
             .setOrigin(0.5, 1)
@@ -370,7 +370,7 @@ export class Game extends Scene {
 
     showError(errorMessage) {
         console.error(`Game Scene: Displaying error: ${errorMessage}`);
-        this.showToast(errorMessage, "rgba(139,0,0,0.8)");
+        this.showToast(errorMessage, COLORS.dangerCss);
     }
 
     handleConnectionLost(message) {
@@ -382,15 +382,15 @@ export class Game extends Scene {
     }
 
     // Minimal in-game notification (non-blocking)
-    showToast(message, backgroundColor = "rgba(0,0,0,0.8)") {
+    showToast(message, backgroundColor = COLORS.panelCss) {
         const text = this.add
             .text(this.cameras.main.centerX, 100, message, {
                 fontSize: "20px",
                 fontFamily: FONTS.body,
-                color: "#ffffff",
+                color: COLORS.textCss,
                 backgroundColor,
                 padding: { x: 12, y: 8 },
-                stroke: "#000000",
+                stroke: COLORS.backgroundCss,
                 strokeThickness: 3,
             })
             .setOrigin(0.5)

@@ -29,13 +29,13 @@ export class CharacterSelect extends Scene {
             .setAlpha(0.7);
         this.add
             .text(centerX, 80, "Choose Your Delegate", {
-                fontSize: "54px", fontFamily: FONTS.heading, color: "#FFFFFF", stroke: "#000000", strokeThickness: 6,
+                fontSize: "54px", fontFamily: FONTS.heading, color: COLORS.textCss, stroke: COLORS.backgroundCss, strokeThickness: 6,
             })
             .setOrigin(0.5);
 
         const loadingText = this.add
             .text(centerX, height / 2, "Loading delegates...", {
-                fontSize: "24px", color: "#ffffff", align: "center",
+                fontSize: "24px", fontFamily: FONTS.body, color: COLORS.textCss, align: "center",
             })
             .setOrigin(0.5);
 
@@ -53,7 +53,7 @@ export class CharacterSelect extends Scene {
                 if (!this.scene.isActive()) return;
                 loadingText
                     .setText("Error: Could not connect to the server.\nPlease ensure the backend is running.")
-                    .setColor("#ff0000");
+                    .setColor(COLORS.negativeCss);
             });
     }
 
@@ -132,20 +132,20 @@ export class CharacterSelect extends Scene {
         const panelHeight = 250;
 
         const panel = this.add.graphics();
-        panel.fillStyle(0x000000, 0.6);
-        panel.fillRoundedRect(panelX - panelWidth / 2, panelY - panelHeight / 2, panelWidth, panelHeight, 15);
-        panel.lineStyle(2, 0xffffff, 0.8);
-        panel.strokeRoundedRect(panelX - panelWidth / 2, panelY - panelHeight / 2, panelWidth, panelHeight, 15);
+        panel.fillStyle(COLORS.panel, 0.98);
+        panel.fillRoundedRect(panelX - panelWidth / 2, panelY - panelHeight / 2, panelWidth, panelHeight, 8);
+        panel.lineStyle(1, COLORS.border, 1);
+        panel.strokeRoundedRect(panelX - panelWidth / 2, panelY - panelHeight / 2, panelWidth, panelHeight, 8);
 
         this.infoPanel.name = this.add
             .text(panelX, panelY - 90, "", {
-                fontSize: "36px", fontFamily: FONTS.heading, color: "#ffffff",
+                fontSize: "36px", fontFamily: FONTS.heading, color: COLORS.textCss,
             })
             .setOrigin(0.5);
 
         this.infoPanel.title = this.add
             .text(panelX, panelY - 50, "", {
-                fontSize: "24px", fontFamily: FONTS.heading, color: "#dddddd", fontStyle: "italic",
+                fontSize: "24px", fontFamily: FONTS.body, color: COLORS.secondaryTextCss, fontStyle: "italic",
             })
             .setOrigin(0.5);
 
@@ -153,7 +153,7 @@ export class CharacterSelect extends Scene {
             .text(panelX, panelY + 25, "", {
                 fontSize: "20px",
                 fontFamily: FONTS.body,
-                color: "#ffffff",
+                color: COLORS.textCss,
                 wordWrap: { width: panelWidth - 40 },
                 align: "center",
             })
@@ -185,7 +185,7 @@ export class CharacterSelect extends Scene {
         if (this.errorText) this.errorText.destroy();
         this.errorText = this.add
             .text(this.scale.width / 2, this.scale.height - 100, message, {
-                fontSize: "18px", fontFamily: FONTS.body, color: "#ff6666",
+                fontSize: "18px", fontFamily: FONTS.body, color: COLORS.negativeCss,
                 align: "center", wordWrap: { width: this.scale.width - 200 },
             })
             .setOrigin(0.5);

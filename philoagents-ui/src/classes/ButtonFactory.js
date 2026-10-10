@@ -1,67 +1,45 @@
-import { FONTS } from "../configs/Theme";
+import { COLORS, FONTS } from "../configs/Theme";
 
 const BUTTON_PRESETS = {
-    // Main menu style - white with blue hover
     menu: {
         width: 350,
         height: 60,
-        radius: 20,
         maxFontSize: 28,
-        bgColor: 0xffffff,
-        hoverBgColor: 0x87ceeb,
-        shadowColor: 0x666666,
-        textColor: "#000000",
-        fontFamily: FONTS.body,
-        fontStyle: "bold",
-        liftOnHover: true,
+        bgColor: COLORS.panel,
+        hoverBgColor: COLORS.panelHover,
+        textColor: COLORS.textCss,
     },
-
-    // Action/confirm button - green
+    primary: {
+        width: 350,
+        height: 60,
+        maxFontSize: 28,
+    },
     confirm: {
         width: 250,
         height: 60,
-        radius: 15,
         maxFontSize: 24,
-        bgColor: 0x006400,
-        hoverBgColor: 0x008000,
-        shadowColor: 0x003300,
-        textColor: "#ffffff",
-        fontFamily: FONTS.heading,
-        fontStyle: "bold",
-        liftOnHover: false,
     },
-
-    // Danger/action phase button - dark red
-    danger: {
+    action: {
         width: 280,
         height: 50,
-        radius: 15,
         maxFontSize: 20,
-        bgColor: 0x8b0000,
-        hoverBgColor: 0xb22222,
-        shadowColor: 0x4a0000,
-        textColor: "#ffffff",
-        fontFamily: FONTS.heading,
-        fontStyle: "bold",
-        liftOnHover: false,
-        hasBorder: true,
-        borderColor: 0xffffff,
-        borderWidth: 2,
     },
-
-    // Info/intel button - dark blue
+    danger: {
+        width: 350,
+        height: 60,
+        maxFontSize: 28,
+        bgColor: COLORS.danger,
+        hoverBgColor: COLORS.dangerHover,
+        textColor: COLORS.textCss,
+        borderColor: COLORS.dangerHover,
+    },
     info: {
         width: 150,
         height: 40,
-        radius: 10,
         maxFontSize: 18,
-        bgColor: 0x003366,
-        hoverBgColor: 0x004488,
-        shadowColor: 0x001a33,
-        textColor: "#ffffff",
-        fontFamily: FONTS.heading,
-        fontStyle: "normal",
-        liftOnHover: false,
+        bgColor: COLORS.panel,
+        hoverBgColor: COLORS.panelHover,
+        textColor: COLORS.textCss,
     },
 };
 
@@ -79,20 +57,20 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
     const {
         width = 350,
         height = 60,
-        radius = 20,
+        radius = 8,
         maxFontSize = 28,
         minFontSize = 10,
         padding = 10,
-        bgColor = 0xffffff,
-        hoverBgColor = 0x87ceeb,
-        shadowColor = 0x666666,
-        textColor = "#000000",
+        bgColor = COLORS.gold,
+        hoverBgColor = COLORS.goldHover,
+        shadowColor = COLORS.background,
+        textColor = COLORS.backgroundCss,
         fontFamily = FONTS.body,
         fontStyle = "bold",
-        liftOnHover = true,
-        hasBorder = false,
-        borderColor = 0xffffff,
-        borderWidth = 2,
+        liftOnHover = false,
+        hasBorder = true,
+        borderColor = COLORS.border,
+        borderWidth = 1,
         alpha = 1,
     } = opts;
 
@@ -163,7 +141,7 @@ export function createUIButton(scene, x, y, text, onClick, opts = {}) {
 /**
  * Creates a button using a preset style.
  * @param {Phaser.Scene} scene - The Phaser scene
- * @param {string} preset - Preset name: 'menu', 'confirm', 'danger', 'info'
+ * @param {string} preset - Preset name: 'menu', 'primary', 'confirm', 'action', 'danger', 'info'
  * @param {number} x - X position
  * @param {number} y - Y position
  * @param {string} text - Button label

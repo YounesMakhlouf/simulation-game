@@ -1,6 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import { createPresetButton } from "../classes/ButtonFactory";
-import { COLORS } from "../configs/Theme";
+import { COLORS, FONTS } from "../configs/Theme";
 
 export class HUDScene extends Scene {
     constructor() {
@@ -28,6 +28,7 @@ export class HUDScene extends Scene {
         const screenWidth = this.cameras.main.width;
         const barHeight = 120;
         if (this.sys.game.renderer.type === Phaser.WEBGL) {
+            const panelColor = Phaser.Display.Color.IntegerToColor(COLORS.panel);
             this.add
                 .gradient(
                     {
@@ -38,8 +39,8 @@ export class HUDScene extends Scene {
                             {
                                 start: 0,
                                 end: 1,
-                                colorStart: [0, 0, 0, 0.6],
-                                colorEnd: [0, 0, 0, 0],
+                                colorStart: [panelColor.redGL, panelColor.greenGL, panelColor.blueGL, 0.9],
+                                colorEnd: [panelColor.redGL, panelColor.greenGL, panelColor.blueGL, 0],
                                 interpolation: 0,
                             },
                         ],
@@ -53,17 +54,17 @@ export class HUDScene extends Scene {
         } else {
             this.add
                 .graphics()
-                .fillStyle(0x000000, 0.5)
+                .fillStyle(COLORS.panel, 0.9)
                 .fillRect(0, 0, screenWidth, barHeight)
                 .setDepth(-1);
         }
 
         this.roundText = this.add.text(20, 20, "Round: 1", {
-            fontSize: "24px", color: "#ffffff", stroke: "#000000", strokeThickness: 4,
+            fontSize: "24px", fontFamily: FONTS.heading, color: COLORS.textCss, stroke: COLORS.backgroundCss, strokeThickness: 4,
         });
         this.phaseText = this.add
             .text(this.cameras.main.width - 20, 20, "Phase: INITIALIZING", {
-                fontSize: "24px", color: "#ffffff", stroke: "#000000", strokeThickness: 4,
+                fontSize: "24px", fontFamily: FONTS.heading, color: COLORS.textCss, stroke: COLORS.backgroundCss, strokeThickness: 4,
             })
             .setOrigin(1, 0);
         this.createEndDiplomacyButton();
@@ -106,13 +107,13 @@ export class HUDScene extends Scene {
         const buttonX = this.cameras.main.width / 2;
         const buttonY = this.cameras.main.height - 40;
 
-        const { container } = createPresetButton(this, "danger", buttonX, buttonY, "Proceed to Action Phase", () => {
+        const { container } = createPresetButton(this, "action", buttonX, buttonY, "Proceed to Action Phase", () => {
             if (this.gameManager.gamePhase === "ROUND_FAILED") {
                 this.gameManager.retryRound();
             } else {
                 this.gameManager.startActionPhase();
             }
-        }, { alpha: 0.8 });
+        });
 
         this.endDiplomacyButton = container;
         this.endDiplomacyButton.setVisible(false);
@@ -131,7 +132,7 @@ export class HUDScene extends Scene {
         for (const [key, value] of Object.entries(resources)) {
             if (!this.resourceTexts[key]) {
                 this.resourceTexts[key] = this.add.text(20, yPos, "", {
-                    fontSize: "18px", color: "#ffffff",
+                    fontSize: "18px", fontFamily: FONTS.body, color: COLORS.textCss,
                 });
             }
             const text = this.resourceTexts[key];
@@ -163,9 +164,10 @@ export class HUDScene extends Scene {
     showResourceDelta(anchor, delta) {
         const floater = this.add.text(anchor.x + anchor.width + 8, anchor.y, `${delta > 0 ? "+" : ""}${delta}`, {
             fontSize: "18px",
+            fontFamily: FONTS.body,
             fontStyle: "bold",
             color: delta > 0 ? COLORS.positiveCss : COLORS.negativeCss,
-            stroke: "#000000",
+            stroke: COLORS.backgroundCss,
             strokeThickness: 3,
         });
         this.tweens.add({

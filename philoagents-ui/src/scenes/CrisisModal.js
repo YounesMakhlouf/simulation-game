@@ -1,5 +1,5 @@
 import { BaseModal } from "../classes/BaseModal";
-import { FONTS } from "../configs/Theme";
+import { COLORS, FONTS } from "../configs/Theme";
 import { escapeHtml } from "../escapeHtml";
 
 export class CrisisModal extends BaseModal {
@@ -26,12 +26,12 @@ export class CrisisModal extends BaseModal {
     const crisisElement = this.addScrollableDom(`
         <div style="
             font-size: 20px;
-            color: #dddddd;
+            color: ${COLORS.textCss};
             width: ${b.width}px;
             line-height: 1.4;
             word-wrap: break-word;
             white-space: pre-wrap;
-            font-family: ${FONTS.body}, sans-serif;
+            font-family: ${FONTS.body};
             text-align: left;
             padding: 10px;
             margin-block-end: 1rem;

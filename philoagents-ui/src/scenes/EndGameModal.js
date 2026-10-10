@@ -1,13 +1,10 @@
 import { BaseModal } from '../classes/BaseModal';
-import { COLORS } from '../configs/Theme';
+import { COLORS, FONTS } from '../configs/Theme';
 
 export class EndGameModal extends BaseModal {
     constructor() {
         super('EndGameModal', {
             titleText: 'The Final Reckoning',
-            titleColor: '#ffffff',
-            panelColor: 0x111111,
-            panelBorderColor: COLORS.gold,
             maxPanelWidth: 824,
             maxPanelHeight: 568,
             // No close button: the only way out of the end screen is the guess
@@ -28,7 +25,7 @@ export class EndGameModal extends BaseModal {
         this.input.keyboard.disableGlobalCapture();
         // Instruction text
         this.add.text(512, 220, 'The simulation has concluded. Now, you must answer the final question:\nWhat was the secret force guiding the events of this world?', {
-            fontSize: '20px', color: '#dddddd', align: 'center', wordWrap: { width: 780 }
+            fontSize: '20px', fontFamily: FONTS.body, color: COLORS.textCss, align: 'center', wordWrap: { width: 780 }
         }).setOrigin(0.5).setDepth(2);
 
         // --- 2. CREATE THE HTML FORM ---

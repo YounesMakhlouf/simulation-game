@@ -1,13 +1,11 @@
 import {BaseModal} from "../classes/BaseModal";
 import ApiService from "../services/ApiService";
+import { COLORS, FONTS } from "../configs/Theme";
 
 export class PauseMenu extends BaseModal {
     constructor() {
         super("PauseMenu", {
             titleText: "GAME PAUSED",
-            titleColor: "#000000",
-            panelColor: 0xffffff,
-            panelBorderColor: 0x000000,
             maxPanelWidth: 400,
             maxPanelHeight: 300,
             closeButtonText: null,
@@ -32,11 +30,11 @@ export class PauseMenu extends BaseModal {
 
         this.createButton(centerX, buttonY + buttonSpacing, "Main Menu", () => {
             this.returnToMainMenu();
-        });
+        }, { bgColor: COLORS.panel, hoverBgColor: COLORS.panelHover, textColor: COLORS.textCss });
 
         this.createButton(centerX, buttonY + buttonSpacing * 2, "Reset Game", () => {
             this.resetGame();
-        });
+        }, { bgColor: COLORS.danger, hoverBgColor: COLORS.dangerHover, textColor: COLORS.textCss, borderColor: COLORS.dangerHover });
     }
 
     // Using the createButton method from BaseModal
@@ -70,7 +68,7 @@ export class PauseMenu extends BaseModal {
 
             const errorText = this.add
                 .text(centerX, centerY, "Failed to reset game. Try again.", {
-                    fontSize: "16px", fontFamily: "Arial", color: "#FF0000",
+                    fontSize: "16px", fontFamily: FONTS.body, color: COLORS.negativeCss,
                 })
                 .setOrigin(0.5)
                 .setDepth(3);

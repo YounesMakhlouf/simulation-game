@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap');
-
 *, *::before, *::after {
     box-sizing: border-box;
 }
@@ -40,26 +38,23 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 :root {
-    --primary-text-color: rgba(255, 255, 255, 0.95);
-    --secondary-text-color: #F5F5F5;
-    --background-color: #121212;
-    --modal-background-gradient-start: #1a1a1a;
-    --modal-background-gradient-end: #0a0a0a;
-    --gold-color: #FFD700;
-    --blue-accent-color: #4a90e2;
-    --green-button-color: #1e8e3e;
-    --green-button-hover-color: #34a853;
-    --error-color: #ff4d4d;
-    --input-background-color: #2a2a2a;
-    --input-border-color: #555;
-    --cinzel-font: 'Cinzel', serif;
-    --lato-font: 'Lato', sans-serif;
+    --primary-text-color: #f3eddf;
+    --secondary-text-color: #cec4b1;
+    --background-color: #151513;
+    --panel-color: #242321;
+    --panel-hover-color: #34332e;
+    --gold-color: #c4a66a;
+    --gold-hover-color: #d8bd86;
+    --error-color: #e99a91;
+    --input-border-color: #72654a;
+    --heading-font: Georgia, serif;
+    --body-font: Arial, sans-serif;
 }
 
 body {
     color: var(--primary-text-color);
     background-color: var(--background-color);
-    font-family: var(--lato-font);
+    font-family: var(--body-font);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
@@ -71,12 +66,12 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: radial-gradient(circle at center, var(--modal-background-gradient-start) 0%, var(--modal-background-gradient-end) 100%);
+    background: radial-gradient(circle at center, var(--panel-color) 0%, var(--background-color) 100%);
 }
 
 /* Styling for the Action Modal Form */
 .action-modal-form {
-    color: var(--secondary-text-color);
+    color: var(--primary-text-color);
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
@@ -85,7 +80,7 @@ body {
 }
 
 .action-modal-form h2 {
-    font-family: var(--cinzel-font);
+    font-family: var(--heading-font);
     color: var(--gold-color);
     border-bottom: 1px solid var(--gold-color);
     padding-bottom: 8px;
@@ -102,9 +97,9 @@ select,
     width: 100%;
     padding: 12px;
     margin-bottom: 1rem;
-    background-color: var(--input-background-color);
+    background-color: var(--background-color);
     border: 1px solid var(--input-border-color);
-    color: var(--secondary-text-color);
+    color: var(--primary-text-color);
     border-radius: 6px;
     resize: vertical;
     transition: border-color 0.3s, box-shadow 0.3s;
@@ -113,9 +108,14 @@ select,
 textarea:focus,
 select:focus,
 .resource-input:focus {
-    outline: none;
-    border-color: var(--blue-accent-color);
-    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+    border-color: var(--gold-color);
+    outline: 2px solid var(--gold-color);
+    outline-offset: 2px;
+}
+
+textarea::placeholder {
+    color: var(--secondary-text-color);
+    opacity: 1;
 }
 
 label {
@@ -133,16 +133,17 @@ button {
     font-weight: bold;
     padding: 1rem;
     font-size: 1.125rem;
-    border: none;
+    border: 1px solid var(--input-border-color);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-#submit-button {
-    background-color: var(--green-button-color);
-    color: var(--secondary-text-color);
+#submit-button,
+#submit-guess-button {
+    background-color: var(--gold-color);
+    color: var(--background-color);
 }
 
 button:hover {
@@ -150,8 +151,9 @@ button:hover {
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
 }
 
-#submit-button:hover {
-    background-color: var(--green-button-hover-color);
+#submit-button:hover,
+#submit-guess-button:hover {
+    background-color: var(--gold-hover-color);
 }
 
 button:active {
@@ -162,7 +164,7 @@ button:active {
 /* For validation feedback */
 .input-error {
     border-color: var(--error-color) !important;
-    background-color: rgba(255, 77, 77, 0.05) !important;
+    background-color: rgba(233, 154, 145, 0.05) !important;
     box-shadow: 0 0 0 1px var(--error-color) !important;
 }
 
@@ -186,13 +188,13 @@ button:active {
 }
 
 .base-modal-close:hover {
-    color: white;
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    color: var(--primary-text-color);
+    text-shadow: 0 0 8px rgba(196, 166, 106, 0.4);
 }
 
 /* Accessibility and Focus Styles */
 :focus {
-    outline: 2px solid var(--blue-accent-color);
+    outline: 2px solid var(--gold-color);
     outline-offset: 2px;
 }
 
@@ -247,25 +249,9 @@ button:active {
     font-weight: 500;
 }
 
-#submit-guess-button {
-    background-color: var(--gold-color);
-    color: #111111;
-}
-
-#submit-guess-button:hover {
-    background-color: #ffdf4d;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
-}
-
-#submit-guess-button:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
 button:disabled {
-    background-color: #666666;
-    color: #999999;
+    background-color: var(--panel-hover-color);
+    color: var(--secondary-text-color);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -273,12 +259,13 @@ button:disabled {
 
 /* ScoreboardScene Styles */
 .scoreboard-container {
-    font-family: var(--cinzel-font);
-    color: white;
+    font-family: var(--body-font);
+    color: var(--primary-text-color);
     text-align: center;
 }
 
 .scoreboard-title {
+    font-family: var(--heading-font);
     font-size: 48px;
     color: var(--gold-color);
     margin-bottom: 24px;
@@ -286,6 +273,7 @@ button:disabled {
 }
 
 .scoreboard-subtitle {
+    font-family: var(--heading-font);
     font-size: 1.5rem;
     color: var(--gold-color);
     margin-bottom: 1rem;
@@ -293,9 +281,9 @@ button:disabled {
 }
 
 .scoreboard-text {
-    font-family: var(--lato-font);
+    font-family: var(--body-font);
     font-size: 18px;
-    color: #dddddd;
+    color: var(--secondary-text-color);
     margin-bottom: 2rem;
     max-width: 700px;
     margin-inline: auto;
@@ -310,9 +298,9 @@ button:disabled {
 }
 
 .scoreboard-table th {
-    font-family: var(--cinzel-font);
+    font-family: var(--heading-font);
     font-size: 22px;
-    color: white;
+    color: var(--primary-text-color);
     font-weight: bold;
     padding: 12px;
     text-align: left;
@@ -320,7 +308,7 @@ button:disabled {
 }
 
 .scoreboard-table td {
-    font-family: 'Lato', sans-serif;
+    font-family: var(--body-font);
     font-size: 20px;
     padding: 12px;
     text-align: left;
@@ -332,7 +320,7 @@ button:disabled {
 }
 
 .scoreboard-return {
-    font-family: var(--cinzel-font);
+    font-family: var(--body-font);
     font-size: 24px;
     color: var(--gold-color);
     cursor: pointer;
@@ -344,7 +332,7 @@ button:disabled {
 }
 
 .scoreboard-return:hover {
-    color: #ffffff;
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    color: var(--primary-text-color);
+    text-shadow: 0 0 8px rgba(196, 166, 106, 0.4);
     transform: translateY(-2px);
 }

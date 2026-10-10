@@ -1,6 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import { createUIButton } from "./ButtonFactory";
-import { COLORS } from "../configs/Theme";
+import { COLORS, FONTS } from "../configs/Theme";
 
 export class BaseModal extends Scene {
     constructor(key, options = {}) {
@@ -18,11 +18,11 @@ export class BaseModal extends Scene {
             backdropBlurStrength: 1,
 
             // Panel
-            panelColor: 0x111111,
-            panelAlpha: 0.92,
-            panelBorderColor: 0xffffff,
-            panelBorderWidth: 2,
-            panelRadius: 16,
+            panelColor: COLORS.panel,
+            panelAlpha: 0.98,
+            panelBorderColor: COLORS.border,
+            panelBorderWidth: 1,
+            panelRadius: 8,
 
             // Layout
             margin: 24, // distance from screen edges
@@ -34,13 +34,13 @@ export class BaseModal extends Scene {
             // Title
             titleText: "Modal Dialog",
             titleFontSize: "32px",
-            titleColor: "#ffffff",
+            titleColor: COLORS.textCss,
 
             // Close button
             closeButtonText: "[ Continue ]",
             closeButtonFontSize: "24px",
             closeButtonColor: COLORS.goldCss,
-            closeButtonHoverColor: "#ffffff",
+            closeButtonHoverColor: COLORS.textCss,
 
             // Keyboard
             closeOnEsc: true,
@@ -152,7 +152,7 @@ export class BaseModal extends Scene {
 
         this.title = this.add
             .text(x, y, this.options.titleText, {
-                fontSize: this.options.titleFontSize, color: this.options.titleColor,
+                fontSize: this.options.titleFontSize, fontFamily: FONTS.heading, color: this.options.titleColor,
             })
             .setOrigin(0.5, 0);
     }
@@ -179,7 +179,7 @@ export class BaseModal extends Scene {
 
         this.closeButton = this.add
             .text(this.panelX + this.panelWidth / 2, y, this.options.closeButtonText, {
-                fontSize: this.options.closeButtonFontSize, color: this.options.closeButtonColor, fontStyle: "bold",
+                fontSize: this.options.closeButtonFontSize, fontFamily: FONTS.body, color: this.options.closeButtonColor, fontStyle: "bold",
             })
             .setOrigin(0.5, 1)
             .setInteractive({ useHandCursor: true });
@@ -223,7 +223,7 @@ export class BaseModal extends Scene {
     }
 
     createButton(x, y, text, onClick, opts = {}) {
-        const defaults = { width: 280, height: 50, radius: 12 };
+        const defaults = { width: 280, height: 50 };
         const { container } = createUIButton(this, x, y, text, onClick, {
             ...defaults, ...opts,
         });

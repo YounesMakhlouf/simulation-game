@@ -40,10 +40,10 @@ export class MainMenu extends Scene {
         if (!this.scene.isActive()) return;
 
         if (session && session.player_character_id) {
-            createPresetButton(this, "menu", centerX, this.startY, `Continue as ${session.player_character_name}`, () => {
+            createPresetButton(this, "primary", centerX, this.startY, `Continue as ${session.player_character_name}`, () => {
                 this.scene.start("Game", { characterId: session.player_character_id });
             });
-            createPresetButton(this, "menu", centerX, this.startY - this.buttonSpacing, "New Game", async () => {
+            createPresetButton(this, "danger", centerX, this.startY - this.buttonSpacing, "New Game", async () => {
                 try {
                     await ApiService.resetGame();
                     this.scene.start("CharacterSelect");
@@ -52,7 +52,7 @@ export class MainMenu extends Scene {
                 }
             });
         } else {
-            createPresetButton(this, "menu", centerX, this.startY, "Let's Play!", () => {
+            createPresetButton(this, "primary", centerX, this.startY, "Let's Play!", () => {
                 this.scene.start("CharacterSelect");
             });
         }
