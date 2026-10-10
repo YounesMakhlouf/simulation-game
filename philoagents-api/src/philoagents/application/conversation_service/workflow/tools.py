@@ -18,14 +18,15 @@ def _retriever():
     )
 
 
-@tool
+@tool(response_format="content_and_artifact")
 def retrieve_character_context(query: str):
     """Search and return information about a specific character.
 
     Use when historical facts needed for the reply are missing from your profile.
     Greetings and personal opinions do not need a search.
     """
-    return "\n\n".join(doc.page_content for doc in _retriever().invoke(query))
+    passages = [doc.page_content for doc in _retriever().invoke(query)]
+    return "\n\n".join(passages), passages
 
 
 tools = [retrieve_character_context]

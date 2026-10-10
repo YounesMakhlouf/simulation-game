@@ -12,7 +12,6 @@ from opik.evaluation.metrics import (
 )
 
 from philoagents.application.conversation_service.generate_response import get_response
-from philoagents.application.conversation_service.workflow import state_to_str
 from philoagents.config import settings
 from philoagents.infrastructure.dependencies import get_character_factory
 
@@ -28,8 +27,8 @@ async def evaluation_task(x: dict) -> dict:
 
     Returns:
         dict: Dictionary with evaluation results containing:
-            input: Original input messages
-            context: Context used for generating the response
+            input: Final user question as text
+            context: Original retrieved passages, excluding generated text
             output: Generated response from character
             expected_output: Expected answer for comparison
     """
@@ -48,13 +47,11 @@ async def evaluation_task(x: dict) -> dict:
         negotiation_summaries={},
         new_thread=True,
     )
-    context = state_to_str(latest_state)
-
     return {
-        "input": input_messages,
-        "context": context,
+        "input": input_messages[-1]["content"],
+        "context": latest_state.get("retrieved_passages", []),
         "output": response,
-        "expected_output": expected_output_message,
+        "expected_output": expected_output_message["content"],
     }
 
 

@@ -107,9 +107,16 @@ def test_retrieval_returns_document_text(monkeypatch, documents):
     retriever = Mock()
     retriever.invoke.return_value = documents
     monkeypatch.setattr(tools, "_retriever", lambda: retriever)
-    assert tools.retrieve_character_context.invoke("Hanno") == "\n\n".join(
-        doc.page_content for doc in documents
+    message = tools.retrieve_character_context.invoke(
+        {
+            "name": "retrieve_character_context",
+            "args": {"query": "Hanno"},
+            "id": "search",
+            "type": "tool_call",
+        }
     )
+    assert message.content == "\n\n".join(doc.page_content for doc in documents)
+    assert message.artifact == [doc.page_content for doc in documents]
 
 
 def test_empty_retrieval_skips_summary_model(monkeypatch):

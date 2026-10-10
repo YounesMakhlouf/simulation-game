@@ -1,4 +1,4 @@
-from langchain_core.messages import RemoveMessage
+from langchain_core.messages import RemoveMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.prebuilt import ToolNode
 
@@ -74,9 +74,15 @@ async def summarize_context_node(state: ConversationState):
     if the retrieved documents are very long.
     """
     tool_output_message = state["messages"][-1]
+    # Keep source passages for evaluation even when summaries remove tool messages.
+    passages = []
+    for message in reversed(state["messages"]):
+        if not isinstance(message, ToolMessage):
+            break
+        passages[0:0] = message.artifact or []
     if not tool_output_message.text.strip():
         tool_output_message.content = "No relevant historical facts were found."
-        return {}
+        return {"retrieved_passages": passages}
     context_summary_chain = get_context_summary_chain()
 
     response = await context_summary_chain.ainvoke(
@@ -86,7 +92,7 @@ async def summarize_context_node(state: ConversationState):
     )
     tool_output_message.content = response.text
 
-    return {}
+    return {"retrieved_passages": passages}
 
 
 async def connector_node(state: ConversationState):

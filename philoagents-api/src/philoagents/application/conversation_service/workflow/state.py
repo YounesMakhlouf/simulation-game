@@ -1,3 +1,4 @@
+from operator import add
 from typing import Annotated
 
 from langgraph.graph.message import AnyMessage, add_messages
@@ -37,6 +38,7 @@ class ConversationState(TypedDict):
     crisis_update: str
     negotiation_summaries: dict[str, str]
     retrieved_context: str | None
+    retrieved_passages: Annotated[list[str], add]
     summary: str | None
 
 
