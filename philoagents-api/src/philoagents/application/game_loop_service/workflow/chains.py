@@ -87,7 +87,7 @@ def get_judge_resolution_chain():
             ("system", JUDGE_RESOLUTION_PROMPT.prompt),
         ],
         template_format="jinja2",
-    )
+    ).partial(max_vp_award_per_round=settings.MAX_VP_AWARD_PER_ROUND)
 
     return (prompt | structured_llm).with_retry(stop_after_attempt=3)
 
