@@ -384,11 +384,16 @@ button:disabled {
     border: 1px solid var(--gold-color);
     background: var(--panel-color);
     font-size: 1.125rem;
+    display: flex;
+    flex-direction: column;
+    block-size: min(34rem, calc(100dvh - 6rem));
+    overflow: hidden;
 }
 .dialogue-panel h2 { font-size: 1rem; color: var(--gold-color); margin-block-end: 0.5rem; }
 .dialogue-content {
-    max-block-size: min(35dvh, 15rem);
+    flex: 1;
     min-block-size: 3rem;
+    margin-block: 0.75rem;
     overflow: auto;
     overscroll-behavior: contain;
     white-space: pre-wrap;
@@ -423,10 +428,23 @@ button:disabled {
     .dialogue-panel { inset-inline: 0.5rem; padding: 0.75rem; }
     .scoreboard-table th, .scoreboard-table td { padding: 0.4rem; font-size: 1rem; }
 }
-.dialogue-panel { max-block-size: calc(100dvh - 6rem); overflow: auto; }
 .dialogue-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .dialogue-panel button { padding: 0.4rem 0.75rem; min-block-size: 2.75rem; background: var(--gold-color); }
 .dialogue-compose { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .dialogue-compose label { inline-size: 100%; }
 .dialogue-compose input { min-inline-size: 0; flex: 1; padding: 0.5rem; font-size: 1rem; color: var(--primary-text-color); background: var(--background-color); border: 1px solid var(--gold-color); }
-.dialogue-reply { margin-block-start: 0.75rem; }
+.dialogue-portrait { inline-size: 3.5rem; block-size: 4rem; object-fit: cover; border-radius: 0.25rem; border: 1px solid var(--gold-color); }
+.dialogue-heading h2 { flex: 1; margin: 0; }
+.dialogue-turn { padding: 0.75rem; margin-block-end: 0.75rem; border-radius: 0.375rem; background: var(--background-color); }
+.dialogue-turn-player { margin-inline-start: 1.5rem; border-inline-start: 2px solid var(--gold-color); }
+.dialogue-turn-delegate { margin-inline-end: 1.5rem; border-inline-start: 2px solid var(--secondary-text-color); }
+.dialogue-turn strong { display: block; color: var(--gold-color); font-size: 0.875rem; margin-block-end: 0.25rem; }
+.dialogue-turn p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.dialogue-status { font-size: 1rem; color: var(--secondary-text-color); margin-block-end: 0.5rem; }
+.dialogue-error { color: var(--error-color); font-size: 1rem; margin-block-start: 0.5rem; }
+
+@media (height <= 30rem) {
+    .dialogue-panel { padding: 0.75rem; }
+    .dialogue-portrait { inline-size: 2.5rem; block-size: 3rem; }
+    .dialogue-content { margin-block: 0.5rem; }
+}

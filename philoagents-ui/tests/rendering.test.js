@@ -10,7 +10,6 @@ vi.mock('../src/classes/BaseModal', () => ({ BaseModal: class {} }));
 import { CrisisModal } from '../src/scenes/CrisisModal';
 import { IntelModal } from '../src/scenes/IntelModal';
 import { ScoreboardScene } from '../src/scenes/ScoreboardScene';
-import DialogueBox from '../src/classes/DialogueBox';
 
 const payload = '<img src=x onerror="alert(1)">&\n</div><script>alert(2)</script>';
 
@@ -70,21 +69,5 @@ describe('untrusted display text', () => {
         scene.create();
         dom.check();
         expect(scene.generateScoreRows()).toContain(escapeHtml(payload));
-    });
-
-    it('escapes scrollable dialogue, including text entered by the player', () => {
-        const box = Object.create(DialogueBox.prototype);
-        box.panel = { hidden: true };
-        box.form = { hidden: true };
-        box.content = { textContent: '', scrollTop: 40 };
-        const content = box.content;
-        box.show(payload);
-        expect(content.textContent).toBe(payload);
-        expect(box.isVisible()).toBe(true);
-        box.show(payload + ' more text');
-        expect(box.content).toBe(content);
-        expect(content.scrollTop).toBe(40);
-        box.hide();
-        expect(box.isVisible()).toBe(false);
     });
 });

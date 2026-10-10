@@ -31,9 +31,11 @@ beforeEach(() => {
     };
     let visible = false;
     box = {
-        show: vi.fn(() => { visible = true; }),
+        open: vi.fn(() => { visible = true; }),
+        appendMessage: vi.fn(),
+        updateReply: vi.fn(),
+        setBusy: vi.fn(),
         hide: vi.fn(() => { visible = false; }),
-        setSpeaker: vi.fn(),
         bind: vi.fn(),
         setInputState: vi.fn(),
         isVisible: () => visible,
@@ -78,7 +80,7 @@ it("ignores repeated Enter and further input until the exchange finishes", async
     exchanges[0].onChunk("Hello");
     exchanges[0].onStreamingEnd();
     await pending;
-    expect(box.show).toHaveBeenLastCalledWith("Hello", true);
+    expect(box.updateReply).toHaveBeenLastCalledWith("Hello");
 
     manager.continueDialogue();
     manager.currentMessage = "Another message";
@@ -129,14 +131,14 @@ it.each(["shutdown", "destroy"])("cancels streaming and keyboard listeners on sc
     const callbacks = exchanges[0];
     scene.events.emit(event);
     await pending;
-    const updates = box.show.mock.calls.length;
+    const updates = box.updateReply.mock.calls.length;
 
     callbacks.onChunk("Stale reply");
     callbacks.onStreamingStart();
     callbacks.onStreamingEnd();
     callbacks.onError(new Error("Late failure"));
     await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS + 5000);
-    expect(box.show).toHaveBeenCalledTimes(updates);
+    expect(box.updateReply).toHaveBeenCalledTimes(updates);
     expect(box.isVisible()).toBe(false);
     expect(scene.input.keyboard.listenerCount("keydown")).toBe(0);
     expect(scene.events.listenerCount("shutdown")).toBe(0);
@@ -156,10 +158,10 @@ it("aborts an HTTP fallback and ignores its late response after reopening dialog
     manager.closeDialogue();
     expect(signal.aborted).toBe(true);
     manager.startDialogue("scipio", { id: "hanno", name: "Hanno" });
-    const updates = box.show.mock.calls.length;
+    const updates = box.updateReply.mock.calls.length;
     response.resolve("Stale HTTP reply");
     await pending;
-    expect(box.show).toHaveBeenCalledTimes(updates);
+    expect(box.updateReply).toHaveBeenCalledTimes(updates);
     expect(manager.isTyping).toBe(true);
     expect(vi.getTimerCount()).toBe(0);
 });
@@ -169,9 +171,9 @@ it("cancels a default reply's animation timer when dialogue closes", async () =>
     const pending = manager.handleEnterKey();
     await vi.advanceTimersByTimeAsync(30);
     manager.closeDialogue();
-    const updates = box.show.mock.calls.length;
+    const updates = box.updateReply.mock.calls.length;
     await pending;
-    expect(box.show).toHaveBeenCalledTimes(updates);
+    expect(box.updateReply).toHaveBeenCalledTimes(updates);
     expect(vi.getTimerCount()).toBe(0);
     expect(WebSocketApiService.connect).not.toHaveBeenCalled();
 });
@@ -181,7 +183,7 @@ it("falls back after a silent stream", async () => {
     await vi.advanceTimersByTimeAsync(STREAM_IDLE_TIMEOUT_MS + 1000);
     await pending;
     expect(ApiService.sendMessage).toHaveBeenCalledTimes(1);
-    expect(box.show).toHaveBeenLastCalledWith("Hello", true);
+    expect(box.updateReply).toHaveBeenLastCalledWith("Hello");
 });
 
 it("keeps a slow exchange alive while receiving server keepalives", async () => {
@@ -195,7 +197,7 @@ it("keeps a slow exchange alive while receiving server keepalives", async () => 
     exchanges[0].onStreamingEnd();
     await pending;
     expect(ApiService.sendMessage).not.toHaveBeenCalled();
-    expect(box.show).toHaveBeenLastCalledWith("Hello", true);
+    expect(box.updateReply).toHaveBeenLastCalledWith("Hello");
     expect(vi.getTimerCount()).toBe(0);
 });
 
@@ -210,13 +212,13 @@ it.each(["server error", "timeout"])("marks a streamed reply incomplete after %s
     }
     await pending;
     expect(ApiService.sendMessage).not.toHaveBeenCalled();
-    expect(box.show).toHaveBeenLastCalledWith("Conversation could not be completed. Please try again.", true);
+    expect(box.updateReply).toHaveBeenLastCalledWith("I agree to your offer.", "Conversation could not be completed. Please try again.");
     expect(manager.isStreaming).toBe(false);
     expect(manager.exchangeController).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
-    const updates = box.show.mock.calls.length;
+    const updates = box.updateReply.mock.calls.length;
     exchanges[0].onStreamingEnd();
-    expect(box.show).toHaveBeenCalledTimes(updates);
+    expect(box.updateReply).toHaveBeenCalledTimes(updates);
 });
 
 it('leaves Enter on native controls to the browser', async () => {
@@ -224,4 +226,34 @@ it('leaves Enter on native controls to the browser', async () => {
     scene.input.keyboard.emit('keydown', { key: 'Enter', target: { closest: () => ({}) } });
     expect(enter).not.toHaveBeenCalled();
     expect(manager.currentMessage).toBe('Hi');
+});
+
+
+it('keeps sent messages separate from the streamed reply and permits the next turn immediately', async () => {
+    const pending = manager.handleEnterKey();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(box.appendMessage.mock.calls).toEqual([['You', 'Hi', 'player'], ['Hannibal', '', 'delegate']]);
+    expect(box.setBusy).toHaveBeenLastCalledWith(true);
+    exchanges[0].onChunk('Hello');
+    exchanges[0].onChunk(', diplomat.');
+    manager.currentMessage = 'My next draft';
+    exchanges[0].onStreamingEnd();
+    await pending;
+    expect(box.appendMessage).toHaveBeenCalledTimes(2);
+    expect(box.updateReply).toHaveBeenLastCalledWith('Hello, diplomat.');
+    expect(box.setBusy).toHaveBeenLastCalledWith(false);
+    expect(manager.currentMessage).toBe('My next draft');
+    expect(manager.isTyping).toBe(true);
+    const next = manager.handleEnterKey();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(box.appendMessage).toHaveBeenNthCalledWith(3, 'You', 'My next draft', 'player');
+    exchanges[1].onStreamingEnd();
+    await next;
+});
+
+it('rejects blank turns without adding them to history', async () => {
+    manager.currentMessage = '   ';
+    await manager.handleEnterKey();
+    expect(box.appendMessage).not.toHaveBeenCalled();
+    expect(WebSocketApiService.connect).not.toHaveBeenCalled();
 });

@@ -81,9 +81,11 @@ class DialogueManager {
             const message = this.currentMessage;
             this.currentMessage = '';
             this.isTyping = false;
-            this.dialogueBox.setSpeaker(this.activeDelegate.name);
-            this.dialogueBox.show('...', true);
-            this.dialogueBox.setInputState('', false, true);
+            this.streamingText = '';
+            this.dialogueBox.appendMessage(this.playerName(), message, 'player');
+            this.dialogueBox.appendMessage(this.activeDelegate.name, '', 'delegate');
+            this.dialogueBox.setInputState('');
+            this.dialogueBox.setBusy(true);
 
             try {
                 if (this.activeDelegate.defaultMessage) {
@@ -94,18 +96,17 @@ class DialogueManager {
             } catch (error) {
                 if (!controller.signal.aborted) {
                     console.error('Dialogue exchange failed:', error);
-                    this.dialogueBox.show('Conversation could not be completed. Please try again.', true);
+                    this.dialogueBox.updateReply(this.streamingText, 'Conversation could not be completed. Please try again.');
                 }
             } finally {
                 if (this.exchangeController === controller) {
                     WebSocketApiService.disconnect();
                     this.exchangeController = null;
                     this.isStreaming = false;
-                    this.dialogueBox.setInputState('', false);
+                    this.isTyping = true;
+                    this.dialogueBox.setBusy(false);
                 }
             }
-        } else if (!this.isTyping) {
-            this.restartTypingPrompt();
         }
     }
 
@@ -113,12 +114,10 @@ class DialogueManager {
 
     async handleDefaultMessage(signal) {
         const apiResponse = this.activeDelegate.defaultMessage;
-        this.dialogueBox.show('', true);
         await this.streamText(apiResponse, signal);
     }
 
     async handleWebSocketMessage(message, signal) {
-        this.dialogueBox.show('', true);
         this.isStreaming = true;
         this.streamingText = '';
 
@@ -163,7 +162,7 @@ class DialogueManager {
                     if (finished || signal.aborted) return;
                     resetTimeout();
                     this.streamingText += chunk;
-                    this.dialogueBox.show(this.streamingText, true);
+                    this.dialogueBox.updateReply(this.streamingText);
                 },
                 onStreamingStart: () => {
                     if (finished || signal.aborted) return;
@@ -182,7 +181,7 @@ class DialogueManager {
 
     finishStreaming() {
         this.isStreaming = false;
-        this.dialogueBox.show(this.streamingText, true);
+        this.dialogueBox.updateReply(this.streamingText);
     }
 
     async fallbackToRegularApi(message, signal) {
@@ -194,14 +193,7 @@ class DialogueManager {
     // === UI Management ===
 
     updateDialogueText() {
-        this.dialogueBox.setInputState(this.currentMessage, this.isTyping);
-    }
-
-    restartTypingPrompt() {
-        this.currentMessage = '';
-        this.dialogueBox.setSpeaker(this.playerName());
-        this.dialogueBox.show('', true);
-        this.updateDialogueText();
+        this.dialogueBox.setInputState(this.currentMessage);
     }
 
     // === Dialogue Flow Control ===
@@ -217,15 +209,17 @@ class DialogueManager {
         this.isTyping = true;
         this.currentMessage = '';
 
-        this.dialogueBox.setSpeaker(this.playerName());
-        this.dialogueBox.show('', true);
-        this.dialogueBox.setInputState('', true);
+        this.dialogueBox.open(delegate);
     }
 
     closeDialogue() {
-        this.exchangeController?.abort();
+        if (this.exchangeController) {
+            this.dialogueBox.updateReply(this.streamingText, 'Response interrupted.');
+            this.exchangeController.abort();
+        }
         this.exchangeController = null;
         WebSocketApiService.disconnect();
+        this.dialogueBox.setBusy(false);
         this.dialogueBox.hide();
         this.isTyping = false;
         this.currentMessage = '';
@@ -245,19 +239,7 @@ class DialogueManager {
     }
 
     continueDialogue() {
-        if (!this.dialogueBox.isVisible()) return;
-
-        if (this.exchangeController) {
-            if (this.isStreaming) this.skipStreaming();
-            return;
-        }
-        if (this.isStreaming) {
-            this.skipStreaming();
-        } else if (!this.isTyping) {
-            this.isTyping = true;
-            this.currentMessage = '';
-            this.restartTypingPrompt();
-        }
+        if (this.isInDialogue() && this.isStreaming) this.skipStreaming();
     }
 
     // === Text Streaming ===
@@ -265,12 +247,11 @@ class DialogueManager {
     async streamText(text, signal, speed = 30) {
         signal.throwIfAborted();
         this.isStreaming = true;
-        let displayedText = '';
-
+        this.streamingText = '';
 
         for (let i = 0; i < text.length; i++) {
-            displayedText += text[i];
-            this.dialogueBox.show(displayedText, true);
+            this.streamingText += text[i];
+            this.dialogueBox.updateReply(this.streamingText);
 
             await new Promise(resolve => {
                 const onAbort = () => {
@@ -288,10 +269,8 @@ class DialogueManager {
             if (!this.isStreaming) break;
         }
 
-        if (this.isStreaming) {
-            this.dialogueBox.show(text, true);
-        }
-
+        this.streamingText = text;
+        this.dialogueBox.updateReply(text);
         this.isStreaming = false;
         return true;
     }
